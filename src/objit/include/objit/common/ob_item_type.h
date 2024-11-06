@@ -511,6 +511,7 @@ typedef enum ObItemType
   T_FUN_SYS_ENHANCED_AES_ENCRYPT = 779,
   T_FUN_SYS_ENHANCED_AES_DECRYPT = 780,
   ///< @note add new mysql only function type before this line
+  T_FUN_SYS_HELLO_REPEAT = 798, // hello_repeat() function
   T_MYSQL_ONLY_SYS_MAX_OP = 800,
 
   // system function for oracle only
