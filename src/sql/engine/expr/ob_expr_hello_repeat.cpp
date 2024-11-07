@@ -38,6 +38,7 @@ int ObExprHelloRepeat::calc_result_type1(ObExprResType& type, ObExprResType &cou
 {
   int ret = OB_SUCCESS;
   UNUSED(type_ctx);
+//  LOG_WARN("hello_step1");
   type.set_varchar();
   type.set_default_collation_type();
   type.set_collation_level(CS_LEVEL_SYSCONST);
@@ -49,25 +50,31 @@ int ObExprHelloRepeat::cg_expr(ObExprCGCtx& op_cg_ctx, const ObRawExpr& raw_expr
 {
   UNUSED(raw_expr);
   UNUSED(op_cg_ctx);
+//  LOG_ERROR("hello_step2");
   rt_expr.eval_func_ = ObExprHelloRepeat::eval;
   return OB_SUCCESS;
 }
 
 int ObExprHelloRepeat::eval(const ObExpr& expr, ObEvalCtx &ctx, ObDatum& expr_datum)
 {
+//  LOG_ERROR("hello_step3");
   int ret = OB_SUCCESS;
   ObDatum *count = NULL;
   ObEvalCtx::TempAllocGuard tmp_alloc_g(ctx);
   common::ObIAllocator &tmp_allocator = tmp_alloc_g.get_allocator();
   ObString text_str;
   if (OB_FAIL(expr.args_[0]->eval(ctx, count))) {
+//    LOG_ERROR("hello_step4");
     LOG_WARN("evaluate parameters failed", K(ret));
   } else if (count->is_null()) {
+//    LOG_ERROR("hello_step5");
     expr_datum.set_null();
   } else {
+    LOG_ERROR("hello_step6");
     ObExprStrResAlloc expr_res_alloc(expr, ctx);
     ObString output;
     ret = repeat(output, count->get_int(), expr_res_alloc);
+//    LOG_ERROR("hello_step7%d", ret);
     if (OB_FAIL(ret)) {
       LOG_WARN("do repeat failed", K(ret));
     } else {
@@ -85,17 +92,19 @@ int ObExprHelloRepeat::repeat(ObString &output,
   if (count <= 0) {
     output.assign_ptr(NULL, 0);
   } else {
-    int64_t tot_length = hello_len * count + 1;
+//    int64_t tot_length = hello_len * count + 1;
+    int64_t tot_length = hello_len * count;
     char *buf = static_cast<char *>(allocator.alloc(tot_length));
     if (OB_ISNULL(buf)) {
         ret = OB_ALLOCATE_MEMORY_FAILED;
         LOG_ERROR("alloc memory failed", K(ret), K(tot_length));
     } else {
-        for(int i = 0;i < count;i++)
-        {
-            MEMCPY(buf + i * hello_len, hello_ob, hello_len);
+        char *ptr = buf;
+        for (int i = 0; i < count; i++) {
+          MEMCPY(ptr, hello_ob, hello_len);
+          ptr += hello_len;
         }
-        buf[tot_length - 1] = '\0';
+//        *ptr = '\0';
         output.assign_ptr(buf, static_cast<int32_t>(tot_length));
     }
   }
