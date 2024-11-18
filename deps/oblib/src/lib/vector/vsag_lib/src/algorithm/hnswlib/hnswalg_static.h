@@ -1900,9 +1900,9 @@ public:
                 min1 = std::min(inbound_connections_num[i], min1);
                 max1 = std::max(inbound_connections_num[i], max1);
             }
-            std::cout << "Min inbound: " << min1 << ", Max inbound:" << max1 << "\n";
+            // std::cout << "Min inbound: " << min1 << ", Max inbound:" << max1 << "\n";
         }
-        std::cout << "integrity ok, checked " << connections_checked << " connections\n";
+        // std::cout << "integrity ok, checked " << connections_checked << " connections\n";
     }
 
     void
@@ -1916,7 +1916,7 @@ public:
             exit(-1);
         }
         in.read((char*)&dim, 4);
-        std::cout << "data dimension: " << dim << std::endl;
+        // std::cout << "data dimension: " << dim << std::endl;
         in.seekg(0, std::ios::end);
         std::ios::pos_type ss = in.tellg();
         size_t fsize = (size_t)ss;
@@ -1982,8 +1982,8 @@ public:
     get_knn_error_quantile(
         float* train_data, size_t dim, size_t num, size_t k = 20, float quantile = 0.995) {
         error_quantile = quantile;
-        std::cout << "get: " << k << " NN  quantile: " << quantile << " dim: " << dim
-                  << " num: " << num << std::endl;
+        // std::cout << "get: " << k << " NN  quantile: " << quantile << " dim: " << dim
+        //           << " num: " << num << std::endl;
         std::vector<std::pair<float, tableint>> train_knn(num * k);
         std::vector<float> error_distribution(num * k);
 #pragma omp parallel for
@@ -2016,7 +2016,7 @@ public:
         }
         std::sort(error_distribution.begin(), error_distribution.end());
         err_quantile_value = error_distribution[num * k * error_quantile];
-        std::cout << k << " NN error quantile:: " << err_quantile_value << std::endl;
+        // std::cout << k << " NN error quantile:: " << err_quantile_value << std::endl;
     }
 
     void
@@ -2053,8 +2053,8 @@ public:
             if (use_node_centroid)
                 node_cluster_dist_[i] = dist_to_centroid;
         }
-        std::cout << "encode HNSW finished with ave encode loss:: "
-                  << ave_encode_loss / (float)(right_range - left_range) << std::endl;
+        // std::cout << "encode HNSW finished with ave encode loss:: "
+        //           << ave_encode_loss / (float)(right_range - left_range) << std::endl;
     }
 
     void
