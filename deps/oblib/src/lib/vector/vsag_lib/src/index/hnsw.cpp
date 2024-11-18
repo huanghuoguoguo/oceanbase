@@ -41,8 +41,8 @@ const static int64_t EXPANSION_NUM = 1000000;
 const static int64_t DEFAULT_MAX_ELEMENT = 1;
 const static int MINIMAL_M = 8;
 const static int MAXIMAL_M = 64;
-const static uint32_t GENERATE_SEARCH_K = 50;
-const static uint32_t GENERATE_SEARCH_L = 400;
+const static uint32_t GENERATE_SEARCH_K = 45;
+const static uint32_t GENERATE_SEARCH_L = 370;
 const static float GENERATE_OMEGA = 0.51;
 
 HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
@@ -60,7 +60,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     dim_ = *((size_t*)space->get_dist_func_param());
 
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
-
+    M = 10;
+    // ef_construction = 200;
     if (ef_construction <= 0) {
         throw std::runtime_error(MESSAGE_PARAMETER);
     }

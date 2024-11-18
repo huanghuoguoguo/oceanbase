@@ -317,7 +317,8 @@ DiskANN::knn_search(const DatasetPtr& query,
                     int64_t k,
                     const std::string& parameters,
                     const std::function<bool(int64_t)>& filter) const {
-    SlowTaskTimer t("diskann knnsearch", 200);
+    // 取消timer，可能会提升效率。
+    // SlowTaskTimer t("diskann knnsearch", 200);
 
     // cannot perform search on empty index
     if (empty_index_) {
