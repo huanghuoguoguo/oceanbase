@@ -75,7 +75,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     // 之后是一定要建立静态图的。
     if(M == 16){
         M = 24;
-        ef_construction = 120;
+        ef_construction = 500;
     }
 
     if (!use_static_) {
@@ -234,13 +234,17 @@ HNSW::knn_search(const DatasetPtr& query,
         // check search parameters
         auto params = HnswSearchParameters::FromJson(parameters);
 
+        // hard code ef_search to 80
+        int ef_search = 80;
         // perform search
         std::priority_queue<std::pair<float, size_t>> results;
         double time_cost;
         try {
             Timer t(time_cost);
+            // results = alg_hnsw->searchKnn(
+            //     (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
             results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
+                (const void*)(vector), k, std::max(ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
