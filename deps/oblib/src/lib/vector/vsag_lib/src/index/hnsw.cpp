@@ -235,7 +235,7 @@ HNSW::knn_search(const DatasetPtr& query,
         auto params = HnswSearchParameters::FromJson(parameters);
 
         // hard code ef_search to 80
-        int ef_search = 80;
+        int64_t ef_search = 80;
         // perform search
         std::priority_queue<std::pair<float, size_t>> results;
         double time_cost;
