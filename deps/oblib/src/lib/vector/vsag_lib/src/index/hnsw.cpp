@@ -77,7 +77,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
         M = 14;
         ef_construction = 180;
     }
-
+    use_static = true;
+    this->use_static = use_static;
     if (!use_static_) {
         alg_hnsw =
             std::make_shared<hnswlib::HierarchicalNSW>(space.get(),
