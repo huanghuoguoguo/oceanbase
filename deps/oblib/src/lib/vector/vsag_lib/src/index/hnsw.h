@@ -291,7 +291,7 @@ private:
     std::shared_ptr<ConjugateGraph> conjugate_graph_;
 
     int64_t dim_;
-    bool use_static_ = false;
+    bool use_static_ = true;
     bool empty_index_ = false;
     bool use_reversed_edges_ = false;
     bool is_init_memory_ = false;
