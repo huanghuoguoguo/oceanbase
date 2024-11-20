@@ -73,10 +73,10 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     // 之后是一定要建立静态图的。
-    if(M == 16){
-        M = 24;
-        ef_construction = 500;
-    }
+    // if(M == 16){
+    //     M = 24;
+    //     ef_construction = 500;
+    // }
 
     if (!use_static_) {
         alg_hnsw =
@@ -244,7 +244,7 @@ HNSW::knn_search(const DatasetPtr& query,
             // results = alg_hnsw->searchKnn(
             //     (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
             results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, std::max(ef_search, k), filter_ptr);
+                (const void*)(vector), k, ef_search, filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
