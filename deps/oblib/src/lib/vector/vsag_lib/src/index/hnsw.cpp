@@ -184,7 +184,7 @@ HNSW::add(const DatasetPtr& base) {
                 );
             }
             // 针对性的建立索引。
-            if(this->build_data_ids.size() == 4){
+            if(this->build_data_ids.size() == 1000000){
                 logger::warn("got {} vecotrs", this->build_data_ids.size());
                 auto incremental = vsag::Dataset::Make(); 
                     incremental->Dim(base_dim) 
