@@ -291,7 +291,7 @@ private:
     std::shared_ptr<ConjugateGraph> conjugate_graph_;
 
     int64_t dim_;
-    bool use_static_ = true;
+    bool use_static_ = false;
     bool empty_index_ = false;
     bool use_reversed_edges_ = false;
     bool is_init_memory_ = false;
@@ -302,6 +302,10 @@ private:
     mutable std::map<std::string, WindowResultQueue> result_queues_;
 
     mutable std::shared_mutex rw_mutex_;
+    bool is_build_ = false;
+    // 暂时保存
+    std::vector<int64_t> build_data_ids;
+    std::vector<float> build_data_vectors;
 };
 
 }  // namespace vsag

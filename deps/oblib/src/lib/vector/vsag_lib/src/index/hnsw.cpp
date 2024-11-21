@@ -77,8 +77,6 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
         M = 14;
         ef_construction = 180;
     }
-    use_static = true;
-    this->use_static_ = use_static;
     if (!use_static_) {
         alg_hnsw =
             std::make_shared<hnswlib::HierarchicalNSW>(space.get(),
@@ -112,14 +110,14 @@ HNSW::build(const DatasetPtr& base) {
             return std::vector<int64_t>();
         }
 
-        logger::debug("index.dim={}, base.dim={}", this->dim_, base->GetDim());
+        
 
         auto base_dim = base->GetDim();
         CHECK_ARGUMENT(base_dim == dim_,
                        fmt::format("base.dim({}) must be equal to index.dim({})", base_dim, dim_));
 
         int64_t num_elements = base->GetNumElements();
-
+        logger::warn("cur vector num_elements: {}", num_elements);
         std::unique_lock lock(rw_mutex_);
         if (auto result = init_memory_space(); not result.has_value()) {
             return tl::unexpected(result.error());
@@ -140,9 +138,11 @@ HNSW::build(const DatasetPtr& base) {
         }
 
         if (use_static_) {
+            logger::warn("build hnsw static encode");
             SlowTaskTimer t("hnsw pq", 1000);
             auto* hnsw = static_cast<hnswlib::StaticHierarchicalNSW*>(alg_hnsw.get());
             hnsw->encode_hnsw_data();
+            logger::warn("build hnsw static encode end");
         }
 
         return failed_ids;
@@ -155,10 +155,10 @@ HNSW::build(const DatasetPtr& base) {
 tl::expected<std::vector<int64_t>, Error>
 HNSW::add(const DatasetPtr& base) {
     SlowTaskTimer t("hnsw add", 20);
-
-    if (use_static_) {
+    // 如果使用的是静态的并且已经build了，不支持再插入数据。
+    if (use_static_ && is_build_) {
         LOG_ERROR_AND_RETURNS(ErrorType::UNSUPPORTED_INDEX_OPERATION,
-                              "static index does not support add");
+                              "static index has build, and does not support add");
     }
     try {
         auto base_dim = base->GetDim();
@@ -168,6 +168,41 @@ HNSW::add(const DatasetPtr& base) {
         int64_t num_elements = base->GetNumElements();
         auto ids = base->GetIds();
         auto vectors = base->GetFloat32Vectors();
+        if(use_static_){
+            // 收集起来，后面search的时候统一build。
+            // num_elements目前始终为1。
+            for (int64_t i = 0; i < num_elements; ++i) {
+                // 收集起来。
+                // 提取当前的 id 和对应的 vector
+                int64_t id = ids[i];
+                build_data_ids.emplace_back(id);
+                // 直接将向量的数据平铺到 build_data_vectors
+                build_data_vectors.insert(
+                    build_data_vectors.end(),
+                    vectors + i * dim_,
+                    vectors + (i + 1) * dim_
+                );
+            }
+            // 针对性的建立索引。
+            if(this->build_data_ids.size() == 4){
+                logger::warn("got {} vecotrs", this->build_data_ids.size());
+                auto incremental = vsag::Dataset::Make(); 
+                    incremental->Dim(base_dim) 
+                        ->NumElements(build_data_ids.size()) 
+                        ->Ids(build_data_ids.data()) 
+                        ->Float32Vectors(build_data_vectors.data()) 
+                        ->Owner(false);
+                logger::warn("start create hnsw index");             
+                this->build(incremental);
+                this->is_build_ = true;
+                this->build_data_ids.clear();
+                this->build_data_vectors.clear();
+                logger::warn("end create hnsw index");
+            }
+
+            return {};
+        }
+        // 走扩张的道路。
         std::vector<int64_t> failed_ids;
 
         std::unique_lock lock(rw_mutex_);
