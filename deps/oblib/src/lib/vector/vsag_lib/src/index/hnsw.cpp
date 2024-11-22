@@ -74,8 +74,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     // 之后是一定要建立静态图的。
     if(M == 16){
-        M = 14;
-        ef_construction = 180;
+        M = 20;
+        ef_construction = 240;
     }
     if (!use_static_) {
         alg_hnsw =
