@@ -1707,6 +1707,11 @@ public:
             enterpoint_node_ = cur_c;
             maxlevel_ = curlevel;
         }
+
+        if(this->cur_element_count_ == 1000000){
+            this->encode_hnsw_data();
+        }
+
         return cur_c;
     }
 

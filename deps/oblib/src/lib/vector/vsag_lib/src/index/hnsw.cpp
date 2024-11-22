@@ -74,8 +74,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     if( M == 16 ){
-      M = 14;
-      ef_construction = 180;
+      M = 28;
+      ef_construction = 240;
     }
     if (!use_static_) {
         alg_hnsw =
@@ -154,10 +154,10 @@ tl::expected<std::vector<int64_t>, Error>
 HNSW::add(const DatasetPtr& base) {
     SlowTaskTimer t("hnsw add", 20);
 
-    if (use_static_) {
-        LOG_ERROR_AND_RETURNS(ErrorType::UNSUPPORTED_INDEX_OPERATION,
-                              "static index does not support add");
-    }
+    // if (use_static_) {
+    //     LOG_ERROR_AND_RETURNS(ErrorType::UNSUPPORTED_INDEX_OPERATION,
+    //                           "static index does not support add");
+    // }
     try {
         auto base_dim = base->GetDim();
         CHECK_ARGUMENT(base_dim == dim_,
@@ -239,7 +239,7 @@ HNSW::knn_search(const DatasetPtr& query,
         try {
             Timer t(time_cost);
             results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, 120, filter_ptr);
+                (const void*)(vector), k, 160, filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
