@@ -74,7 +74,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     // 之后是一定要建立静态图的。
     if(M == 16){
-        M = 12;
+        M = 28;
         ef_construction = 160;
     }
     if (!use_static_) {
@@ -271,7 +271,7 @@ HNSW::knn_search(const DatasetPtr& query,
         auto params = HnswSearchParameters::FromJson(parameters);
 
         // hard code ef_search to 80
-        int64_t ef_search = 80;
+        int64_t ef_search = 120;
         // perform search
         std::priority_queue<std::pair<float, size_t>> results;
         double time_cost;
