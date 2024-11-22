@@ -38,7 +38,7 @@
 namespace vsag {
 
 const static int64_t EXPANSION_NUM = 1000000;
-const static int64_t DEFAULT_MAX_ELEMENT = 1;
+const static int64_t DEFAULT_MAX_ELEMENT = 1000000;
 const static int MINIMAL_M = 8;
 const static int MAXIMAL_M = 64;
 const static uint32_t GENERATE_SEARCH_K = 50;
@@ -74,8 +74,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     // 之后是一定要建立静态图的。
     if(M == 16){
-        M = 20;
-        ef_construction = 240;
+        M = 12;
+        ef_construction = 160;
     }
     if (!use_static_) {
         alg_hnsw =
@@ -184,7 +184,7 @@ HNSW::add(const DatasetPtr& base) {
                 );
             }
             // 针对性的建立索引。
-            if(this->build_data_ids.size() == 1000000){
+            if(this->build_data_ids.size() == DEFAULT_MAX_ELEMENT){
                 logger::warn("got {} vecotrs", this->build_data_ids.size());
                 auto incremental = vsag::Dataset::Make(); 
                     incremental->Dim(base_dim) 
@@ -277,8 +277,10 @@ HNSW::knn_search(const DatasetPtr& query,
         double time_cost;
         try {
             Timer t(time_cost);
-            results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
+            // results = alg_hnsw->searchKnn(
+            //     (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
+                results = alg_hnsw->searchKnn(
+                (const void*)(vector), k, ef_search, filter_ptr);
             
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
