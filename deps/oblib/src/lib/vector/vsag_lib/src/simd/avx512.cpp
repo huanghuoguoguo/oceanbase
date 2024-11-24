@@ -85,4 +85,33 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
     return sum;
 }
 
+void 
+PQDistanceAVX512Float256(const void* single_dim_centers, float single_dim_val, void* result) {
+    const float* float_centers = (const float*)single_dim_centers;
+    float* float_result = (float*)result;
+    
+    // 每次处理 16 个浮点数
+    for (size_t idx = 0; idx < 256; idx += 16) {
+        // 加载中心点的 16 个值
+        __m512 v_centers_dim = _mm512_loadu_ps(float_centers + idx);
+
+        // 将查询值广播到向量中
+        __m512 v_query_vec = _mm512_set1_ps(single_dim_val);
+
+        // 计算差值
+        __m512 v_diff = _mm512_sub_ps(v_centers_dim, v_query_vec);
+
+        // 计算差值的平方
+        __m512 v_diff_sq = _mm512_mul_ps(v_diff, v_diff);
+
+        // 加载结果的当前值
+        __m512 v_chunk_dists = _mm512_loadu_ps(&float_result[idx]);
+
+        // 累加到结果向量
+        v_chunk_dists = _mm512_add_ps(v_chunk_dists, v_diff_sq);
+
+        // 存储计算结果
+        _mm512_storeu_ps(&float_result[idx], v_chunk_dists);
+    }
+}
 }  // namespace vsag
