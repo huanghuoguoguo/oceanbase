@@ -74,8 +74,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     
-    M = 32;
-    ef_construction = 360;
+    M = 36;
+    ef_construction = 500;
     
     if (!use_static_) {
         alg_hnsw =
@@ -239,7 +239,7 @@ HNSW::knn_search(const DatasetPtr& query,
         try {
             Timer t(time_cost);
             results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, 200, filter_ptr);
+                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
