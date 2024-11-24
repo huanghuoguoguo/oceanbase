@@ -1709,7 +1709,7 @@ public:
         }
 
         if(this->cur_element_count_ == 1000000){
-            this->encode_hnsw_data();
+            this->encode_hnsw_data(16 , 256);
         }
 
         return cur_c;

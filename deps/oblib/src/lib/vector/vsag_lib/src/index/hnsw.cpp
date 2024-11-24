@@ -74,8 +74,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     
-    M = 36;
-    ef_construction = 500;
+    M = 16;
+    ef_construction = 200;
     
     if (!use_static_) {
         alg_hnsw =
