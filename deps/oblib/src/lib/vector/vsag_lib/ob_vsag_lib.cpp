@@ -232,7 +232,7 @@ int create_index(VectorIndexPtr& index_handler, IndexType index_type,
                                                                 hnsw,
                                                                 vsag_allocator);
             index_handler = static_cast<VectorIndexPtr>(hnsw_index);
-            vsag::logger::debug("   success to create hnsw index , index parameter:{}, allocator addr:{}",index_parameters.dump(), (void*)vsag_allocator);
+            vsag::logger::warn("   success to create hnsw index , index parameter:{}, allocator addr:{}",index_parameters.dump(), (void*)vsag_allocator);
             return 0;
         } else {
             error = index.error().type;
@@ -326,7 +326,7 @@ int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_
     auto filter = [bitmap](int64_t id) -> bool {
         return roaring::api::roaring64_bitmap_contains(bitmap, id);
     };
-    nlohmann::json search_parameters{{"hnsw", {{"ef_search", 120}}}};
+    nlohmann::json search_parameters{{"hnsw", {{"ef_search", ef_search}}}};
     HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
     auto query = vsag::Dataset::Make();
     query->NumElements(1)->Dim(dim)->Float32Vectors(query_vector)->Owner(false);
