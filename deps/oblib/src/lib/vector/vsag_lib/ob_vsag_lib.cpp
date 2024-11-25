@@ -213,7 +213,7 @@ int create_index(VectorIndexPtr& index_handler, IndexType index_type,
     if (is_support) {
         // create index
         std::shared_ptr<vsag::Index> hnsw;
-        bool use_static = true;
+        bool use_static = false;
         nlohmann::json hnsw_parameters{{"max_degree", max_degree},
                                 {"ef_construction", ef_construction},
                                 {"ef_search", ef_search},
@@ -326,7 +326,7 @@ int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_
     auto filter = [bitmap](int64_t id) -> bool {
         return roaring::api::roaring64_bitmap_contains(bitmap, id);
     };
-    nlohmann::json search_parameters{{"hnsw", {{"ef_search", ef_search}}}};
+    nlohmann::json search_parameters{{"hnsw", {{"ef_search", 120}}}};
     HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
     auto query = vsag::Dataset::Make();
     query->NumElements(1)->Dim(dim)->Float32Vectors(query_vector)->Owner(false);
