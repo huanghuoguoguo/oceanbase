@@ -23,38 +23,64 @@ namespace vsag {
 #define PORTABLE_ALIGN32 __attribute__((aligned(32)))
 #define PORTABLE_ALIGN64 __attribute__((aligned(64)))
 
-float
-L2SqrSIMD16ExtAVX(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    float* pVect1 = (float*)pVect1v;
-    float* pVect2 = (float*)pVect2v;
-    size_t qty = *((size_t*)qty_ptr);
-    float PORTABLE_ALIGN32 TmpRes[8];
-    size_t qty16 = qty >> 4;
+float 
+L2SqrSIMD16ExtAVX(const void* pVect1v, const void* pVect2v, const void* qty_ptr) { 
+    float* pVect1 = (float*)pVect1v; 
+    float* pVect2 = (float*)pVect2v; 
+    size_t qty = *((size_t*)qty_ptr); 
+    float PORTABLE_ALIGN32 TmpRes[8]; 
+    
+    // 针对128维向量的优化路径
+    if (__builtin_expect(qty == 128, 1)) {
+        __m256 sum = _mm256_setzero_ps();
+        __m256 v1, v2, diff;
 
-    const float* pEnd1 = pVect1 + (qty16 << 4);
+        // 加载并计算128维的L2范数
+        for (int i = 0; i < 16; i += 8) {
+            v1 = _mm256_load_ps(pVect1 + i);
+            v2 = _mm256_load_ps(pVect2 + i);
+            diff = _mm256_sub_ps(v1, v2);
+            sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff));
+        }
 
-    __m256 diff, v1, v2;
-    __m256 sum = _mm256_set1_ps(0);
-
-    while (pVect1 < pEnd1) {
-        v1 = _mm256_loadu_ps(pVect1);
-        pVect1 += 8;
-        v2 = _mm256_loadu_ps(pVect2);
-        pVect2 += 8;
-        diff = _mm256_sub_ps(v1, v2);
-        sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff));
-
-        v1 = _mm256_loadu_ps(pVect1);
-        pVect1 += 8;
-        v2 = _mm256_loadu_ps(pVect2);
-        pVect2 += 8;
-        diff = _mm256_sub_ps(v1, v2);
-        sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff));
+        _mm256_store_ps(TmpRes, sum);
+        return TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] + TmpRes[7];
     }
 
-    _mm256_store_ps(TmpRes, sum);
-    return TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
-           TmpRes[7];
+    // 通用路径，处理任意维度
+    size_t qty16 = qty >> 3; // 计算16元素块数（每次加载8个元素）
+    const float* pEnd1 = pVect1 + (qty16 << 3); // 对应的结束指针
+
+    __m256 sum = _mm256_setzero_ps(); 
+    __m256 v1, v2, diff;
+    
+    while (pVect1 < pEnd1) { 
+        v1 = _mm256_loadu_ps(pVect1); 
+        pVect1 += 8; 
+        v2 = _mm256_loadu_ps(pVect2); 
+        pVect2 += 8; 
+        diff = _mm256_sub_ps(v1, v2); 
+        sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+    }
+
+    // 如果向量的长度不是8的倍数，处理剩余部分
+    size_t remaining = qty - (qty16 << 3); 
+    if (remaining > 0) {
+        __m256 v1 = _mm256_setzero_ps();
+        __m256 v2 = _mm256_setzero_ps();
+        __m256 diff = _mm256_setzero_ps();
+
+        for (size_t i = 0; i < remaining; ++i) {
+            v1 = _mm256_set1_ps(pVect1[qty16 * 8 + i]);
+            v2 = _mm256_set1_ps(pVect2[qty16 * 8 + i]);
+            diff = _mm256_sub_ps(v1, v2);
+            sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff));
+        }
+    }
+
+    // 汇总最终结果
+    _mm256_store_ps(TmpRes, sum); 
+    return TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] + TmpRes[7];
 }
 
 float
