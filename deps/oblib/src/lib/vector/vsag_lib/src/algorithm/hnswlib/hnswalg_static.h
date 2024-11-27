@@ -2096,7 +2096,7 @@ public:
         }
 
         diskann::generate_pq_pivots(
-            pq_training_data.get(), pq_train_bound, vec_dim, pq_cluster, pq_chunk, 16, pq_book);
+            pq_training_data.get(), pq_train_bound, vec_dim, pq_cluster, pq_chunk, 12, pq_book);
         is_trained_pq = true;
         encode_hnsw_data_with_codebook(0, cur_element_count_);
     }
