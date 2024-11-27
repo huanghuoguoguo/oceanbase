@@ -55,6 +55,73 @@ L2SqrSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void* qty_p
 }
 
 float
+L2SqrSIMD16ExtAVX512_128(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+    const float *pVect1 = (const float *)pVect1v;
+    const float *pVect2 = (const float *)pVect2v;
+    size_t qty = *((const size_t *)qty_ptr); // qty 应为 128
+
+    // 直接假设 qty 为 128（避免运行时检查），展开主循环
+    __m512 sum = _mm512_setzero_ps();
+
+    // 每次加载 16 个浮点数并进行计算，共需 8 次迭代
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+    pVect1 += 16; pVect2 += 16;
+
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+    pVect1 += 16; pVect2 += 16;
+
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+    pVect1 += 16; pVect2 += 16;
+
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+    pVect1 += 16; pVect2 += 16;
+
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+    pVect1 += 16; pVect2 += 16;
+
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+    pVect1 += 16; pVect2 += 16;
+
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+    pVect1 += 16; pVect2 += 16;
+
+    sum = _mm512_add_ps(sum, _mm512_mul_ps(
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2)),
+        _mm512_sub_ps(_mm512_loadu_ps(pVect1), _mm512_loadu_ps(pVect2))
+    ));
+
+    // 利用 AVX-512 指令将结果归约求和
+    __m256 sum256 = _mm512_castps512_ps256(sum);
+    sum256 = _mm256_add_ps(sum256, _mm512_extractf32x8_ps(sum, 1));
+    __m128 sum128 = _mm_add_ps(_mm256_castps256_ps128(sum256), _mm256_extractf128_ps(sum256, 1));
+    sum128 = _mm_add_ps(sum128, _mm_movehl_ps(sum128, sum128));
+    sum128 = _mm_add_ps(sum128, _mm_movehdup_ps(sum128));
+
+    return _mm_cvtss_f32(sum128);
+}
+
+float
 InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     float PORTABLE_ALIGN64 TmpRes[16];
     float* pVect1 = (float*)pVect1v;
