@@ -57,7 +57,7 @@ setup_simd() {
     }
 #else
         L2SqrSIMD16Ext = L2SqrSIMD16ExtSSE;
-        L2SqrSIMD16Ext_128 = L2SqrSIMD16ExtSSE;
+        L2SqrSIMD16Ext_128 = L2SqrSIMD4ExtSSE_128;
         L2SqrSIMD16ExtResiduals = L2SqrSIMD16ExtResidualsSSE;
         L2SqrSIMD4Ext = L2SqrSIMD4ExtSSE;
         L2SqrSIMD4ExtResiduals = L2SqrSIMD4ExtResidualsSSE;
@@ -78,7 +78,7 @@ setup_simd() {
     }
 #else
         L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
-        L2SqrSIMD16Ext_128 = L2SqrSIMD16ExtAVX;
+        L2SqrSIMD16Ext_128 = L2SqrSIMD16ExtAVX_128;
         InnerProductSIMD4Ext = InnerProductSIMD4ExtAVX;
         InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
     }

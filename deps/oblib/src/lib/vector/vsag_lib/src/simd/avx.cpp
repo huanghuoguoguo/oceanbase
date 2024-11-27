@@ -58,6 +58,68 @@ L2SqrSIMD16ExtAVX(const void* pVect1v, const void* pVect2v, const void* qty_ptr)
 }
 
 float
+L2SqrSIMD16ExtAVX_128(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+    // 输入参数是两个 128 维向量的指针
+    float* pVect1 = (float*)pVect1v; 
+    float* pVect2 = (float*)pVect2v; 
+
+    // 临时存储累积的结果
+    float PORTABLE_ALIGN32 TmpRes[8]; 
+
+    // 初始化 AVX 寄存器
+    __m256 diff, v1, v2; 
+    __m256 sum = _mm256_set1_ps(0); 
+
+    // 全展开：每次计算 16 个浮点数，128 维正好分为 8 个块
+    v1 = _mm256_loadu_ps(pVect1); 
+    v2 = _mm256_loadu_ps(pVect2); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    v1 = _mm256_loadu_ps(pVect1 + 8); 
+    v2 = _mm256_loadu_ps(pVect2 + 8); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    v1 = _mm256_loadu_ps(pVect1 + 16); 
+    v2 = _mm256_loadu_ps(pVect2 + 16); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    v1 = _mm256_loadu_ps(pVect1 + 24); 
+    v2 = _mm256_loadu_ps(pVect2 + 24); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    v1 = _mm256_loadu_ps(pVect1 + 32); 
+    v2 = _mm256_loadu_ps(pVect2 + 32); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    v1 = _mm256_loadu_ps(pVect1 + 40); 
+    v2 = _mm256_loadu_ps(pVect2 + 40); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    v1 = _mm256_loadu_ps(pVect1 + 48); 
+    v2 = _mm256_loadu_ps(pVect2 + 48); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    v1 = _mm256_loadu_ps(pVect1 + 56); 
+    v2 = _mm256_loadu_ps(pVect2 + 56); 
+    diff = _mm256_sub_ps(v1, v2); 
+    sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff)); 
+
+    // 将累积结果存储到 TmpRes
+    _mm256_store_ps(TmpRes, sum); 
+
+    // 汇总 TmpRes 中的所有部分和
+    return TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + 
+           TmpRes[4] + TmpRes[5] + TmpRes[6] + TmpRes[7]; 
+}
+
+float
 InnerProductSIMD4ExtAVX(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     float PORTABLE_ALIGN32 TmpRes[8];
     float* pVect1 = (float*)pVect1v;

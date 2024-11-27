@@ -57,6 +57,182 @@ L2SqrSIMD4ExtSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr) 
 }
 
 float
+L2SqrSIMD4ExtSSE_128(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+    // 输入是两个 128 维向量
+    float* pVect1 = (float*)pVect1v; 
+    float* pVect2 = (float*)pVect2v; 
+
+    // 临时数组存储中间结果
+    float PORTABLE_ALIGN32 TmpRes[4]; 
+
+    // 初始化 SSE 寄存器
+    __m128 diff, v1, v2; 
+    __m128 sum = _mm_set1_ps(0); 
+
+    // 全展开：每次处理 4 个浮点数，总共 32 次（128 / 4 = 32）
+    v1 = _mm_loadu_ps(pVect1); 
+    v2 = _mm_loadu_ps(pVect2); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 4); 
+    v2 = _mm_loadu_ps(pVect2 + 4); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 8); 
+    v2 = _mm_loadu_ps(pVect2 + 8); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 12); 
+    v2 = _mm_loadu_ps(pVect2 + 12); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 16); 
+    v2 = _mm_loadu_ps(pVect2 + 16); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 20); 
+    v2 = _mm_loadu_ps(pVect2 + 20); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 24); 
+    v2 = _mm_loadu_ps(pVect2 + 24); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 28); 
+    v2 = _mm_loadu_ps(pVect2 + 28); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 32); 
+    v2 = _mm_loadu_ps(pVect2 + 32); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 36); 
+    v2 = _mm_loadu_ps(pVect2 + 36); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 40); 
+    v2 = _mm_loadu_ps(pVect2 + 40); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 44); 
+    v2 = _mm_loadu_ps(pVect2 + 44); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 48); 
+    v2 = _mm_loadu_ps(pVect2 + 48); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 52); 
+    v2 = _mm_loadu_ps(pVect2 + 52); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 56); 
+    v2 = _mm_loadu_ps(pVect2 + 56); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 60); 
+    v2 = _mm_loadu_ps(pVect2 + 60); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 64); 
+    v2 = _mm_loadu_ps(pVect2 + 64); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 68); 
+    v2 = _mm_loadu_ps(pVect2 + 68); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 72); 
+    v2 = _mm_loadu_ps(pVect2 + 72); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 76); 
+    v2 = _mm_loadu_ps(pVect2 + 76); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 80); 
+    v2 = _mm_loadu_ps(pVect2 + 80); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 84); 
+    v2 = _mm_loadu_ps(pVect2 + 84); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 88); 
+    v2 = _mm_loadu_ps(pVect2 + 88); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 92); 
+    v2 = _mm_loadu_ps(pVect2 + 92); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 96); 
+    v2 = _mm_loadu_ps(pVect2 + 96); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 100); 
+    v2 = _mm_loadu_ps(pVect2 + 100); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 104); 
+    v2 = _mm_loadu_ps(pVect2 + 104); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 108); 
+    v2 = _mm_loadu_ps(pVect2 + 108); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 112); 
+    v2 = _mm_loadu_ps(pVect2 + 112); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 116); 
+    v2 = _mm_loadu_ps(pVect2 + 116); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    v1 = _mm_loadu_ps(pVect1 + 120); 
+    v2 = _mm_loadu_ps(pVect2 + 120); 
+    diff = _mm_sub_ps(v1, v2); 
+    sum = _mm_add_ps(sum, _mm_mul_ps(diff, diff)); 
+
+    // 将结果存储到 TmpRes
+    _mm_store_ps(TmpRes, sum); 
+
+    // 汇总所有结果
+    return TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3]; 
+}
+
+float
 L2SqrSIMD4ExtResidualsSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     size_t qty = *((size_t*)qty_ptr);
     size_t qty4 = qty >> 2 << 2;

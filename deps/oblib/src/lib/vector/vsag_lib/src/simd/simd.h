@@ -107,6 +107,8 @@ PQDistanceFloat256(const void* single_dim_centers, float single_dim_val, void* r
 float
 L2SqrSIMD16ExtSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
 float
+L2SqrSIMD4ExtSSE_128(const void* pVect1v, const void* pVect2v, const void* qty_ptr)
+float
 L2SqrSIMD4ExtSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
 float
 L2SqrSIMD4ExtResidualsSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
@@ -142,6 +144,8 @@ float
 InnerProductSIMD16ExtAVX(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
 void
 PQDistanceAVXFloat256(const void* single_dim_centers, float single_dim_val, void* result);
+float
+L2SqrSIMD16ExtAVX_128(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
 #endif
 
 #if defined(ENABLE_AVX512)
