@@ -105,7 +105,7 @@ int create_index(obvectorlib::VectorIndexPtr& index_handler, int index_type,
                                    dtype, metric,
                                    dim,
                                    18,
-                                   200,
+                                   180,
                                    256,
                                    allocator);
 #endif
