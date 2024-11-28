@@ -104,9 +104,9 @@ int create_index(obvectorlib::VectorIndexPtr& index_handler, int index_type,
                                    static_cast<obvectorlib::IndexType>(index_type),
                                    dtype, metric,
                                    dim,
-                                   24, // M
-                                   200, // ef_construction
-                                   256, // ef_search 理论上来说没有什么用。
+                                   18, // M
+                                   240, // ef_construction
+                                   120, // ef_search 理论上来说没有什么用。
                                    allocator);
 #endif
 }
@@ -152,7 +152,7 @@ int knn_search(obvectorlib::VectorIndexPtr index_handler, float* query_vector,in
 #else
   return obvectorlib::knn_search(index_handler, query_vector, dim, topk,
                                  result_dist, result_ids, result_size,
-                                 256, // ef_serach
+                                 120, // ef_serach
                                  invalid);
 #endif
 }
