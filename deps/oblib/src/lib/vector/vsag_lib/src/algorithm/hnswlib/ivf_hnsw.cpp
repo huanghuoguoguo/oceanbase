@@ -1,26 +1,15 @@
 #pragma once
 
-#include "k_means.h"
+#include "ivf_hnsw.h"
 #include <random>
 
 
-KMeans::KMeans(int _k, int _N, int _dim, hnswlib::SpaceInterface<float> *_space, 
-    DataLoader *_data_loader, vector<int> &ids)
-    : k(_k), N(_N), dim(_dim), space(_space), data_loader(_data_loader) {
-
-    // Constructor implementation
-
-    centroids.resize(k);
-    for (int i = 0; i < k; i++)
-        centroids[i].resize(dim);
-    assignments.resize(N, -1); // 初始化点分配为-1
-    cluster_nums.resize(k, 0);
-    diameters.resize(k, 0);
-    globalIDS = ids;
-    clusters.resize(k);
-
-    center_dis.resize(k, vector<float>(k));
-    dis2centroid.resize(N, 1e9);
+IVFHierarchicalNSW::IVFHierarchicalNSW(SpaceInterface* s,
+                    size_t max_elements,
+                    vsag::Allocator* allocator,
+                    size_t M = 16,
+                    size_t ef_construction = 200,){
+    // 构造函数中什么都不做，build的时候做。
 }
 
 static std::random_device rd; // 用于获取随机数种子
@@ -30,9 +19,10 @@ int rand_int(int l, int r) {
     return dis(gen);
 }
 
-// 使用的均为[0, N)的local id
 
-void KMeans::initializeCenters() {
+/////////////////////////////////////////////function/////////////////////////////////////////////
+// 使用的均为[0, N)的local id
+void IVFHierarchicalNSW::initializeCenters() {
     std::mt19937 gen(random_device{}()); // 使用设备随机数作为种子
     std::uniform_real_distribution<float> dist(0.0, 1.0); // 定义分布范围
 
@@ -83,8 +73,48 @@ void KMeans::initializeCenters() {
     
 }
 
+void create_hnsws(int M, int ef_construction, Config *config) {
+        hnsws.resize(this->k);
+        for (int i = 0; i < hnsws.size(); i++) {
+            hnsws[i] = std::move(unique_ptr<HierarchicalNSW<float>>(new HierarchicalNSW<float>(this->space, 
+                this->clusters[i].size(), M, ef_construction)));
+            hnsws[i]->config = config;
+            for (auto p: this->clusters[i]) {
+                hnsws[i]->addPoint(this->data_loader->point_data(p), p);
+            }
+        }
+    }
+    vector<uint32_t> ivf_hnsw_search(const void *data_point, int knn,int nprobe, float epsilon) {
+        auto near_centers = this->find_nearest_centers_id(data_point, nprobe);
+        vector<pair<float, int> > centers;
+        while(near_centers.size()) {
+            centers.push_back(near_centers.top());
+            near_centers.pop();
+        }
+        reverse(centers.begin(), centers.end());
 
-void KMeans::assignPointsToClosestCenter() {
+        priority_queue<pair<float, int> > nns;
+
+        for (auto pr: centers) {
+            int id = pr.second;
+            auto result = hnsws[id]->searchKnn(data_point, knn);
+            while (result.size()) {
+                nns.push(result.top());
+                result.pop();
+            }
+        }
+
+        vector<uint32_t> result;
+        while(nns.size()) {
+            result.push_back(nns.top().second);
+            nns.pop();
+        }
+        reverse(result.begin(), result.end());
+        return result;
+    }
+
+
+void IVFHierarchicalNSW::assignPointsToClosestCenter() {
     for (int j = 0; j < k; j++) {
         cluster_nums[j] = 0;
     }
@@ -107,7 +137,7 @@ void KMeans::assignPointsToClosestCenter() {
 }
 
 
-void KMeans::updateCenters() {
+void IVFHierarchicalNSW::updateCenters() {
     vector<vector<float> > tem(k);
     for (int i = 0; i < k; i++)
         tem[i].resize(dim);
@@ -125,7 +155,7 @@ void KMeans::updateCenters() {
 }
 
 
-void KMeans::updateCenterDis() {
+void IVFHierarchicalNSW::updateCenterDis() {
     for (int i = 0; i < k; i ++)
         for (int j = i + 1; j < k; j++)
             center_dis[i][j] = center_dis[j][i] = dis(centroids[i].data(), centroids[j].data());
@@ -134,7 +164,7 @@ void KMeans::updateCenterDis() {
 }
 
 
-void KMeans::run(int maxIterations) {
+void IVFHierarchicalNSW::run(int maxIterations) {
 
     initializeCenters();
     updateCenterDis();
@@ -165,7 +195,7 @@ void KMeans::run(int maxIterations) {
     calc_diameter();
 }
 
-float KMeans::dis(int i, int j) {
+float IVFHierarchicalNSW::dis(int i, int j) {
     // dis 实现...
     i = globalIDS[i];
     j = globalIDS[j];
@@ -173,27 +203,27 @@ float KMeans::dis(int i, int j) {
 }
 
 t
-float KMeans::dis(int i, const void* data_point) {
+float IVFHierarchicalNSW::dis(int i, const void* data_point) {
     // dis 实现...
     i = globalIDS[i];
     return space->get_dist_func()(data_loader->point_data(i), data_point, space->get_dist_func_param());
 }
 
 
-float KMeans::dis(const void* data_point, const void* data_point2) {
+float IVFHierarchicalNSW::dis(const void* data_point, const void* data_point2) {
     // dis 实现...
     return space->get_dist_func()(data_point, data_point2, space->get_dist_func_param());
 }
 
 
-float KMeans::tot_dist() {
+float IVFHierarchicalNSW::tot_dist() {
     // tot_dist 实现...
     float sum = 0;
     return sum;
 }
 
 
-float KMeans::tot_dist_recalc() {
+float IVFHierarchicalNSW::tot_dist_recalc() {
     // tot_dist_recalc 实现...
     float ans = 0;
     for (int i = 0; i < N; i++)
@@ -203,7 +233,7 @@ float KMeans::tot_dist_recalc() {
 }
 
 
-void KMeans::calc_diameter() {
+void IVFHierarchicalNSW::calc_diameter() {
     for (int i = 0; i < k; i++) {
         diameters[i] = 0;
         for (auto p: clusters[i]) {
@@ -214,7 +244,7 @@ void KMeans::calc_diameter() {
     }
 }
 
-void KMeans::output() {
+void IVFHierarchicalNSW::output() {
     // output 实现...
     cout << "centers:\n";
     for (int i = 0; i < k; i++) {
@@ -224,14 +254,14 @@ void KMeans::output() {
 }
 
 
-vector<vector<float> > KMeans::get_centers_global() {
+vector<vector<float> > IVFHierarchicalNSW::get_centers_global() {
     return centroids;
 }
 
 int searchCalc = 0;
 
 
-priority_queue<pair<float, int> > KMeans::find_nearest_centers_id(const void* data_point, int nprobe) {
+priority_queue<pair<float, int> > IVFHierarchicalNSW::find_nearest_centers_id(const void* data_point, int nprobe) {
     priority_queue<pair<float, int> > near_centers;
     for (int i = 0; i < k; i++) {
         float d = dis(centroids[i].data(), data_point);
@@ -242,7 +272,7 @@ priority_queue<pair<float, int> > KMeans::find_nearest_centers_id(const void* da
 }
 
 
-vector<vector<float> > KMeans::find_nearest_centers(const void* data_point, int nprobe) {
+vector<vector<float> > IVFHierarchicalNSW::find_nearest_centers(const void* data_point, int nprobe) {
     auto nn_ids = find_nearest_centers_id(data_point, nprobe);
     vector<vector<float> > ans;
     while (nn_ids.size()) {
@@ -254,7 +284,7 @@ vector<vector<float> > KMeans::find_nearest_centers(const void* data_point, int 
 }
 // ivf-flat
 
-vector<tableint> KMeans::searchKnn(const void* data_point, int knn, int nprobe) {
+vector<tableint> IVFHierarchicalNSW::searchKnn_internal(const void* data_point, int knn, int nprobe) {
 
     // centers id: [0, k-1]
     auto near_centers = find_nearest_centers_id(data_point, nprobe);
@@ -282,14 +312,14 @@ vector<tableint> KMeans::searchKnn(const void* data_point, int knn, int nprobe) 
     return result;
 }
 
-inline float * KMeans::get_assign(int id) {
+inline float * IVFHierarchicalNSW::get_assign(int id) {
     return centroids[assignments[id]].data();
 }
 
 int prune_search_calc = 0;
 int prune_search_probes = 0;
 
-vector<tableint> KMeans::searchKnn_prune(const void* data_point, int knn, int nprobe, float epsilon) {
+vector<tableint> IVFHierarchicalNSW::searchKnn_prune(const void* data_point, int knn, int nprobe, float epsilon) {
     auto near_centers = find_nearest_centers_id(data_point, nprobe);
     vector<pair<float, int> > centers;
     while(near_centers.size()) {
@@ -323,7 +353,7 @@ vector<tableint> KMeans::searchKnn_prune(const void* data_point, int knn, int np
 }
 
 
-vector<int> KMeans::find_center_point_global_id() {
+vector<int> IVFHierarchicalNSW::find_center_point_global_id() {
     vector<int> center_points(this->k);
     vector<float> center_dis(this->k, 1e9);
     for (int i = 0; i < N; i++) {
@@ -336,3 +366,68 @@ vector<int> KMeans::find_center_point_global_id() {
         c = globalIDS[c];
     return center_points;
 }
+
+
+//// agf
+bool
+IVFHierarchicalNSW::addPoint(const void* datapoint, labeltype label){}
+
+std::priority_queue<std::pair<float, labeltype>>
+IVFHierarchicalNSW::searchKnn(const void*, size_t, size_t, BaseFilterFunctor* isIdAllowed = nullptr){}
+
+std::priority_queue<std::pair<float, labeltype>>
+IVFHierarchicalNSW::searchRange(const void*, float, size_t, BaseFilterFunctor* isIdAllowed = nullptr){}
+
+// Return k nearest neighbor in the order of closer fist
+std::vector<std::pair<float, labeltype>>
+IVFHierarchicalNSW::searchKnnCloserFirst(const void* query_data,
+                        size_t k,
+                        size_t ef,
+                        BaseFilterFunctor* isIdAllowed = nullptr) const{}
+
+void
+IVFHierarchicalNSW::saveIndex(const std::string& location){}
+
+void
+IVFHierarchicalNSW::saveIndex(void* d){}
+
+void
+IVFHierarchicalNSW::saveIndex(std::ostream& out_stream){}
+
+size_t
+IVFHierarchicalNSW::getMaxElements(){}
+
+float
+IVFHierarchicalNSW::getDistanceByLabel(labeltype label, const void* data_point){}
+
+const float*
+IVFHierarchicalNSW::getDataByLabel(labeltype label) const{}
+
+std::priority_queue<std::pair<float, labeltype>>
+IVFHierarchicalNSW::bruteForce(const void* data_point, int64_t k){}
+
+void
+IVFHierarchicalNSW::resizeIndex(size_t new_max_elements){}
+
+size_t
+IVFHierarchicalNSW::calcSerializeSize(){}
+
+void
+IVFHierarchicalNSW::loadIndex(std::function<void(uint64_t, uint64_t, void*)> read_func,
+            SpaceInterface* s,
+            size_t max_elements_i = 0){}
+
+void
+IVFHierarchicalNSW::loadIndex(std::istream& in_stream, SpaceInterface* s, size_t max_elements_i = 0){}
+
+size_t
+IVFHierarchicalNSW::getCurrentElementCount(){}
+
+size_t
+IVFHierarchicalNSW::getDeletedCount(){}
+
+bool
+IVFHierarchicalNSW::isValidLabel(labeltype label){}
+
+bool
+IVFHierarchicalNSW::init_memory_space(){}

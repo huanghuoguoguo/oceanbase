@@ -1,75 +1,153 @@
-#pragma once
+// k_means.h
+#ifndef K_MEANS_H
+#define K_MEANS_H
 
-#include "k_means.h"
 #include "../hnswlib/hnswlib.h"
-#include "config.h"
+#include <vector>
+#include <limits>
+#include "../../default_allocator.h"
+#include "../../simd/simd.h"
+#include "../../utils.h"
+#include <functional>
 
-namespace hnswlib {
-    
-
-class IVFHNSW: public KMeans {
-
+namespace hnswlib{
+using tableint = hnswlib::labeltype;
+class IVFHierarchicalNSW : public AlgorithmInterface<float>{
 public:
-    IVFHNSW(int _k, int _N, int _dim )
-        :KMeans(_k, _N, _dim, ) {
+    IVFHierarchicalNSW(SpaceInterface* s,
+                    size_t max_elements,
+                    vsag::Allocator* allocator,
+                    size_t M = 16,
+                    size_t ef_construction = 200);
+    ~IVFHierarchicalNSW()=default;
 
-    }
-    ~IVFHNSW() {
+    // 初始化中心
+    void initializeCenters();
 
-    }
-    vector<uint32_t> searchKnn(const void* data_point, int knn, int nprobe) {
+    // ？
+    void assignPointsToClosestCenter();
 
-    }
+    // 更新中心
+    void updateCenters();
+
+    // 更新中心距离
+    void updateCenterDis();
+
+    // 最主要的计算K个质心的函数
+    void run(int maxIterations = 100);
+
+    // i,j均为局部坐标
+    float dis(int i, int j);
+    float dis(int i, const void* data_point);
+    float dis(const void* data_point, const void* data_point2);
+    float tot_dist();
+    float tot_dist_recalc();
+
+    // 输出什么？
+    void output();
+    // 返回
+    vector<vector<float> > get_centers_global();
+
+    // 计算什么？
+    void calc_diameter();
+    vector<tableint> searchKnn_internal(const void* data_point, int knn, int nprobe);
+    vector<tableint> searchKnn_prune(const void* data_point, int knn, int nprobe, float epsilon);
+    priority_queue<pair<float, int> > find_nearest_centers_id(const void* data_point, int nprobe);
+    vector<vector<float> > find_nearest_centers(const void* data_point, int nprobe);
+    inline float *get_assign(int id);
+
+    // 找到每个类中距离centroids最近的那个点
+    vector<int> find_center_point_global_id();
     
-    vector<uint32_t> ivfflat_search(const void* data_point, int knn, int nprobe) {
-        return KMeans::searchKnn(data_point, knn, nprobe);
-    }
 
-    vector<uint32_t> ivfflat_search_prune(const void* data_point, int knn, int nprobe, float epsilon) {
-        return KMeans::searchKnn_prune(data_point, knn, nprobe, epsilon);
-    }
+    // agf
+    bool
+    addPoint(const void* datapoint, labeltype label) override;
 
-    void create_hnsws(int M, int ef_construction, Config *config) {
-        hnsws.resize(this->k);
-        for (int i = 0; i < hnsws.size(); i++) {
-            hnsws[i] = std::move(unique_ptr<HierarchicalNSW<float>>(new HierarchicalNSW<float>(this->space, 
-                this->clusters[i].size(), M, ef_construction)));
-            hnsws[i]->config = config;
-            for (auto p: this->clusters[i]) {
-                hnsws[i]->addPoint(this->data_loader->point_data(p), p);
-            }
-        }
-    }
-    vector<uint32_t> ivf_hnsw_search(const void *data_point, int knn,int nprobe, float epsilon) {
-        auto near_centers = this->find_nearest_centers_id(data_point, nprobe);
-        vector<pair<float, int> > centers;
-        while(near_centers.size()) {
-            centers.push_back(near_centers.top());
-            near_centers.pop();
-        }
-        reverse(centers.begin(), centers.end());
+    std::priority_queue<std::pair<float, labeltype>>
+    searchKnn(const void*, size_t, size_t, BaseFilterFunctor* isIdAllowed = nullptr) override;
 
-        priority_queue<pair<float, int> > nns;
+    std::priority_queue<std::pair<float, labeltype>>
+    searchRange(const void*, float, size_t, BaseFilterFunctor* isIdAllowed = nullptr) override;
 
-        for (auto pr: centers) {
-            int id = pr.second;
-            auto result = hnsws[id]->searchKnn(data_point, knn);
-            while (result.size()) {
-                nns.push(result.top());
-                result.pop();
-            }
-        }
+    // Return k nearest neighbor in the order of closer fist
+    std::vector<std::pair<float, labeltype>>
+    searchKnnCloserFirst(const void* query_data,
+                         size_t k,
+                         size_t ef,
+                         BaseFilterFunctor* isIdAllowed = nullptr) const override;
 
-        vector<uint32_t> result;
-        while(nns.size()) {
-            result.push_back(nns.top().second);
-            nns.pop();
-        }
-        reverse(result.begin(), result.end());
-        return result;
-    }
-private:
+    void
+    saveIndex(const std::string& location) override;
+
+    void
+    saveIndex(void* d) override;
+
+    void
+    saveIndex(std::ostream& out_stream) override;
+
+    size_t
+    getMaxElements() override;
+
+    float
+    getDistanceByLabel(labeltype label, const void* data_point) override;
+
+    const float*
+    getDataByLabel(labeltype label) const override;
+
+    std::priority_queue<std::pair<float, labeltype>>
+    bruteForce(const void* data_point, int64_t k) override;
+
+    void
+    resizeIndex(size_t new_max_elements) override;
+
+    size_t
+    calcSerializeSize() override;
+
+    void
+    loadIndex(std::function<void(uint64_t, uint64_t, void*)> read_func,
+              SpaceInterface* s,
+              size_t max_elements_i = 0) override;
+
+    void
+    loadIndex(std::istream& in_stream, SpaceInterface* s, size_t max_elements_i = 0) override;
+
+    size_t
+    getCurrentElementCount() override;
+
+    size_t
+    getDeletedCount() override;
+
+    bool
+    isValidLabel(labeltype label) override;
+
+    bool
+    init_memory_space() override;
+
+protected:
+    int k, N, dim;
+    int M_,ef_;
+    hnswlib::SpaceInterface<float> *space;
+    vector<int> cluster_nums, globalIDS;
+    vector<vector<float> > center_dis;
+    vector<float> dis2centroid;
+    // vector<int> centers;
+
+    // 质心
+    vector<vector<float> > centroids;
+
+    // assignments: [0, k)
+    vector<int> assignments;
+    vector<vector<int>> clusters;
+    vector<float> diameters;
+
     vector<unique_ptr<HierarchicalNSW<float> > > hnsws;
 
 };
 }
+
+
+
+
+#include "ivf_hnsw.cpp"
+#endif // K_MEANS_H
