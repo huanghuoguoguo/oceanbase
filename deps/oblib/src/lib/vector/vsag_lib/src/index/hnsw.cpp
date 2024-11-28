@@ -38,7 +38,7 @@
 namespace vsag {
 
 const static int64_t EXPANSION_NUM = 1000000;
-const static int64_t DEFAULT_MAX_ELEMENT = 1;
+const static int64_t DEFAULT_MAX_ELEMENT = 1000010;
 const static int MINIMAL_M = 8;
 const static int MAXIMAL_M = 64;
 const static uint32_t GENERATE_SEARCH_K = 50;
@@ -151,10 +151,10 @@ tl::expected<std::vector<int64_t>, Error>
 HNSW::add(const DatasetPtr& base) {
     SlowTaskTimer t("hnsw add", 20);
 
-    if (use_static_) {
-        LOG_ERROR_AND_RETURNS(ErrorType::UNSUPPORTED_INDEX_OPERATION,
-                              "static index does not support add");
-    }
+    // if (use_static_) {
+    //     LOG_ERROR_AND_RETURNS(ErrorType::UNSUPPORTED_INDEX_OPERATION,
+    //                           "static index does not support add");
+    // }
     try {
         auto base_dim = base->GetDim();
         CHECK_ARGUMENT(base_dim == dim_,
