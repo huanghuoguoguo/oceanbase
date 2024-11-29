@@ -1,5 +1,5 @@
 #!/bin/bash
-
+git pull
 # Stop the obcluster
 ./tools/deploy/obd.sh stop -n obcluster
 
@@ -26,12 +26,9 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-
-
 # Wait for 30 seconds
 echo "Waiting for 30 seconds..."
 sleep 30
-
 
 
 # Run the benchmark
