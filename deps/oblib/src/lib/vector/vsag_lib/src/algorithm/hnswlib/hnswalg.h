@@ -1650,7 +1650,7 @@ public:
     std::priority_queue<std::pair<float, labeltype>>
     searchKnn(const void* query_data,
               size_t k,
-              uint64_t base_ef,
+              uint64_t ef,
               BaseFilterFunctor* isIdAllowed = nullptr) const override {
         std::priority_queue<std::pair<float, labeltype>> result;
         if (cur_element_count_ == 0)
