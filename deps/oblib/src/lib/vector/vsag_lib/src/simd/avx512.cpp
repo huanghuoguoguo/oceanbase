@@ -85,4 +85,18 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
     return sum;
 }
 
+float 
+SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+    const uint8_t* codes1 = reinterpret_cast<const uint8_t*>(pVect1v);
+    const uint8_t* codes2 = reinterpret_cast<const uint8_t*>(pVect2v);
+    float result = 0.0f;
+
+    for (uint64_t i = 0; i < 128; ++i) {
+        int diff = static_cast<int>(codes1[i]) - static_cast<int>(codes2[i]);
+        result += diff * diff;
+    }
+
+    return result;  
+}
+
 }  // namespace vsag

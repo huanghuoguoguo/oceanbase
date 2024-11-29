@@ -156,14 +156,18 @@ HNSW::add(const DatasetPtr& base) {
                               "static index does not support add");
     }
     try {
-        auto base_dim = base->GetDim();
-        CHECK_ARGUMENT(base_dim == dim_,
-                       fmt::format("base.dim({}) must be equal to index.dim({})", base_dim, dim_));
 
         int64_t num_elements = base->GetNumElements();
         auto ids = base->GetIds();
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
+
+        for (size_t i = 0; i < 128; ++i) {
+            float value = vectors[i];
+            // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
+            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vectors);
+            byte_ptr[i] = static_cast<int8_t>(value);
+        }
 
         std::unique_lock lock(rw_mutex_);
         if (auto result = init_memory_space(); not result.has_value()) {
@@ -216,10 +220,12 @@ HNSW::knn_search(const DatasetPtr& query,
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
-        int64_t query_dim = query->GetDim();
-        CHECK_ARGUMENT(
-            query_dim == dim_,
-            fmt::format("query.dim({}) must be equal to index.dim({})", query_dim, dim_));
+        for (size_t i = 0; i < 128; ++i) {
+            float value = vectors[i];
+            // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
+            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vectors);
+            byte_ptr[i] = static_cast<int8_t>(value);
+        }
 
         // check k
         CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
