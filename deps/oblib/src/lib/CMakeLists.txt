@@ -419,9 +419,10 @@ if (NOT OB_BUILD_CDC)
 # vsag vector library
 target_link_directories(
   oblib_lib PUBLIC 
+  ${CMAKE_BINARY_DIR}/deps/oblib/src/lib/vector/vsag_lib/src/simd
   ${DEP_DIR}/lib ${DEP_DIR}/lib/vsag_lib
   ${CMAKE_BINARY_DIR}/deps/oblib/src/lib/vector/vsag_lib 
-  ${CMAKE_BINARY_DIR}/deps/oblib/src/lib//vector/vsag_lib/src
+  ${CMAKE_BINARY_DIR}/deps/oblib/src/lib/vector/vsag_lib/src
   ${CMAKE_BINARY_DIR}/_deps/fmt-build
 )
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")

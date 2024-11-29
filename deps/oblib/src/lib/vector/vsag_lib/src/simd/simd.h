@@ -103,6 +103,9 @@ InnerProductDistance(const void* pVect1, const void* pVect2, const void* qty_ptr
 void
 PQDistanceFloat256(const void* single_dim_centers, float single_dim_val, void* result);
 
+float 
+SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
+
 #if defined(ENABLE_SSE)
 float
 L2SqrSIMD16ExtSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
@@ -149,8 +152,6 @@ float
 L2SqrSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
 float
 InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void* qty_ptr);
-float 
-SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr)
 #endif
 
 typedef float (*DistanceFunc)(const void* pVect1, const void* pVect2, const void* qty_ptr);

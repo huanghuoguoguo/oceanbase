@@ -31,6 +31,7 @@
 #include <random>
 #include <stdexcept>
 #include <unordered_set>
+#include "../../logger.h"
 
 #include "../../default_allocator.h"
 #include "../../simd/simd.h"
@@ -1538,6 +1539,7 @@ public:
         {
             // Checking if the element with the same label already exists
             // if so, updating it *instead* of creating a new element.
+
             std::unique_lock<std::mutex> lock_table(label_lookup_lock_);
             auto search = label_lookup_.find(label);
             if (search != label_lookup_.end()) {
@@ -1553,8 +1555,10 @@ public:
             label_lookup_[label] = cur_c;
         }
 
-        std::shared_ptr<float[]> normalize_data;
-        normalize_vector(data_point, normalize_data);
+        // std::shared_ptr<float[]> normalize_data;
+        // normalize_vector(data_point, normalize_data);
+
+
 
         std::unique_lock<std::recursive_mutex> lock_el(link_list_locks_[cur_c]);
         int curlevel = getRandomLevel(mult_);
@@ -1571,9 +1575,11 @@ public:
 
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
 
+
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
+        vsag::logger::warn("yhh data_size_ log:{}",data_size_);
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1587,6 +1593,7 @@ public:
             if (curlevel < maxlevelcopy) {
                 float curdist =
                     fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
+                vsag::logger::warn("yhh curdist log:{}",curdist);
                 for (int level = maxlevelcopy; level > curlevel; level--) {
                     bool changed = true;
                     while (changed) {
@@ -1612,7 +1619,6 @@ public:
                     }
                 }
             }
-
             bool epDeleted = isMarkedDeleted(enterpoint_copy);
             for (int level = std::min(curlevel, maxlevelcopy); level >= 0; level--) {
                 if (level > maxlevelcopy || level < 0)  // possible?
@@ -1638,7 +1644,6 @@ public:
             enterpoint_node_ = 0;
             maxlevel_ = curlevel;
         }
-
         // Releasing lock for the maximum level
         if (curlevel > maxlevelcopy) {
             enterpoint_node_ = cur_c;
@@ -1661,6 +1666,7 @@ public:
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        vsag::logger::warn("yhh curdist log:{}",curdist);
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
