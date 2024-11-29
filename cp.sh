@@ -29,9 +29,11 @@ if [ $? -ne 0 ]; then
 fi
 
 
+
 # Wait for 30 seconds
 echo "Waiting for 30 seconds..."
 sleep 30
+
 
 
 # Run the benchmark
