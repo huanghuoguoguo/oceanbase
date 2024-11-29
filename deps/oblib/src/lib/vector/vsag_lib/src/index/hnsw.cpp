@@ -58,7 +58,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
       use_conjugate_graph_(use_conjugate_graph),
       use_reversed_edges_(use_reversed_edges) {
     dim_ = *((size_t*)space->get_dist_func_param());
-
+    logger::warn("yhh  construct dim result log{}",dim_); 
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
 
     if (ef_construction <= 0) {

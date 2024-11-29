@@ -15,7 +15,7 @@
 
 #pragma once
 #include "hnswlib.h"
-
+#include "../../logger.h"
 namespace vsag {
 
 extern hnswlib::DISTFUNC
@@ -33,6 +33,7 @@ class L2Space : public SpaceInterface {
 public:
     L2Space(size_t dim) {
         fstdistfunc_ = vsag::GetL2DistanceFunc(dim);
+        vsag::logger::warn("yhh dim result log {}", dim);
         if(dim == 128){
             dim = 32;
         }
