@@ -25,6 +25,8 @@ float (*L2SqrSIMD16Ext)(const void*, const void*, const void*);
 float (*L2SqrSIMD16ExtResiduals)(const void*, const void*, const void*);
 float (*L2SqrSIMD4Ext)(const void*, const void*, const void*);
 float (*L2SqrSIMD4ExtResiduals)(const void*, const void*, const void*);
+float (*L2SqrSQ8)(const void*, const void*, const void*);
+
 
 float (*InnerProductSIMD4Ext)(const void*, const void*, const void*);
 float (*InnerProductSIMD16Ext)(const void*, const void*, const void*);
@@ -39,6 +41,7 @@ setup_simd() {
     L2SqrSIMD16ExtResiduals = L2Sqr;
     L2SqrSIMD4Ext = L2Sqr;
     L2SqrSIMD4ExtResiduals = L2Sqr;
+    L2SqrSQ8 = L2Sqr;
 
     InnerProductSIMD4Ext = InnerProduct;
     InnerProductSIMD16Ext = InnerProduct;
@@ -101,7 +104,7 @@ setup_simd() {
 #else
         L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX512;
         InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
-    }
+    }   L2SqrSQ8 = SQ8ComputeCodesL2Sqr;
     ret.dist_support_avx512f = true;
     ret.dist_support_avx512dq = true;
     ret.dist_support_avx512bw = true;
@@ -139,6 +142,9 @@ GetPQDistanceFunc() {
 
 DistanceFunc
 GetL2DistanceFunc(size_t dim) {
+    if(dim == 128){
+        return vsag::L2SqrSQ8;
+    }
     if (dim % 16 == 0) {
         return vsag::L2SqrSIMD16Ext;
     } else if (dim % 4 == 0) {
