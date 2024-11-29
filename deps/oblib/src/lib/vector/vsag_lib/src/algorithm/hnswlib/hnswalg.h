@@ -1689,7 +1689,7 @@ public:
             }
         }
 
-        logger::warn("yhh curdist {}",curdist );
+        vsag::logger::warn("yhh curdist {}",curdist );
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
