@@ -39,4 +39,14 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "Deployment and testing completed successfully."
+# Change to oceanbase source directory
+cd /root/source/oceanbase
+
+# Stop the obcluster
+./tools/deploy/obd.sh stop -n obcluster
+if [ $? -ne 0 ]; then
+  echo "Failed to stop obcluster. Exiting."
+  exit 1
+fi
+
+echo "Deployment, testing, and stopping of obcluster completed successfully."
