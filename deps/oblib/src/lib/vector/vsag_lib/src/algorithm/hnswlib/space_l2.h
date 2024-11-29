@@ -35,7 +35,7 @@ public:
         if(dim == 128){
             dim = 32;
         }
-        fstdistfunc_ = vsag::GetL2DistanceFunc(dim);
+        fstdistfunc_ = avx512::SQ8ComputeCodesL2Sqr;
         dim_ = dim;
         data_size_ = dim * sizeof(float);
     }
