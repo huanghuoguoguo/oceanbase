@@ -16,7 +16,7 @@
 #include "simd.h"
 
 #include <cpuinfo.h>
-
+#include "../logger.h"
 #include <iostream>
 
 namespace vsag {
@@ -144,7 +144,9 @@ GetPQDistanceFunc() {
 
 DistanceFunc
 GetL2DistanceFunc(size_t dim) {
+    vsag::logger::warn("yhh dim result log{}",dim);
     if(dim == 128){
+        vsag::logger::warn("yhh L2SqrSQ8 log");
         return vsag::L2SqrSQ8;
     }
     if (dim % 16 == 0) {
