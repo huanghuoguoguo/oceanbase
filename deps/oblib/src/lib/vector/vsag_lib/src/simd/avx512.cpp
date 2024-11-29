@@ -130,7 +130,6 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 //     // 提取最终的 L2 距离
 //     return _mm_extract_epi32(sum128, 0) + _mm_extract_epi32(sum128, 1);
 // }
-namespace avx512{
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
@@ -144,6 +143,5 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     }
     return static_cast<float>(sum);  // 返回 L2 距离的平方
 }
-} // namespace avx512
 
 }  // namespace vsag

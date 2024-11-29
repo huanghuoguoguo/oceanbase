@@ -16,6 +16,7 @@
 #pragma once
 #include "hnswlib.h"
 #include "../../logger.h"
+#include "../../simd/avx512.cpp"
 namespace vsag {
 
 extern hnswlib::DISTFUNC
@@ -35,7 +36,7 @@ public:
         if(dim == 128){
             dim = 32;
         }
-        fstdistfunc_ = avx512::SQ8ComputeCodesL2Sqr;
+        fstdistfunc_ = vsag::SQ8ComputeCodesL2Sqr;
         dim_ = dim;
         data_size_ = dim * sizeof(float);
     }
