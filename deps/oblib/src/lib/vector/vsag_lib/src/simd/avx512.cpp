@@ -15,7 +15,7 @@
 // limitations under the License.
 
 #include <x86intrin.h>
-
+#include "../logger.h"
 #include <iostream>
 
 namespace vsag {
@@ -136,12 +136,12 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
     
     uint32_t sum = 0;
-
+    
     for (int i = 0; i < 128; ++i) {
         int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
         sum += diff * diff;  // 累加差值的平方
     }
-
+    vsag::logger::warn("yhh sum {}",sum);  
     return static_cast<float>(sum);  // 返回 L2 距离的平方
 }
 

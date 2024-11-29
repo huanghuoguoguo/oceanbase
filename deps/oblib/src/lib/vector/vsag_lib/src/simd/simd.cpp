@@ -49,7 +49,7 @@ setup_simd() {
     InnerProductDistanceSIMD16ExtResiduals = InnerProductDistance;
     InnerProductDistanceSIMD4Ext = InnerProductDistance;
     InnerProductDistanceSIMD4ExtResiduals = InnerProductDistance;
-
+    vsag::logger::warn("yhh setip_simd");
     SimdStatus ret;
 
     if (cpuinfo_has_x86_sse()) {
@@ -113,7 +113,7 @@ setup_simd() {
     ret.dist_support_avx512bw = true;
     ret.dist_support_avx512vl = true;
 #endif
-
+    vsag::logger::warn("yhh setip_simd end");
     return ret;
 }
 
