@@ -55,7 +55,7 @@ Factory::CreateIndex(const std::string& origin_name,
                                           params.use_static,
                                           false,
                                           params.use_conjugate_graph,
-                                          params.normalize,
+                                          false,
                                           allocator);
         } else if (name == INDEX_FRESH_HNSW) {
             // read parameters from json, throw exception if not exists
