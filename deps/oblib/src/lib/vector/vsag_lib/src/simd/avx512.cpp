@@ -100,17 +100,22 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         __m512i v2 = _mm512_loadu_si512(&pVect2[i]);
 
         // Expand uint8_t (8-bit) to 32-bit integers (16 elements, 32-bit each)
-        __m512i v1_extended = _mm512_cvtepu8_epi32(v1);  // Expands uint8_t to int32_t
-        __m512i v2_extended = _mm512_cvtepu8_epi32(v2);
+        __m512i v1_lo = _mm512_unpacklo_epi8(v1, _mm512_setzero_si512());  // Lower 8 bits of each byte to 32-bit
+        __m512i v1_hi = _mm512_unpackhi_epi8(v1, _mm512_setzero_si512());  // Upper 8 bits of each byte to 32-bit
+        __m512i v2_lo = _mm512_unpacklo_epi8(v2, _mm512_setzero_si512());
+        __m512i v2_hi = _mm512_unpackhi_epi8(v2, _mm512_setzero_si512());
 
         // Calculate the difference between corresponding elements
-        __m512i diff = _mm512_sub_epi32(v1_extended, v2_extended);  // 32-bit difference
+        __m512i diff_lo = _mm512_sub_epi32(v1_lo, v2_lo);
+        __m512i diff_hi = _mm512_sub_epi32(v1_hi, v2_hi);
 
         // Calculate the squared difference (using mullo_epi32 to multiply 32-bit integers)
-        __m512i squared_diff = _mm512_mullo_epi32(diff, diff);  // Square the differences
+        __m512i squared_diff_lo = _mm512_mullo_epi32(diff_lo, diff_lo);  // Square the differences
+        __m512i squared_diff_hi = _mm512_mullo_epi32(diff_hi, diff_hi);
 
         // Accumulate the squared differences
-        sum = _mm512_add_epi32(sum, squared_diff);
+        sum = _mm512_add_epi32(sum, squared_diff_lo);
+        sum = _mm512_add_epi32(sum, squared_diff_hi);
     }
 
     // Handle remaining elements (less than 64 bytes)
