@@ -161,7 +161,7 @@ HNSW::add(const DatasetPtr& base) {
         auto ids = base->GetIds();
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
-        vector<int8_t> temp(128);
+        std::vector<int8_t> temp(128);
 
         for (size_t i = 0; i < 128; ++i) {
             float value = vectors[i];
@@ -220,7 +220,7 @@ HNSW::knn_search(const DatasetPtr& query,
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
-        vector<int8_t> temp(128);
+        std::vector<int8_t> temp(128);
 
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
