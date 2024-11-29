@@ -106,6 +106,7 @@ setup_simd() {
 #else
         L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX512;
         InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
+        vsag::logger::warn("yhh use SQ8ComputeCodesL2Sqr");
     }   L2SqrSQ8 = SQ8ComputeCodesL2Sqr;
     ret.dist_support_avx512f = true;
     ret.dist_support_avx512dq = true;
@@ -144,11 +145,11 @@ GetPQDistanceFunc() {
 
 DistanceFunc
 GetL2DistanceFunc(size_t dim) {
-    vsag::logger::warn("yhh dim result log{}",dim);
-    if(dim == 128){
+    vsag::logger::warn("yhh dim result log {} ",dim);
+    if(dim == 32){
         vsag::logger::warn("yhh L2SqrSQ8 log");
-        return vsag::L2SqrSQ8;
     }
+    return vsag::L2SqrSQ8;
     if (dim % 16 == 0) {
         return vsag::L2SqrSIMD16Ext;
     } else if (dim % 4 == 0) {

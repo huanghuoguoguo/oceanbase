@@ -206,6 +206,7 @@ public:
     void
     normalize_vector(const void*& data_point, std::shared_ptr<float[]>& normalize_data) const {
         if (normalize_) {
+            vsag::logger::warn("yhh normalize");
             float query_mold = std::sqrt(ip_func_(data_point, data_point, dist_func_param_));
             normalize_data.reset(new float[dim_]);
             for (int i = 0; i < dim_; ++i) {

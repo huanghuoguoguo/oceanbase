@@ -32,11 +32,10 @@ class L2Space : public SpaceInterface {
 
 public:
     L2Space(size_t dim) {
-        fstdistfunc_ = vsag::GetL2DistanceFunc(dim);
-        vsag::logger::warn("yhh dim result log {}", dim);
         if(dim == 128){
             dim = 32;
         }
+        fstdistfunc_ = vsag::GetL2DistanceFunc(dim);
         dim_ = dim;
         data_size_ = dim * sizeof(float);
     }
