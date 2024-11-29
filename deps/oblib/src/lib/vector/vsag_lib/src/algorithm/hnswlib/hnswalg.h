@@ -1650,7 +1650,7 @@ public:
     std::priority_queue<std::pair<float, labeltype>>
     searchKnn(const void* query_data,
               size_t k,
-              uint64_t ef,
+              uint64_t base_ef,
               BaseFilterFunctor* isIdAllowed = nullptr) const override {
         std::priority_queue<std::pair<float, labeltype>> result;
         if (cur_element_count_ == 0)
@@ -1659,15 +1659,17 @@ public:
         std::shared_ptr<float[]> normalize_query;
         normalize_vector(query_data, normalize_query);
         tableint currObj = enterpoint_node_;
-        float curdist =
-            fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        float curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+
+        // 定义阈值：距离较小的阈值和距离较大的阈值
+        float threshold_near = 0.5f;  // 距离小于这个值时，减少 efSearch
+        float threshold_far = 2.0f;   // 距离大于这个值时，增加 efSearch
+
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
                 changed = false;
-                unsigned int* data;
-
-                data = (unsigned int*)get_linklist(currObj, level);
+                unsigned int* data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
                 metric_hops_++;
                 metric_distance_computations_ += size;
@@ -1677,8 +1679,9 @@ public:
                     tableint cand = datal[i];
                     if (cand < 0 || cand > max_elements_)
                         throw std::runtime_error("cand error");
-                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
+                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                    
                     if (d < curdist) {
                         curdist = d;
                         currObj = cand;
@@ -1688,16 +1691,19 @@ public:
             }
         }
 
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            top_candidates(allocator_);
+        std::priority_queue<std::pair<float, tableint>, vsag::Vector<std::pair<float, tableint>>, CompareByFirst> top_candidates(allocator_);
+
+        // 根据当前距离动态调整 efSearch
+        if (curdist < threshold_near) {
+            ef = std::max(k, ef / 2);  // 距离小，减少 efSearch
+        } else if (curdist > threshold_far) {
+            ef = std::min(ef * 2, max_ef);  // 距离大，增加 efSearch
+        }
+
         if (num_deleted_) {
-            top_candidates =
-                searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         } else {
-            top_candidates =
-                searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }
 
         while (top_candidates.size() > k) {
@@ -1708,6 +1714,7 @@ public:
             result.push(std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second)));
             top_candidates.pop();
         }
+
         return result;
     }
 
