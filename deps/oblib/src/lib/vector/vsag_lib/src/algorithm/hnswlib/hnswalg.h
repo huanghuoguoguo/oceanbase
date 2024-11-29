@@ -1693,7 +1693,7 @@ public:
         }
 
         std::priority_queue<std::pair<float, tableint>, vsag::Vector<std::pair<float, tableint>>, CompareByFirst> top_candidates(allocator_);
-        logger::warn("yhh curdist {}", curdist);
+        vsag::logger::warn("yhh curdist {}", curdist);
         // 根据当前距离动态调整 efSearch
         if (curdist < threshold_near) {
             ef = std::max(k, ef / 2);  // 距离小，减少 efSearch
