@@ -3,7 +3,9 @@
 # Stop the obcluster
 ./tools/deploy/obd.sh stop -n obcluster
 
+
 rm -rf /data/obcluster/log/*
+
 
 # Build the release
 bash build.sh release --init --make --silent
@@ -26,9 +28,11 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+
 # Wait for 30 seconds
 echo "Waiting for 30 seconds..."
 sleep 30
+
 
 # Run the benchmark
 cd /root/source/ann-benchmarks
