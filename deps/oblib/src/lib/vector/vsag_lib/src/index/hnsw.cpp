@@ -162,13 +162,13 @@ HNSW::add(const DatasetPtr& base) {
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
         std::vector<uint8_t> temp(128);
-        logger::warn("yhh add");
+        
         for (size_t i = 0; i < 128; ++i) {
             float value = vectors[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
             temp[i] = static_cast<uint8_t>(value);
         }
-
+        logger::warn("yhh add log:{} - {}",temp[0],temp[127]);
         std::unique_lock lock(rw_mutex_);
         if (auto result = init_memory_space(); not result.has_value()) {
             return tl::unexpected(result.error());
@@ -216,7 +216,7 @@ HNSW::knn_search(const DatasetPtr& query,
             ret->Dim(0)->NumElements(1);
             return ret;
         }
-        logger::warn("yhh search");
+        
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
@@ -227,6 +227,7 @@ HNSW::knn_search(const DatasetPtr& query,
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
             temp[i] = static_cast<uint8_t>(value);
         }
+        logger::warn("yhh search log:{} - {}",temp[0],temp[127]);
 
         // check k
         CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
@@ -287,6 +288,7 @@ HNSW::knn_search(const DatasetPtr& query,
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results.top().first;
             ids[j] = results.top().second;
+            logger::warn("yhh seach result log:{} - {}",results.top().first,results.top().second;);
             results.pop();
         }
 
