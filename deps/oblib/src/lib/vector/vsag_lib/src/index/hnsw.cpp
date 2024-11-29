@@ -161,12 +161,12 @@ HNSW::add(const DatasetPtr& base) {
         auto ids = base->GetIds();
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
-        std::vector<u_int8_t> temp(128);
+        std::vector<uint8_t> temp(128);
 
         for (size_t i = 0; i < 128; ++i) {
             float value = vectors[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            temp[i] = static_cast<u_int8_t>(value);
+            temp[i] = static_cast<uint8_t>(value);
         }
 
         std::unique_lock lock(rw_mutex_);
@@ -220,12 +220,12 @@ HNSW::knn_search(const DatasetPtr& query,
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
-        std::vector<u_int8_t> temp(128);
+        std::vector<uint8_t> temp(128);
 
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            temp[i] = static_cast<u_int8_t>(value);
+            temp[i] = static_cast<uint8_t>(value);
         }
 
         // check k
