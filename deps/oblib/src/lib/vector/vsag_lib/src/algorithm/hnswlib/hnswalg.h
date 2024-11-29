@@ -31,6 +31,7 @@
 #include <random>
 #include <stdexcept>
 #include <unordered_set>
+#include "../../logger.h"
 
 #include "../../default_allocator.h"
 #include "../../simd/simd.h"
@@ -1688,6 +1689,7 @@ public:
             }
         }
 
+        logger::warn("yhh curdist {}",curdist );
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
