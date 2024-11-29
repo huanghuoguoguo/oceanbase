@@ -162,7 +162,7 @@ HNSW::add(const DatasetPtr& base) {
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
         std::vector<uint8_t> temp(128);
-
+        logger::warn("yhh add");
         for (size_t i = 0; i < 128; ++i) {
             float value = vectors[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
@@ -216,7 +216,7 @@ HNSW::knn_search(const DatasetPtr& query,
             ret->Dim(0)->NumElements(1);
             return ret;
         }
-
+        logger::warn("yhh search");
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
