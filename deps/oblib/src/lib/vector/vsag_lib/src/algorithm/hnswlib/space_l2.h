@@ -16,7 +16,6 @@
 #pragma once
 #include "hnswlib.h"
 #include "../../logger.h"
-#include "../../simd/avx512.cpp"
 namespace vsag {
 
 extern hnswlib::DISTFUNC
