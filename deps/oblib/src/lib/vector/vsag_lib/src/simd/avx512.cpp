@@ -87,52 +87,49 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    const uint8_t* pVect1 = reinterpret_cast<const uint8_t*>(pVect1v);
-    const uint8_t* pVect2 = reinterpret_cast<const uint8_t*>(pVect2v);
+    const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
+    const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
 
-    const size_t dim = 128; // We know we are working with 128-dimensional vectors
-    __m512i sum = _mm512_setzero_si512(); // accumulator for the sum of squared differences
+    __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
+    __m256i mask = _mm256_set1_epi8(0xf);
 
-    size_t i = 0;
-    for (; i + 63 < dim; i += 64) {
-        // Load 64 bytes (8 uint8_t elements) from both vectors (Note: these are now 512-bit wide)
-        __m512i v1 = _mm512_loadu_si512(&pVect1[i]);
-        __m512i v2 = _mm512_loadu_si512(&pVect2[i]);
+    for (int i = 0; i < 128; i += 32) { // 每次处理32个uint8（256 bits = 32 bytes）
+        // 加载32个元素（每次处理64个字节，128维数据分为4块处理）
+        auto xx = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));
+        auto yy = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));
 
-        // Expand uint8_t (8-bit) to 32-bit integers (16 elements, 32-bit each)
-        __m512i v1_lo = _mm512_unpacklo_epi8(v1, _mm512_setzero_si512());  // Lower 8 bits of each byte to 32-bit
-        __m512i v1_hi = _mm512_unpackhi_epi8(v1, _mm512_setzero_si512());  // Upper 8 bits of each byte to 32-bit
-        __m512i v2_lo = _mm512_unpacklo_epi8(v2, _mm512_setzero_si512());
-        __m512i v2_hi = _mm512_unpackhi_epi8(v2, _mm512_setzero_si512());
+        // 分拆为低四位和高四位
+        auto xx1 = _mm256_and_si256(xx, mask);
+        auto xx2 = _mm256_srli_epi16(xx, 4);
+        xx2 = _mm256_and_si256(xx2, mask);
+        
+        auto yy1 = _mm256_and_si256(yy, mask);
+        auto yy2 = _mm256_srli_epi16(yy, 4);
+        yy2 = _mm256_and_si256(yy2, mask);
 
-        // Calculate the difference between corresponding elements
-        __m512i diff_lo = _mm512_sub_epi32(v1_lo, v2_lo);
-        __m512i diff_hi = _mm512_sub_epi32(v1_hi, v2_hi);
+        // 计算每部分的差值
+        auto d1 = _mm256_sub_epi8(xx1, yy1);
+        auto d2 = _mm256_sub_epi8(xx2, yy2);
 
-        // Calculate the squared difference (using mullo_epi32 to multiply 32-bit integers)
-        __m512i squared_diff_lo = _mm512_mullo_epi32(diff_lo, diff_lo);  // Square the differences
-        __m512i squared_diff_hi = _mm512_mullo_epi32(diff_hi, diff_hi);
+        // 取差值的绝对值
+        d1 = _mm256_abs_epi8(d1);
+        d2 = _mm256_abs_epi8(d2);
 
-        // Accumulate the squared differences
-        sum = _mm512_add_epi32(sum, squared_diff_lo);
-        sum = _mm512_add_epi32(sum, squared_diff_hi);
+        // 计算差值平方并累加
+        sum1 = _mm256_add_epi32(sum1, _mm256_maddubs_epi16(d1, d1)); // d1^2
+        sum2 = _mm256_add_epi32(sum2, _mm256_maddubs_epi16(d2, d2)); // d2^2
     }
 
-    // Handle remaining elements (less than 64 bytes)
-    float result = 0.0f;
-    for (; i < dim; ++i) {
-        int diff = static_cast<int>(pVect1[i]) - static_cast<int>(pVect2[i]);
-        result += diff * diff;
-    }
+    // 汇总 sum1 和 sum2 中的结果
+    sum1 = _mm256_add_epi32(sum1, sum2);
+    
+    // 水平加法，合并sum1中的数据并得到最终结果
+    __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum1), _mm256_extracti128_si256(sum1, 1));
+    sum128 = _mm_hadd_epi32(sum128, sum128); // 水平加法，合并为一个单一的值
 
-    // Horizontal sum (reducing 16 elements to 1 value)
-    uint32_t tmp[16];
-    _mm512_storeu_si512(tmp, sum);
-    for (int j = 0; j < 16; ++j) {
-        result += tmp[j];
-    }
-
-    return result;
+    // 提取最终的 L2 距离
+    return _mm_extract_epi32(sum128, 0) + _mm_extract_epi32(sum128, 1);
 }
+
 
 }  // namespace vsag
