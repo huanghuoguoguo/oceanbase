@@ -101,14 +101,18 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         __m512i v1 = _mm512_loadu_si512(&pVect1[i]);
         __m512i v2 = _mm512_loadu_si512(&pVect2[i]);
 
-        // Calculate the difference between corresponding elements
-        __m512i diff = _mm512_subs_epu8(v1, v2);  // Difference between uint8_t values (saturated)
+        // Convert uint8_t to int32_t (32-bit signed integer)
+        __m512i v1_extended = _mm512_cvtepu8_epi32(v1);  // Expands uint8_t to int32_t
+        __m512i v2_extended = _mm512_cvtepu8_epi32(v2);
 
-        // Calculate the squared difference (using _mm512_mullo_epi8 to multiply)
-        __m512i squared_diff = _mm512_mullo_epi8(diff, diff);
+        // Calculate the difference between corresponding elements
+        __m512i diff = _mm512_sub_epi32(v1_extended, v2_extended);  // 32-bit difference
+
+        // Calculate the squared difference (using mullo_epi32 to multiply 32-bit integers)
+        __m512i squared_diff = _mm512_mullo_epi32(diff, diff);  // Square the differences
 
         // Accumulate the squared differences
-        sum = _mm512_add_epi32(sum, _mm512_cvtepu8_epi32(squared_diff));
+        sum = _mm512_add_epi32(sum, squared_diff);
     }
 
     // Handle the remaining elements (less than 64 bytes)
