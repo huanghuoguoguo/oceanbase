@@ -74,11 +74,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
     normalize = false;
-    if(!normalize){
-        logger::warn("yhh normalize log: false");
-    }else{
-         logger::warn("yhh normalize log: true");
-    }
+
     if (!use_static_) {
         alg_hnsw =
             std::make_shared<hnswlib::HierarchicalNSW>(space.get(),
