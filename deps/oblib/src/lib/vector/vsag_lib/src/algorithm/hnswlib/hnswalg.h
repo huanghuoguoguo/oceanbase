@@ -1664,6 +1664,7 @@ public:
         // 定义阈值：距离较小的阈值和距离较大的阈值
         float threshold_near = 0.5f;  // 距离小于这个值时，减少 efSearch
         float threshold_far = 2.0f;   // 距离大于这个值时，增加 efSearch
+        uint64_t max_ef = 4 * ef;
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
