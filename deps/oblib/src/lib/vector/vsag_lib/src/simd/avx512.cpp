@@ -85,51 +85,64 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
     return sum;
 }
 
+// float 
+// SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+//     const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
+//     const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
+
+//     __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
+//     __m256i mask = _mm256_set1_epi8(0xf);
+
+//     for (int i = 0; i < 128; i += 32) { // 每次处理32个uint8（256 bits = 32 bytes）
+//         // 加载32个元素（每次处理64个字节，128维数据分为4块处理）
+//         auto xx = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));
+//         auto yy = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));
+
+//         // 分拆为低四位和高四位
+//         auto xx1 = _mm256_and_si256(xx, mask);
+//         auto xx2 = _mm256_srli_epi16(xx, 4);
+//         xx2 = _mm256_and_si256(xx2, mask);
+        
+//         auto yy1 = _mm256_and_si256(yy, mask);
+//         auto yy2 = _mm256_srli_epi16(yy, 4);
+//         yy2 = _mm256_and_si256(yy2, mask);
+
+//         // 计算每部分的差值
+//         auto d1 = _mm256_sub_epi8(xx1, yy1);
+//         auto d2 = _mm256_sub_epi8(xx2, yy2);
+
+//         // 取差值的绝对值
+//         d1 = _mm256_abs_epi8(d1);
+//         d2 = _mm256_abs_epi8(d2);
+
+//         // 计算差值平方并累加
+//         sum1 = _mm256_add_epi32(sum1, _mm256_maddubs_epi16(d1, d1)); // d1^2
+//         sum2 = _mm256_add_epi32(sum2, _mm256_maddubs_epi16(d2, d2)); // d2^2
+//     }
+
+//     // 汇总 sum1 和 sum2 中的结果
+//     sum1 = _mm256_add_epi32(sum1, sum2);
+    
+//     // 水平加法，合并sum1中的数据并得到最终结果
+//     __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum1), _mm256_extracti128_si256(sum1, 1));
+//     sum128 = _mm_hadd_epi32(sum128, sum128); // 水平加法，合并为一个单一的值
+
+//     // 提取最终的 L2 距离
+//     return _mm_extract_epi32(sum128, 0) + _mm_extract_epi32(sum128, 1);
+// }
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
     const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
+    
+    uint32_t sum = 0;
 
-    __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
-    __m256i mask = _mm256_set1_epi8(0xf);
-
-    for (int i = 0; i < 128; i += 32) { // 每次处理32个uint8（256 bits = 32 bytes）
-        // 加载32个元素（每次处理64个字节，128维数据分为4块处理）
-        auto xx = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));
-        auto yy = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));
-
-        // 分拆为低四位和高四位
-        auto xx1 = _mm256_and_si256(xx, mask);
-        auto xx2 = _mm256_srli_epi16(xx, 4);
-        xx2 = _mm256_and_si256(xx2, mask);
-        
-        auto yy1 = _mm256_and_si256(yy, mask);
-        auto yy2 = _mm256_srli_epi16(yy, 4);
-        yy2 = _mm256_and_si256(yy2, mask);
-
-        // 计算每部分的差值
-        auto d1 = _mm256_sub_epi8(xx1, yy1);
-        auto d2 = _mm256_sub_epi8(xx2, yy2);
-
-        // 取差值的绝对值
-        d1 = _mm256_abs_epi8(d1);
-        d2 = _mm256_abs_epi8(d2);
-
-        // 计算差值平方并累加
-        sum1 = _mm256_add_epi32(sum1, _mm256_maddubs_epi16(d1, d1)); // d1^2
-        sum2 = _mm256_add_epi32(sum2, _mm256_maddubs_epi16(d2, d2)); // d2^2
+    for (int i = 0; i < 128; ++i) {
+        int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
+        sum += diff * diff;  // 累加差值的平方
     }
 
-    // 汇总 sum1 和 sum2 中的结果
-    sum1 = _mm256_add_epi32(sum1, sum2);
-    
-    // 水平加法，合并sum1中的数据并得到最终结果
-    __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum1), _mm256_extracti128_si256(sum1, 1));
-    sum128 = _mm_hadd_epi32(sum128, sum128); // 水平加法，合并为一个单一的值
-
-    // 提取最终的 L2 距离
-    return _mm_extract_epi32(sum128, 0) + _mm_extract_epi32(sum128, 1);
+    return static_cast<float>(sum);  // 返回 L2 距离的平方
 }
-
 
 }  // namespace vsag
