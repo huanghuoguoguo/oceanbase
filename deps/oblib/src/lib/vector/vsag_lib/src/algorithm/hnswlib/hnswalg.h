@@ -31,6 +31,7 @@
 #include <random>
 #include <stdexcept>
 #include <unordered_set>
+#include "../logger.h"
 
 #include "../../default_allocator.h"
 #include "../../simd/simd.h"
@@ -1661,6 +1662,7 @@ public:
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        logger::warn("yhh curdist log:{}",curdist);
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
