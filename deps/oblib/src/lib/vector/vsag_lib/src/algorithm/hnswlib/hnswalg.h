@@ -1662,9 +1662,9 @@ public:
         float curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
 
         // 定义阈值：距离较小的阈值和距离较大的阈值
-        float threshold_near = 10.0f;  // 距离小于这个值时，减少 efSearch
-        float threshold_far = 100.0f;   // 距离大于这个值时，增加 efSearch
-        uint64_t max_ef = 3 * ef;
+        float threshold_near = 2.0f;  // 距离小于这个值时，减少 efSearch
+        float threshold_far = 20.0f;   // 距离大于这个值时，增加 efSearch
+        uint64_t max_ef = 4 * ef;
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
@@ -1698,7 +1698,7 @@ public:
         if (curdist < threshold_near) {
             ef = std::max(k, ef / 2);  // 距离小，减少 efSearch
         } else if (curdist > threshold_far) {
-            ef = std::min(ef * 1.5, max_ef);  // 距离大，增加 efSearch
+            ef = std::min(ef * 2, max_ef);  // 距离大，增加 efSearch
         }
 
         if (num_deleted_) {
