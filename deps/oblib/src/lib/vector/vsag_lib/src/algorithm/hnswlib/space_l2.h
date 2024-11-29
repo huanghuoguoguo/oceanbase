@@ -15,7 +15,6 @@
 
 #pragma once
 #include "hnswlib.h"
-#include "../../logger.h"
 namespace vsag {
 
 extern hnswlib::DISTFUNC
@@ -24,19 +23,6 @@ GetL2DistanceFunc(size_t dim);
 }  // namespace vsag
 
 namespace hnswlib {
-float 
-SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
-    const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
-    
-    uint32_t sum = 0;
-    
-    for (int i = 0; i < 128; ++i) {
-        int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
-        sum += diff * diff;  // 累加差值的平方
-    }
-    return static_cast<float>(sum);  // 返回 L2 距离的平方
-}
 class L2Space : public SpaceInterface {
     DISTFUNC fstdistfunc_;
     size_t data_size_;
@@ -47,7 +33,7 @@ public:
         if(dim == 128){
             dim = 32;
         }
-        fstdistfunc_ = &SQ8ComputeCodesL2Sqr;
+        fstdistfunc_ = vsag::GetL2DistanceFunc(dim);
         dim_ = dim;
         data_size_ = dim * sizeof(float);
     }

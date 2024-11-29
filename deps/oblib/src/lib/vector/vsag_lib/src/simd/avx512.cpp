@@ -15,7 +15,6 @@
 // limitations under the License.
 
 #include <x86intrin.h>
-#include "../logger.h"
 #include <iostream>
 
 namespace vsag {

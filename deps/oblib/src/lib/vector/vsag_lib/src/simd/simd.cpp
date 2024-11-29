@@ -16,7 +16,6 @@
 #include "simd.h"
 
 #include <cpuinfo.h>
-#include "../logger.h"
 #include <iostream>
 
 namespace vsag {
@@ -49,7 +48,7 @@ setup_simd() {
     InnerProductDistanceSIMD16ExtResiduals = InnerProductDistance;
     InnerProductDistanceSIMD4Ext = InnerProductDistance;
     InnerProductDistanceSIMD4ExtResiduals = InnerProductDistance;
-    vsag::logger::warn("yhh setip_simd");
+
     SimdStatus ret;
 
     if (cpuinfo_has_x86_sse()) {
@@ -106,14 +105,12 @@ setup_simd() {
 #else
         L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX512;
         InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
-        vsag::logger::warn("yhh use SQ8ComputeCodesL2Sqr");
     }   L2SqrSQ8 = SQ8ComputeCodesL2Sqr;
     ret.dist_support_avx512f = true;
     ret.dist_support_avx512dq = true;
     ret.dist_support_avx512bw = true;
     ret.dist_support_avx512vl = true;
 #endif
-    vsag::logger::warn("yhh setip_simd end");
     return ret;
 }
 
@@ -145,11 +142,10 @@ GetPQDistanceFunc() {
 
 DistanceFunc
 GetL2DistanceFunc(size_t dim) {
-    vsag::logger::warn("yhh dim result log {} ",dim);
     if(dim == 32){
-        vsag::logger::warn("yhh L2SqrSQ8 log");
+        return vsag::L2SqrSQ8;
     }
-    return vsag::L2SqrSQ8;
+    
     if (dim % 16 == 0) {
         return vsag::L2SqrSIMD16Ext;
     } else if (dim % 4 == 0) {
