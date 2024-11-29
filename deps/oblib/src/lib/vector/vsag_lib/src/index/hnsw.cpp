@@ -161,12 +161,12 @@ HNSW::add(const DatasetPtr& base) {
         auto ids = base->GetIds();
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
+        vector<int8_t> temp(128);
 
         for (size_t i = 0; i < 128; ++i) {
             float value = vectors[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vectors);
-            byte_ptr[i] = static_cast<int8_t>(value);
+            temp[i] = static_cast<int8_t>(value);
         }
 
         std::unique_lock lock(rw_mutex_);
@@ -175,7 +175,7 @@ HNSW::add(const DatasetPtr& base) {
         }
         for (int64_t i = 0; i < num_elements; ++i) {
             // noexcept runtime
-            if (!alg_hnsw->addPoint((const void*)(vectors + i * dim_), ids[i])) {
+            if (!alg_hnsw->addPoint((const void*)(temp.data() + i * dim_), ids[i])) {
                 logger::debug("duplicate point: {}", i);
                 failed_ids.push_back(ids[i]);
             }
@@ -220,11 +220,12 @@ HNSW::knn_search(const DatasetPtr& query,
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
+        vector<int8_t> temp(128);
+
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vector);
-            byte_ptr[i] = static_cast<int8_t>(value);
+            temp[i] = static_cast<int8_t>(value);
         }
 
         // check k
@@ -242,7 +243,7 @@ HNSW::knn_search(const DatasetPtr& query,
         try {
             Timer t(time_cost);
             results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
+                (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
