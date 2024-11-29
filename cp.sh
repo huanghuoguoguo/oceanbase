@@ -26,9 +26,9 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Wait for 15 seconds
-echo "Waiting for 15 seconds..."
-sleep 15
+# Wait for 30 seconds
+echo "Waiting for 30 seconds..."
+sleep 30
 
 # Run the benchmark
 cd /root/source/ann-benchmarks
