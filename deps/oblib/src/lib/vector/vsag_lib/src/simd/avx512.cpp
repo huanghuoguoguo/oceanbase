@@ -89,19 +89,17 @@ float
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     const uint8_t* pVect1 = reinterpret_cast<const uint8_t*>(pVect1v);
     const uint8_t* pVect2 = reinterpret_cast<const uint8_t*>(pVect2v);
-    
-    // 128 dimensions
-    const size_t dim = 128;
-    __m512i sum = _mm512_setzero_si512(); // accumulator for the sum of squares
 
-    // Process 64 bytes (8 * 8-bit integers = 64 bytes) at a time
+    const size_t dim = 128; // We know we are working with 128-dimensional vectors
+    __m512i sum = _mm512_setzero_si512(); // accumulator for the sum of squared differences
+
     size_t i = 0;
     for (; i + 63 < dim; i += 64) {
-        // Load 64 bytes (8 uint8_t elements) from both vectors
+        // Load 64 bytes (8 uint8_t elements) from both vectors (Note: these are now 512-bit wide)
         __m512i v1 = _mm512_loadu_si512(&pVect1[i]);
         __m512i v2 = _mm512_loadu_si512(&pVect2[i]);
 
-        // Convert uint8_t to int32_t (32-bit signed integer)
+        // Expand uint8_t (8-bit) to 32-bit integers (16 elements, 32-bit each)
         __m512i v1_extended = _mm512_cvtepu8_epi32(v1);  // Expands uint8_t to int32_t
         __m512i v2_extended = _mm512_cvtepu8_epi32(v2);
 
@@ -115,7 +113,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         sum = _mm512_add_epi32(sum, squared_diff);
     }
 
-    // Handle the remaining elements (less than 64 bytes)
+    // Handle remaining elements (less than 64 bytes)
     float result = 0.0f;
     for (; i < dim; ++i) {
         int diff = static_cast<int>(pVect1[i]) - static_cast<int>(pVect2[i]);
