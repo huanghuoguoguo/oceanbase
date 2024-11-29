@@ -73,7 +73,12 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
         allocator = DefaultAllocator::Instance();
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
-
+    normalize = false;
+    if(!normalize){
+        logger::warn("yhh normalize log: false");
+    }else{
+         logger::warn("yhh normalize log: true");
+    }
     if (!use_static_) {
         alg_hnsw =
             std::make_shared<hnswlib::HierarchicalNSW>(space.get(),
@@ -168,7 +173,7 @@ HNSW::add(const DatasetPtr& base) {
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
             temp[i] = static_cast<uint8_t>(value);
         }
-        logger::warn("yhh add log:{} - {}",temp[0],temp[127]);
+
         std::unique_lock lock(rw_mutex_);
         if (auto result = init_memory_space(); not result.has_value()) {
             return tl::unexpected(result.error());
@@ -227,7 +232,7 @@ HNSW::knn_search(const DatasetPtr& query,
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
             temp[i] = static_cast<uint8_t>(value);
         }
-        logger::warn("yhh search log:{} - {}",temp[0],temp[127]);
+
 
         // check k
         CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
@@ -288,7 +293,7 @@ HNSW::knn_search(const DatasetPtr& query,
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results.top().first;
             ids[j] = results.top().second;
-            logger::warn("yhh seach result log:{} - {}",results.top().first,results.top().second);
+            logger::warn("yhh search result log:{} - {}",results.top().first,results.top().second);
             results.pop();
         }
 
