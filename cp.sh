@@ -24,6 +24,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Wait for 15 seconds
+echo "Waiting for 15 seconds..."
+sleep 15
+
 # Run the benchmark
 cd /root/source/ann-benchmarks
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1
