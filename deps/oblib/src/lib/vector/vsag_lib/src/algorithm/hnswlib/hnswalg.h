@@ -156,7 +156,7 @@ public:
 
         level_generator_.seed(random_seed);
         update_probability_generator_.seed(random_seed + 1);
-
+        vsag::logger::warn("yhh use norm {}", normalize);
         size_links_level0_ = maxM0_ * sizeof(tableint) + sizeof(linklistsizeint);
         size_data_per_element_ = size_links_level0_ + data_size_ + sizeof(labeltype);
         offsetData_ = size_links_level0_;
@@ -1660,7 +1660,6 @@ public:
         normalize_vector(query_data, normalize_query);
         tableint currObj = enterpoint_node_;
         float curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
-        vsag::logger::warn("yhh cat {} {}", normalize_query[0],normalize_query[127]);
         // 定义阈值：距离较小的阈值和距离较大的阈值
         float threshold_near = 50000.0f;  // 距离小于这个值时，减少 efSearch
         float threshold_far = 100000.0f;   // 距离大于这个值时，增加 efSearch
