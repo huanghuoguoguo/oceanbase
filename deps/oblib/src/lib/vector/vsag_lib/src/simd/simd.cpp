@@ -16,9 +16,7 @@
 #include "simd.h"
 
 #include <cpuinfo.h>
-
 #include <iostream>
-
 namespace vsag {
 
 float (*L2SqrSIMD16Ext)(const void*, const void*, const void*);
@@ -41,7 +39,7 @@ setup_simd() {
     L2SqrSIMD16ExtResiduals = L2Sqr;
     L2SqrSIMD4Ext = L2Sqr;
     L2SqrSIMD4ExtResiduals = L2Sqr;
-    L2SqrSQ8 = L2Sqr;
+    L2SqrSQ8 = SQ8ComputeCodesL2Sqr;
 
     InnerProductSIMD4Ext = InnerProduct;
     InnerProductSIMD16Ext = InnerProduct;
@@ -61,6 +59,7 @@ setup_simd() {
         L2SqrSIMD16ExtResiduals = L2SqrSIMD16ExtResidualsSSE;
         L2SqrSIMD4Ext = L2SqrSIMD4ExtSSE;
         L2SqrSIMD4ExtResiduals = L2SqrSIMD4ExtResidualsSSE;
+        L2SqrSQ8 = SQ8ComputeCodesL2Sqr;
 
         InnerProductSIMD4Ext = InnerProductSIMD4ExtSSE;
         InnerProductSIMD16Ext = InnerProductSIMD16ExtSSE;
@@ -80,6 +79,7 @@ setup_simd() {
         L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
         InnerProductSIMD4Ext = InnerProductSIMD4ExtAVX;
         InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
+        L2SqrSQ8 = SQ8ComputeCodesL2Sqr;
     }
     ret.dist_support_avx = true;
 #endif
@@ -110,7 +110,6 @@ setup_simd() {
     ret.dist_support_avx512bw = true;
     ret.dist_support_avx512vl = true;
 #endif
-
     return ret;
 }
 
@@ -142,9 +141,10 @@ GetPQDistanceFunc() {
 
 DistanceFunc
 GetL2DistanceFunc(size_t dim) {
-    if(dim == 128){
+    if(dim == 32){
         return vsag::L2SqrSQ8;
     }
+    
     if (dim % 16 == 0) {
         return vsag::L2SqrSIMD16Ext;
     } else if (dim % 4 == 0) {

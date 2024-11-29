@@ -57,8 +57,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
       use_static_(use_static),
       use_conjugate_graph_(use_conjugate_graph),
       use_reversed_edges_(use_reversed_edges) {
-    dim_ = *((size_t*)space->get_dist_func_param());
-
+    dim_ = *((size_t*)space->get_dist_func_param()) * 4;
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
 
     if (ef_construction <= 0) {
@@ -73,6 +72,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
         allocator = DefaultAllocator::Instance();
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
+
 
     if (!use_static_) {
         alg_hnsw =
@@ -107,7 +107,7 @@ HNSW::build(const DatasetPtr& base) {
             return std::vector<int64_t>();
         }
 
-        logger::debug("index.dim={}, base.dim={}", this->dim_, base->GetDim());
+        logger::warn("index.dim={}, base.dim={}", this->dim_, base->GetDim());
 
         auto base_dim = base->GetDim();
         CHECK_ARGUMENT(base_dim == dim_,
@@ -156,27 +156,31 @@ HNSW::add(const DatasetPtr& base) {
                               "static index does not support add");
     }
     try {
+        auto base_dim = base->GetDim();
+        CHECK_ARGUMENT(base_dim == dim_,
+                       fmt::format("base.dim({}) must be equal to index.dim({})", base_dim, dim_));
 
         int64_t num_elements = base->GetNumElements();
         auto ids = base->GetIds();
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
 
-        for (size_t i = 0; i < 128; ++i) {
-            float value = vectors[i];
-            // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vectors);
-            byte_ptr[i] = static_cast<int8_t>(value);
-        }
-
         std::unique_lock lock(rw_mutex_);
         if (auto result = init_memory_space(); not result.has_value()) {
             return tl::unexpected(result.error());
         }
         for (int64_t i = 0; i < num_elements; ++i) {
+            std::vector<uint8_t> temp(128);
+            for (size_t j = 0; j < 128; ++j) {
+                float value = vectors[j];
+                // logger::warn("yhh HNSW::float: {}", vectors[j]);
+                // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
+                temp[j] = static_cast<uint8_t>(value);
+                // logger::warn("yhh HNSW::temp: {}", temp[j]);
+            }
             // noexcept runtime
-            if (!alg_hnsw->addPoint((const void*)(vectors + i * dim_), ids[i])) {
-                logger::debug("duplicate point: {}", i);
+            if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
+                logger::warn("duplicate point: {}", i);
                 failed_ids.push_back(ids[i]);
             }
         }
@@ -216,16 +220,18 @@ HNSW::knn_search(const DatasetPtr& query,
             ret->Dim(0)->NumElements(1);
             return ret;
         }
-
+        
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
+        std::vector<uint8_t> temp(128);
+
         for (size_t i = 0; i < 128; ++i) {
-            float value = vectors[i];
+            float value = vector[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vectors);
-            byte_ptr[i] = static_cast<int8_t>(value);
+            temp[i] = static_cast<uint8_t>(value);
         }
+
 
         // check k
         CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
@@ -242,7 +248,7 @@ HNSW::knn_search(const DatasetPtr& query,
         try {
             Timer t(time_cost);
             results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
+                (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
@@ -286,6 +292,7 @@ HNSW::knn_search(const DatasetPtr& query,
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results.top().first;
             ids[j] = results.top().second;
+            logger::warn("yhh search result log:{} - {}",results.top().first,results.top().second);
             results.pop();
         }
 
