@@ -31,7 +31,7 @@
 #include <random>
 #include <stdexcept>
 #include <unordered_set>
-
+#include "../../logger.h"
 #include "../../default_allocator.h"
 #include "../../simd/simd.h"
 #include "../../utils.h"
@@ -1662,9 +1662,9 @@ public:
         float curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
 
         // 定义阈值：距离较小的阈值和距离较大的阈值
-        float threshold_near = 800.0f;  // 距离小于这个值时，减少 efSearch
-        float threshold_far = 4000.0f;   // 距离大于这个值时，增加 efSearch
-        uint64_t max_ef = std::min(static_cast<uint64_t>(10000),4 * ef);
+        float threshold_near = 8000.0f;  // 距离小于这个值时，减少 efSearch
+        float threshold_far = 40000.0f;   // 距离大于这个值时，增加 efSearch
+        uint64_t max_ef = static_cast<uint64_t>(10000);
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
@@ -1693,7 +1693,7 @@ public:
         }
 
         std::priority_queue<std::pair<float, tableint>, vsag::Vector<std::pair<float, tableint>>, CompareByFirst> top_candidates(allocator_);
-
+        logger::warn("yhh curdist {}", curdist);
         // 根据当前距离动态调整 efSearch
         if (curdist < threshold_near) {
             ef = std::max(k, ef / 2);  // 距离小，减少 efSearch
