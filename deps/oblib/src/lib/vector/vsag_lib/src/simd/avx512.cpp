@@ -87,16 +87,45 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    const uint8_t* codes1 = reinterpret_cast<const uint8_t*>(pVect1v);
-    const uint8_t* codes2 = reinterpret_cast<const uint8_t*>(pVect2v);
-    float result = 0.0f;
+    const uint8_t* pVect1 = reinterpret_cast<const uint8_t*>(pVect1v);
+    const uint8_t* pVect2 = reinterpret_cast<const uint8_t*>(pVect2v);
+    
+    // 128 dimensions
+    const size_t dim = 128;
+    __m512i sum = _mm512_setzero_si512(); // accumulator for the sum of squares
 
-    for (uint64_t i = 0; i < 128; ++i) {
-        int diff = static_cast<int>(codes1[i]) - static_cast<int>(codes2[i]);
+    // Process 64 bytes (8 * 8-bit integers = 64 bytes) at a time
+    size_t i = 0;
+    for (; i + 63 < dim; i += 64) {
+        // Load 64 bytes (8 uint8_t elements) from both vectors
+        __m512i v1 = _mm512_loadu_si512(&pVect1[i]);
+        __m512i v2 = _mm512_loadu_si512(&pVect2[i]);
+
+        // Calculate the difference between corresponding elements
+        __m512i diff = _mm512_subs_epu8(v1, v2);  // Difference between uint8_t values (saturated)
+
+        // Calculate the squared difference (using _mm512_mullo_epi8 to multiply)
+        __m512i squared_diff = _mm512_mullo_epi8(diff, diff);
+
+        // Accumulate the squared differences
+        sum = _mm512_add_epi32(sum, _mm512_cvtepu8_epi32(squared_diff));
+    }
+
+    // Handle the remaining elements (less than 64 bytes)
+    float result = 0.0f;
+    for (; i < dim; ++i) {
+        int diff = static_cast<int>(pVect1[i]) - static_cast<int>(pVect2[i]);
         result += diff * diff;
     }
 
-    return result;  
+    // Horizontal sum (reducing 16 elements to 1 value)
+    uint32_t tmp[16];
+    _mm512_storeu_si512(tmp, sum);
+    for (int j = 0; j < 16; ++j) {
+        result += tmp[j];
+    }
+
+    return result;
 }
 
 }  // namespace vsag
