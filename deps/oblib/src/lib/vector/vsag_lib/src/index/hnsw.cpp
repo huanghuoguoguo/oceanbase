@@ -221,9 +221,9 @@ HNSW::knn_search(const DatasetPtr& query,
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
         for (size_t i = 0; i < 128; ++i) {
-            float value = vectors[i];
+            float value = vector[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vectors);
+            int8_t* byte_ptr = reinterpret_cast<int8_t*>(vector);
             byte_ptr[i] = static_cast<int8_t>(value);
         }
 
