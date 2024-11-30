@@ -140,7 +140,9 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
         sum += static_cast<uint64_t>(diff) * diff;  // 累加差值的平方
     }
-    return std::bit_cast<float>(sum);  // 返回 L2 距离的平方
+    float ret;
+    std::memcpy(&ret, &sum, sizeof(float));
+    return ret;
     // return 3.0f;
 }
 
