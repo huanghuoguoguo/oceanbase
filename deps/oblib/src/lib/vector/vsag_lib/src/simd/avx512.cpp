@@ -16,7 +16,6 @@
 
 #include <x86intrin.h>
 #include <iostream>
-#include <cstring>
 // #include "../logger.h"
 namespace vsag {
 
@@ -135,15 +134,12 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     uint8_t* x = (uint8_t*)pVect1v;
     uint8_t* y = (uint8_t*)pVect2v;
 
-    uint32_t sum = 0;
-    
+    int sum = 0;
     for (int i = 0; i < 128; ++i) {
         int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
-        sum += static_cast<uint64_t>(diff) * diff;  // 累加差值的平方
+        sum += diff * diff;  // 累加差值的平方
     }
-    float ret;
-    std::memcpy(&ret, &sum, sizeof(float));
-    return ret;
+    return static_cast<float>(sum);
     // return 3.0f;
 }
 
