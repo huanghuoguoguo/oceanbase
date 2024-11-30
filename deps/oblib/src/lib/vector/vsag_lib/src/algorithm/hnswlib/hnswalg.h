@@ -1660,8 +1660,8 @@ public:
         tableint currObj = enterpoint_node_;
         float curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
         // 定义阈值：距离较小的阈值和距离较大的阈值
-        float threshold_near = 40000.0f;  // 距离小于这个值时，减少 efSearch
-        float threshold_far = 80000.0f;   // 距离大于这个值时，增加 efSearch
+        float threshold_near = 50000.0f;  // 距离小于这个值时，减少 efSearch
+        float threshold_far = 100000.0f;   // 距离大于这个值时，增加 efSearch
         uint64_t max_ef = static_cast<uint64_t>(10000);
 
         for (int level = maxlevel_; level > 0; level--) {
