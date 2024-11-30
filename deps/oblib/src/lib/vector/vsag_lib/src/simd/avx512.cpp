@@ -16,7 +16,7 @@
 
 #include <x86intrin.h>
 #include <iostream>
-
+#include "../logger.h"
 namespace vsag {
 
 #define PORTABLE_ALIGN32 __attribute__((aligned(32)))
@@ -131,6 +131,7 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 // }
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+    vsag::logger::warn("yhh add logdd");
     const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
     const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
     
