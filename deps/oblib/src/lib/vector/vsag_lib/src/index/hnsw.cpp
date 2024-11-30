@@ -192,6 +192,7 @@ HNSW::add(const DatasetPtr& base) {
             ErrorType::INVALID_ARGUMENT, "failed to add(invalid argument): ", e.what());
     } catch (const std::exception& e){
         logger::warn("yhh exception:{}", e.what());
+        return {};
     }
 }
 
