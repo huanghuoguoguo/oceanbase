@@ -157,7 +157,6 @@ HNSW::add(const DatasetPtr& base) {
     }
     try {
         auto base_dim = base->GetDim();
-        logger::warn("yhh dim: {}-{}", base_dim ,dim_);
         CHECK_ARGUMENT(base_dim == dim_,
                        fmt::format("base.dim({}) must be equal to index.dim({})", base_dim, dim_));
 
@@ -165,21 +164,21 @@ HNSW::add(const DatasetPtr& base) {
         auto ids = base->GetIds();
         auto vectors = base->GetFloat32Vectors();
         std::vector<int64_t> failed_ids;
-        
+        logger::warn("yhh HNSW::num_elements: {}", num_elements);
 
         std::unique_lock lock(rw_mutex_);
         if (auto result = init_memory_space(); not result.has_value()) {
             return tl::unexpected(result.error());
         }
         for (int64_t i = 0; i < num_elements; ++i) {
-            std::vector<uint8_t> temp(128);
-        
+            std::vector<uint8_t> temp(129);
             for (size_t j = 0; j < 128; ++j) {
                 float value = vectors[j];
                 // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
                 temp[j] = static_cast<uint8_t>(value);
-                logger::warn("yhh HNSW::add: {}-{}", i ,temp[j]);
+                logger::warn("yhh HNSW::count: {}", j);
             }
+            logger::warn("yhh HNSW::add: {}-{}", temp[0] ,temp[127]);
             // noexcept runtime
             if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
                 logger::debug("duplicate point: {}", i);
@@ -191,6 +190,8 @@ HNSW::add(const DatasetPtr& base) {
     } catch (const std::invalid_argument& e) {
         LOG_ERROR_AND_RETURNS(
             ErrorType::INVALID_ARGUMENT, "failed to add(invalid argument): ", e.what());
+    } catch (const std::exception& e){
+        logger::warn("yhh exception:{}", e.what());
     }
 }
 
