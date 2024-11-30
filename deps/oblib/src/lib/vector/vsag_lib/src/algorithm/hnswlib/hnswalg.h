@@ -1585,6 +1585,7 @@ public:
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
+        vsag::logger::warn("yhh memcopy after");
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1594,9 +1595,10 @@ public:
             memset(link_lists_[cur_c], 0, size_links_per_element_ * curlevel + 1);
         }
 
+        vsag::logger::warn("yhh curdist out");
         if ((signed)currObj != -1) {
+            vsag::logger::warn("yhh curdist in");
             if (curlevel < maxlevelcopy) {
-                vsag::logger::warn("yhh curdist log before:");
                 float curdist =
                     fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
                 vsag::logger::warn("yhh curdist log:{}",curdist);
@@ -1625,7 +1627,7 @@ public:
                     }
                 }
             }
-
+            vsag::logger::warn("yhh curdist in2");
             bool epDeleted = isMarkedDeleted(enterpoint_copy);
             for (int level = std::min(curlevel, maxlevelcopy); level >= 0; level--) {
                 if (level > maxlevelcopy || level < 0)  // possible?
@@ -1646,12 +1648,13 @@ public:
                 currObj =
                     mutuallyConnectNewElement(data_point, cur_c, top_candidates, level, false);
             }
+            vsag::logger::warn("yhh curdist in2");
         } else {
             // Do nothing for the first element
             enterpoint_node_ = 0;
             maxlevel_ = curlevel;
         }
-
+        vsag::logger::warn("yhh curdist in3");
         // Releasing lock for the maximum level
         if (curlevel > maxlevelcopy) {
             enterpoint_node_ = cur_c;
