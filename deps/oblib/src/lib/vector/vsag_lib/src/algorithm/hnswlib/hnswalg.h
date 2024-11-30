@@ -1540,7 +1540,6 @@ public:
             // Checking if the element with the same label already exists
             // if so, updating it *instead* of creating a new element.
 
-            vsag::logger::warn("yhh add log");
             std::unique_lock<std::mutex> lock_table(label_lookup_lock_);
             auto search = label_lookup_.find(label);
             if (search != label_lookup_.end()) {
@@ -1579,7 +1578,7 @@ public:
         tableint enterpoint_copy = enterpoint_node_;
 
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
-        vsag::logger::warn("yhh size_data:{}",size_data_per_element_);
+
 
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
@@ -1595,7 +1594,6 @@ public:
         }
 
         if ((signed)currObj != -1) {
-            vsag::logger::warn("yhh curdist in");
             if (curlevel < maxlevelcopy) {
                 float curdist =
                     fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);

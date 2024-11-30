@@ -49,7 +49,7 @@ fi
 # Change to oceanbase source directory
 cd /root/source/oceanbase
 
-sleep 5
+sleep 10
 # Stop the obcluster
 ./tools/deploy/obd.sh stop -n obcluster
 if [ $? -ne 0 ]; then

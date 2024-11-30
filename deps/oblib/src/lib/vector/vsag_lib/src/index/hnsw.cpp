@@ -72,7 +72,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
         allocator = DefaultAllocator::Instance();
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
-    normalize = false;
+
 
     if (!use_static_) {
         alg_hnsw =
@@ -107,7 +107,7 @@ HNSW::build(const DatasetPtr& base) {
             return std::vector<int64_t>();
         }
 
-        logger::debug("index.dim={}, base.dim={}", this->dim_, base->GetDim());
+        logger::warn("index.dim={}, base.dim={}", this->dim_, base->GetDim());
 
         auto base_dim = base->GetDim();
         CHECK_ARGUMENT(base_dim == dim_,
@@ -173,10 +173,10 @@ HNSW::add(const DatasetPtr& base) {
             std::vector<uint8_t> temp(129);
             for (size_t j = 0; j < 128; ++j) {
                 float value = vectors[j];
-                logger::warn("yhh HNSW::float: {}", vectors[j]);
+                // logger::warn("yhh HNSW::float: {}", vectors[j]);
                 // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
                 temp[j] = static_cast<uint8_t>(value);
-                logger::warn("yhh HNSW::temp: {}", temp[j]);
+                // logger::warn("yhh HNSW::temp: {}", temp[j]);
             }
             // noexcept runtime
             if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
@@ -189,13 +189,6 @@ HNSW::add(const DatasetPtr& base) {
     } catch (const std::invalid_argument& e) {
         LOG_ERROR_AND_RETURNS(
             ErrorType::INVALID_ARGUMENT, "failed to add(invalid argument): ", e.what());
-    } catch (const std::exception& e){
-        logger::warn("yhh exception:{}", e.what());
-        return {};
-    } catch (...) {
-        // 捕获所有其他异常
-        std::cerr << "An unknown error occurred." << std::endl;
-        return {};
     }
 }
 
