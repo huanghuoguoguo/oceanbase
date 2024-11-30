@@ -419,6 +419,7 @@ if (NOT OB_BUILD_CDC)
 # vsag vector library
 target_link_directories(
   oblib_lib PUBLIC 
+  ${CMAKE_BINARY_DIR}/deps/oblib/src/lib/vector/vsag_lib/simd
   ${DEP_DIR}/lib ${DEP_DIR}/lib/vsag_lib
   ${CMAKE_BINARY_DIR}/deps/oblib/src/lib/vector/vsag_lib 
   ${CMAKE_BINARY_DIR}/deps/oblib/src/lib//vector/vsag_lib/src
