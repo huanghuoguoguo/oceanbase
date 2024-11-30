@@ -16,7 +16,7 @@
 
 #include <x86intrin.h>
 #include <iostream>
-#include "../logger.h"
+// #include "../logger.h"
 namespace vsag {
 
 #define PORTABLE_ALIGN32 __attribute__((aligned(32)))
@@ -131,7 +131,7 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 // }
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    vsag::logger::warn("yhh SQ8ComputeCodesL2Sqr");
+    // vsag::logger::warn("yhh SQ8ComputeCodesL2Sqr");
     uint8_t* x = (uint8_t*)pVect1v;
     uint8_t* y = (uint8_t*)pVect2v;
 
@@ -141,7 +141,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
         sum += diff * diff;  // 累加差值的平方
     }
-    vsag::logger::warn("yhh sum:{}",sum);
+    // vsag::logger::warn("yhh sum:{}",sum);
     return static_cast<float>(sum);  // 返回 L2 距离的平方
 }
 
