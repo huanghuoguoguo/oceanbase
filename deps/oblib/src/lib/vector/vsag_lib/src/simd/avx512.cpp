@@ -133,8 +133,9 @@ float
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     vsag::logger::warn("yhh add logdd");
     const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
+    vsag::logger::warn("yhh add logd2x,{}",x[0]);
     const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
-    
+    vsag::logger::warn("yhh add logd2y,{}",y[0]);
     uint32_t sum = 0;
     
     for (int i = 0; i < 128; ++i) {

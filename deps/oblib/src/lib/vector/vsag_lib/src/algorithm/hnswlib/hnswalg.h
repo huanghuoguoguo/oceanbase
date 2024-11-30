@@ -1554,8 +1554,15 @@ public:
             label_lookup_[label] = cur_c;
         }
 
-        std::shared_ptr<float[]> normalize_data;
-        normalize_vector(data_point, normalize_data);
+        // std::shared_ptr<float[]> normalize_data;
+        // normalize_vector(data_point, normalize_data);
+        vsag::logger::warn("yhh cat before");  
+        const uint8_t* x = reinterpret_cast<const uint8_t*>(data_point);   
+        for (int i = 0; i < 128; ++i) {
+            vsag::logger::warn("yhh cat:{}",static_cast<int>(x[i]));
+        }
+
+
 
         std::unique_lock<std::recursive_mutex> lock_el(link_list_locks_[cur_c]);
         int curlevel = getRandomLevel(mult_);
@@ -1571,7 +1578,8 @@ public:
         tableint enterpoint_copy = enterpoint_node_;
 
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
-        vsag::logger::warn("yhh add log");
+        vsag::logger::warn("yhh size_data:{}",size_data_per_element_);
+
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
@@ -1586,6 +1594,7 @@ public:
 
         if ((signed)currObj != -1) {
             if (curlevel < maxlevelcopy) {
+                vsag::logger::warn("yhh curdist log before:");
                 float curdist =
                     fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
                 vsag::logger::warn("yhh curdist log:{}",curdist);
