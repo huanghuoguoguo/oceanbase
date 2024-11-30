@@ -24,43 +24,33 @@ namespace vsag {
 
 float
 L2SqrSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    // float* pVect1 = (float*)pVect1v;
-    // float* pVect2 = (float*)pVect2v;
-    // size_t qty = *((size_t*)qty_ptr);
-    // float PORTABLE_ALIGN64 TmpRes[16];
-    // size_t qty16 = qty >> 4;
+    float* pVect1 = (float*)pVect1v;
+    float* pVect2 = (float*)pVect2v;
+    size_t qty = *((size_t*)qty_ptr);
+    float PORTABLE_ALIGN64 TmpRes[16];
+    size_t qty16 = qty >> 4;
 
-    // const float* pEnd1 = pVect1 + (qty16 << 4);
+    const float* pEnd1 = pVect1 + (qty16 << 4);
 
-    // __m512 diff, v1, v2;
-    // __m512 sum = _mm512_set1_ps(0);
+    __m512 diff, v1, v2;
+    __m512 sum = _mm512_set1_ps(0);
 
-    // while (pVect1 < pEnd1) {
-    //     v1 = _mm512_loadu_ps(pVect1);
-    //     pVect1 += 16;
-    //     v2 = _mm512_loadu_ps(pVect2);
-    //     pVect2 += 16;
-    //     diff = _mm512_sub_ps(v1, v2);
-    //     // sum = _mm512_fmadd_ps(diff, diff, sum);
-    //     sum = _mm512_add_ps(sum, _mm512_mul_ps(diff, diff));
-    // }
-
-    // _mm512_store_ps(TmpRes, sum);
-    // float res = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
-    //             TmpRes[7] + TmpRes[8] + TmpRes[9] + TmpRes[10] + TmpRes[11] + TmpRes[12] +
-    //             TmpRes[13] + TmpRes[14] + TmpRes[15];
-
-    // return (res);
-    uint8_t* x = (uint8_t*)pVect1v;
-    uint8_t* y = (uint8_t*)pVect2v;
-
-    uint32_t sum = 0;
-    
-    for (int i = 0; i < 128; ++i) {
-        int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
-        sum += diff * diff;  // 累加差值的平方
+    while (pVect1 < pEnd1) {
+        v1 = _mm512_loadu_ps(pVect1);
+        pVect1 += 16;
+        v2 = _mm512_loadu_ps(pVect2);
+        pVect2 += 16;
+        diff = _mm512_sub_ps(v1, v2);
+        // sum = _mm512_fmadd_ps(diff, diff, sum);
+        sum = _mm512_add_ps(sum, _mm512_mul_ps(diff, diff));
     }
-    return static_cast<float>(sum);  // 返回 L2 距离的平方
+
+    _mm512_store_ps(TmpRes, sum);
+    float res = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
+                TmpRes[7] + TmpRes[8] + TmpRes[9] + TmpRes[10] + TmpRes[11] + TmpRes[12] +
+                TmpRes[13] + TmpRes[14] + TmpRes[15];
+
+    return (res);
 }
 
 float
@@ -144,7 +134,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     uint8_t* x = (uint8_t*)pVect1v;
     uint8_t* y = (uint8_t*)pVect2v;
 
-    // uint32_t sum = 0;
+    uint32_t sum = 0;
     
     // for (int i = 0; i < 128; ++i) {
     //     int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
