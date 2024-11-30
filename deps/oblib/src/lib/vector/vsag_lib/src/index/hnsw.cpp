@@ -167,7 +167,7 @@ HNSW::add(const DatasetPtr& base) {
             float value = vectors[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
             temp[i] = static_cast<uint8_t>(value);
-            logger::debug("yhh HNSW::add: {}-{}", i,temp[i]);
+            logger::warn("yhh HNSW::add: {}-{}", i ,temp[i]);
         }
 
         std::unique_lock lock(rw_mutex_);
