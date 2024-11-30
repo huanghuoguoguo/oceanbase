@@ -1556,10 +1556,12 @@ public:
 
         // std::shared_ptr<float[]> normalize_data;
         // normalize_vector(data_point, normalize_data);
-        vsag::logger::warn("yhh cat before");  
-        const uint8_t* x = reinterpret_cast<const uint8_t*>(data_point);   
-        for (int i = 0; i < 128; ++i) {
-            vsag::logger::warn("yhh cat:{}",static_cast<int>(x[i]));
+        if(dim_ == 32){
+            vsag::logger::warn("yhh cat before");  
+            const uint8_t* x = reinterpret_cast<const uint8_t*>(data_point);   
+            for (int i = 0; i < 128; ++i) {
+                vsag::logger::warn("yhh cat:{}",static_cast<int>(x[i]));
+            }
         }
 
 
