@@ -129,41 +129,39 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 //     // 提取最终的 L2 距离
 //     return _mm_extract_epi32(sum128, 0) + _mm_extract_epi32(sum128, 1);
 // }
-// float 
-// SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-//     // // vsag::logger::warn("yhh SQ8ComputeCodesL2Sqr");
-//     // uint8_t* x = (uint8_t*)pVect1v;
-//     // uint8_t* y = (uint8_t*)pVect2v;
+float 
+SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+    uint8_t* x = (uint8_t*)pVect1v;
+    uint8_t* y = (uint8_t*)pVect2v;
 
-//     // uint32_t sum = 0;
+    // uint32_t sum = 0;
     
-//     // for (int i = 0; i < 128; ++i) {
-//     //     int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
-//     //     sum += diff * diff;  // 累加差值的平方
-//     // }
-//     // // vsag::logger::warn("yhh sum:{}",sum);
-//     // return static_cast<float>(sum);  // 返回 L2 距离的平方
-//     return 3.0f;
-// }
-
-float SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
-    const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
-    uint32_t sum = 0;
-
-    // 使用SSE2指令集进行优化
-    __m128i sum_vec = _mm_setzero_si128(); // 初始化累加向量为零
-    for (int i = 0; i < 128; i += 16) { // 每次处理16个字节
-        __m128i x_vec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i)); // 加载x的16个字节
-        __m128i y_vec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i)); // 加载y的16个字节
-        __m128i diff_vec = _mm_sub_epi8(x_vec, y_vec); // 计算差值
-        __m128i diff_sq_vec = _mm_maddubs_epi16(diff_vec, diff_vec); // 计算差值的平方
-        sum_vec = _mm_add_epi32(sum_vec, _mm_shuffle_epi32(_mm_add_epi32(_mm_add_epi32(diff_sq_vec, _mm_srli_si128(diff_sq_vec, 4)), _mm_srli_si128(diff_sq_vec, 8)), 0x0E)); // 累加差值的平方
-    }
-
-    // 将累加向量的四个32位整数相加得到最终结果
-    sum = _mm_cvtsi128_si32(sum_vec) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 4)) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 8)) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 12));
-
-    return static_cast<float>(sum); // 返回 L2 距离的平方
+    // for (int i = 0; i < 128; ++i) {
+    //     int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
+    //     sum += diff * diff;  // 累加差值的平方
+    // }
+    // return static_cast<float>(sum);  // 返回 L2 距离的平方
+    return 3.0f;
 }
+
+// float SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+//     const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
+//     const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
+//     uint32_t sum = 0;
+
+//     // 使用SSE2指令集进行优化
+//     __m128i sum_vec = _mm_setzero_si128(); // 初始化累加向量为零
+//     for (int i = 0; i < 128; i += 16) { // 每次处理16个字节
+//         __m128i x_vec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i)); // 加载x的16个字节
+//         __m128i y_vec = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i)); // 加载y的16个字节
+//         __m128i diff_vec = _mm_sub_epi8(x_vec, y_vec); // 计算差值
+//         __m128i diff_sq_vec = _mm_maddubs_epi16(diff_vec, diff_vec); // 计算差值的平方
+//         sum_vec = _mm_add_epi32(sum_vec, _mm_shuffle_epi32(_mm_add_epi32(_mm_add_epi32(diff_sq_vec, _mm_srli_si128(diff_sq_vec, 4)), _mm_srli_si128(diff_sq_vec, 8)), 0x0E)); // 累加差值的平方
+//     }
+
+//     // 将累加向量的四个32位整数相加得到最终结果
+//     sum = _mm_cvtsi128_si32(sum_vec) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 4)) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 8)) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 12));
+
+//     return static_cast<float>(sum); // 返回 L2 距离的平方
+// }
 }  // namespace vsag
