@@ -1583,11 +1583,12 @@ public:
             link_lists_[cur_c] = new_link_lists;
             memset(link_lists_[cur_c], 0, size_links_per_element_ * curlevel + 1);
         }
-
+        vsag::logger::warn("yhh hnsw add internal");
         if ((signed)currObj != -1) {
             if (curlevel < maxlevelcopy) {
                 float curdist =
                     fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
+                vsag::logger::warn("yhh curdist {}",curdist );
                 for (int level = maxlevelcopy; level > curlevel; level--) {
                     bool changed = true;
                     while (changed) {
