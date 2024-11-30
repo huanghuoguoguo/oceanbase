@@ -156,6 +156,10 @@ HNSW::add(const DatasetPtr& base) {
                               "static index does not support add");
     }
     try {
+        auto base_dim = base->GetDim();
+        logger::warn("yhh dim: {}-{}", base_dim ,dim_);
+        CHECK_ARGUMENT(base_dim == dim_,
+                       fmt::format("base.dim({}) must be equal to index.dim({})", base_dim, dim_));
 
         int64_t num_elements = base->GetNumElements();
         auto ids = base->GetIds();
