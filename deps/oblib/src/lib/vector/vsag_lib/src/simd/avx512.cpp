@@ -132,16 +132,16 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     vsag::logger::warn("yhh SQ8ComputeCodesL2Sqr");
-    const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
-    const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
+    uint8_t* x = (uint8_t*)pVect1v;
+    uint8_t* y = (uint8_t*)pVect2v;
 
     uint32_t sum = 0;
     
     for (int i = 0; i < 128; ++i) {
         int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
         sum += diff * diff;  // 累加差值的平方
-        vsag::logger::warn("yhh sum:{}",sum);
     }
+    vsag::logger::warn("yhh sum:{}",sum);
     return static_cast<float>(sum);  // 返回 L2 距离的平方
 }
 

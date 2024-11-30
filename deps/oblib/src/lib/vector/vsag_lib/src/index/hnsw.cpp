@@ -170,7 +170,7 @@ HNSW::add(const DatasetPtr& base) {
             return tl::unexpected(result.error());
         }
         for (int64_t i = 0; i < num_elements; ++i) {
-            std::vector<uint8_t> temp(129);
+            std::vector<uint8_t> temp(128);
             for (size_t j = 0; j < 128; ++j) {
                 float value = vectors[j];
                 // logger::warn("yhh HNSW::float: {}", vectors[j]);
@@ -180,7 +180,7 @@ HNSW::add(const DatasetPtr& base) {
             }
             // noexcept runtime
             if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
-                logger::debug("duplicate point: {}", i);
+                logger::warn("duplicate point: {}", i);
                 failed_ids.push_back(ids[i]);
             }
         }

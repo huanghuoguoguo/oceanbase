@@ -1557,10 +1557,6 @@ public:
 
         // std::shared_ptr<float[]> normalize_data;
         // normalize_vector(data_point, normalize_data);
-        if(dim_ == 32){
-            const uint8_t* x = reinterpret_cast<const uint8_t*>(data_point);   
-            vsag::logger::warn("yhh cat:0-{},127-{}",static_cast<int>(x[0]),static_cast<int>(x[127]));
-        }
 
 
 
@@ -1583,7 +1579,7 @@ public:
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
-
+        vsag::logger::warn("yhh data_size_ log:{}",data_size_);
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1623,7 +1619,6 @@ public:
                     }
                 }
             }
-            vsag::logger::warn("yhh curdist in2");
             bool epDeleted = isMarkedDeleted(enterpoint_copy);
             for (int level = std::min(curlevel, maxlevelcopy); level >= 0; level--) {
                 if (level > maxlevelcopy || level < 0)  // possible?
@@ -1644,7 +1639,6 @@ public:
                 currObj =
                     mutuallyConnectNewElement(data_point, cur_c, top_candidates, level, false);
             }
-            vsag::logger::warn("yhh curdist in2");
         } else {
             // Do nothing for the first element
             enterpoint_node_ = 0;

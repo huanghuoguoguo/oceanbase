@@ -141,9 +141,9 @@ GetPQDistanceFunc() {
 
 DistanceFunc
 GetL2DistanceFunc(size_t dim) {
-    // if(dim == 32){
-    //     return vsag::L2SqrSQ8;
-    // }
+    if(dim == 32){
+        return vsag::L2SqrSQ8;
+    }
     
     if (dim % 16 == 0) {
         return vsag::L2SqrSIMD16Ext;
