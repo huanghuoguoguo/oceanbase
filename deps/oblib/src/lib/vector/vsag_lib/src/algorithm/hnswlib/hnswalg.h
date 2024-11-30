@@ -1539,6 +1539,8 @@ public:
         {
             // Checking if the element with the same label already exists
             // if so, updating it *instead* of creating a new element.
+
+            vsag::logger::warn("yhh add log");
             std::unique_lock<std::mutex> lock_table(label_lookup_lock_);
             auto search = label_lookup_.find(label);
             if (search != label_lookup_.end()) {
