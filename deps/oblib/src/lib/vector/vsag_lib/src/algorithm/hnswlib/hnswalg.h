@@ -1562,6 +1562,7 @@ public:
             for (int i = 0; i < 128; ++i) {
                 vsag::logger::warn("yhh cat:{}",static_cast<int>(x[i]));
             }
+            vsag::logger::warn("yhh cat after");  
         }
 
 
@@ -1585,7 +1586,7 @@ public:
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
-        vsag::logger::warn("yhh memcopy after");
+
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1595,7 +1596,6 @@ public:
             memset(link_lists_[cur_c], 0, size_links_per_element_ * curlevel + 1);
         }
 
-        vsag::logger::warn("yhh curdist out");
         if ((signed)currObj != -1) {
             vsag::logger::warn("yhh curdist in");
             if (curlevel < maxlevelcopy) {
@@ -1654,7 +1654,6 @@ public:
             enterpoint_node_ = 0;
             maxlevel_ = curlevel;
         }
-        vsag::logger::warn("yhh curdist in3");
         // Releasing lock for the maximum level
         if (curlevel > maxlevelcopy) {
             enterpoint_node_ = cur_c;

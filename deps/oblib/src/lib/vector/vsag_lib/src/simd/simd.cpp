@@ -17,7 +17,6 @@
 
 #include <cpuinfo.h>
 #include <iostream>
-#include "../logger.h"
 namespace vsag {
 
 float (*L2SqrSIMD16Ext)(const void*, const void*, const void*);
@@ -143,7 +142,6 @@ GetPQDistanceFunc() {
 DistanceFunc
 GetL2DistanceFunc(size_t dim) {
     if(dim == 32){
-        vsag::logger::warn("yhh use L2SqrSQ8");
         return vsag::L2SqrSQ8;
     }
     

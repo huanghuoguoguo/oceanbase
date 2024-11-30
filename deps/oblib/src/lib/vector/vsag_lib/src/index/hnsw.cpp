@@ -58,7 +58,6 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
       use_conjugate_graph_(use_conjugate_graph),
       use_reversed_edges_(use_reversed_edges) {
     dim_ = *((size_t*)space->get_dist_func_param());
-    logger::warn("yhh  construct dim result log{}",dim_); 
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
 
     if (ef_construction <= 0) {
@@ -168,6 +167,7 @@ HNSW::add(const DatasetPtr& base) {
             float value = vectors[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
             temp[i] = static_cast<uint8_t>(value);
+            logger::debug("yhh HNSW::add: {}-{}", i,temp[i]);
         }
 
         std::unique_lock lock(rw_mutex_);
