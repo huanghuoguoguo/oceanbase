@@ -136,10 +136,10 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
 
     uint32_t sum = 0;
     
-    // for (int i = 0; i < 128; ++i) {
-    //     int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
-    //     sum += diff * diff;  // 累加差值的平方
-    // }
+    for (int i = 0; i < 128; ++i) {
+        int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
+        sum += diff * diff;  // 累加差值的平方
+    }
     // return static_cast<float>(sum);  // 返回 L2 距离的平方
     return 3.0f;
 }
