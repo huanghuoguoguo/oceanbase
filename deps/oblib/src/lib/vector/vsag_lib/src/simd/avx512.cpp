@@ -16,7 +16,7 @@
 
 #include <x86intrin.h>
 #include <iostream>
-// #include "../logger.h"
+#include "../logger.h"
 namespace vsag {
 
 #define PORTABLE_ALIGN32 __attribute__((aligned(32)))
@@ -131,19 +131,18 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 // }
 
 // 这个函数起作用了，但是不知道速度是多少
-float 
-SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    uint8_t* x = (uint8_t*)pVect1v;
-    uint8_t* y = (uint8_t*)pVect2v;
+// float 
+// SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+//     uint8_t* x = (uint8_t*)pVect1v;
+//     uint8_t* y = (uint8_t*)pVect2v;
 
-    int sum = 0;
-    for (int i = 0; i < 128; ++i) {
-        int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
-        sum += diff * diff;  // 累加差值的平方
-    }
-    return static_cast<float>(sum);
-    // return 3.0f;
-}
+//     int sum = 0;
+//     for (int i = 0; i < 128; ++i) {
+//         int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
+//         sum += diff * diff;  // 累加差值的平方
+//     }
+//     return static_cast<float>(sum);
+// }
 
 float SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     uint8_t* x = (uint8_t*)pVect1v;
@@ -162,7 +161,7 @@ float SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void*
 
     // 将累加向量的四个32位整数相加得到最终结果
     sum = _mm_cvtsi128_si32(sum_vec) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 4)) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 8)) + _mm_cvtsi128_si32(_mm_srli_si128(sum_vec, 12));
-
+    vsag::logger::error("yhh sum = {}", sum);
     return static_cast<float>(sum); // 返回 L2 距离的平方
 }
 }  // namespace vsag
