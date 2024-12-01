@@ -84,31 +84,76 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
     return sum;
 }
 
-float 
-SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    uint8_t* codes1 = (uint8_t*)pVect1v;
-    uint8_t* codes2 = (uint8_t*)pVect1v;
+// float 
+// SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+//     uint8_t* codes1 = (uint8_t*)pVect1v;
+//     uint8_t* codes2 = (uint8_t*)pVect1v;
 
-    __m512 sum = _mm512_setzero_ps();
-    uint64_t i = 0;
-    int dim = 128;
-    for (; i + 15 < dim; i += 16) {
-        __m128i code1_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes1 + i));
-        __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes2 + i));
-        __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values);
-        __m512i codes2_512 = _mm512_cvtepu8_epi32(code2_values);
-        __m512 code1_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes1_512), _mm512_set1_ps(255.0f));
-        __m512 code2_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes2_512), _mm512_set1_ps(255.0f));
+//     __m512 sum = _mm512_setzero_ps();
+//     uint64_t i = 0;
+//     int dim = 128;
+//     for (; i + 15 < dim; i += 16) {
+//         __m128i code1_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes1 + i));
+//         __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes2 + i));
+//         __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values);
+//         __m512i codes2_512 = _mm512_cvtepu8_epi32(code2_values);
+//         __m512 code1_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes1_512), _mm512_set1_ps(255.0f));
+//         __m512 code2_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes2_512), _mm512_set1_ps(255.0f));
 
-        __m512 val = _mm512_sub_ps(code1_floats, code2_floats);
-        val = _mm512_mul_ps(val, val);
-        sum = _mm512_add_ps(sum, val);
+//         __m512 val = _mm512_sub_ps(code1_floats, code2_floats);
+//         val = _mm512_mul_ps(val, val);
+//         sum = _mm512_add_ps(sum, val);
+//     }
+
+//     // Horizontal addition
+//     float result = _mm512_reduce_add_ps(sum);
+//     return result;
+// }
+
+float SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v) {
+    const uint8_t* x = reinterpret_cast<const uint8_t*>(pVect1v);
+    const uint8_t* y = reinterpret_cast<const uint8_t*>(pVect2v);
+
+    __m256i sum = _mm256_setzero_si256(); // 初始化累加向量为零
+    __m256i mask = _mm256_set1_epi8(0xf); // 用于掩码低4位的掩码
+
+    for (int i = 0; i < 128; i += 32) { // 每次处理32个uint8（256 bits = 32 bytes）
+        // 加载32个元素（每次处理32个字节，128维数据分为4块处理）
+        __m256i xx = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));
+        __m256i yy = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));
+
+        // 分拆为低四位和高四位
+        __m256i xx1 = _mm256_and_si256(xx, mask);
+        __m256i xx2 = _mm256_srli_epi16(xx, 4);
+        xx2 = _mm256_and_si256(xx2, mask);
+
+        __m256i yy1 = _mm256_and_si256(yy, mask);
+        __m256i yy2 = _mm256_srli_epi16(yy, 4);
+        yy2 = _mm256_and_si256(yy2, mask);
+
+        // 计算每部分的差值
+        __m256i d1 = _mm256_sub_epi8(xx1, yy1);
+        __m256i d2 = _mm256_sub_epi8(xx2, yy2);
+
+        // 取差值的绝对值
+        d1 = _mm256_abs_epi8(d1);
+        d2 = _mm256_abs_epi8(d2);
+
+        // 计算差值平方并累加
+        __m256i d1_sq = _mm256_maddubs_epi16(d1, d1); // d1^2
+        __m256i d2_sq = _mm256_maddubs_epi16(d2, d2); // d2^2
+        sum = _mm256_add_epi32(sum, _mm256_add_epi32(d1_sq, d2_sq));
     }
 
-    // Horizontal addition
-    float result = _mm512_reduce_add_ps(sum);
-    return result;
+    // 将256位向量的8个int32相加得到最终结果
+    __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extractf128_si256(sum, 1));
+    sum128 = _mm_hadd_epi32(sum128, sum128);
+    sum128 = _mm_hadd_epi32(sum128, sum128);
+
+    // 提取最终的 L2 距离平方
+    return _mm_cvtsi128_si32(sum128);
 }
+
 
 // 这个函数起作用了，但是不知道速度是多少
 // float 
