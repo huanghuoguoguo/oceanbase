@@ -87,12 +87,12 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     uint8_t* codes1 = (uint8_t*)pVect1v;
-    uint8_t* codes2 = (uint8_t*)pVect2v;
+    uint8_t* codes2 = (uint8_t*)pVect1v;
 
     __m512 sum = _mm512_setzero_ps();
     uint64_t i = 0;
-
-    for (; i + 15 < 128; i += 16) {
+    int dim = 128;
+    for (; i + 15 < dim; i += 16) {
         __m128i code1_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes1 + i));
         __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes2 + i));
         __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values);
