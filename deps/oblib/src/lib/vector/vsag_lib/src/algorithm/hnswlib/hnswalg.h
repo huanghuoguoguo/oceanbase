@@ -1579,7 +1579,7 @@ public:
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
-        vsag::logger::warn("yhh data_size_ log:{}",data_size_);
+        // vsag::logger::warn("yhh data_size_ log:{}",data_size_);
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1593,7 +1593,7 @@ public:
             if (curlevel < maxlevelcopy) {
                 float curdist =
                     fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
-                vsag::logger::warn("yhh curdist log:{}",curdist);
+                // vsag::logger::warn("yhh curdist log:{}",curdist);
                 for (int level = maxlevelcopy; level > curlevel; level--) {
                     bool changed = true;
                     while (changed) {
