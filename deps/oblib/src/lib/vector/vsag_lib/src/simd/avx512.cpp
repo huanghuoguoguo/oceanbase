@@ -137,8 +137,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     
     int sum = 0;
     
-    // #pragma omp parallel for reduction(+:sum)
-    #pragma omp parallel for 
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < 128; ++i) { 
         int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
         sum += diff * diff;  // 累加差值的平方
