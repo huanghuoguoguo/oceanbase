@@ -150,7 +150,8 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         total_sum += static_cast<int>(result[i]); // Total sum of squared differences 
     }  
 
-    return static_cast<float>(total_sum);
+    // return static_cast<float>(total_sum);
+    return 0.0f;
 }
 
 
