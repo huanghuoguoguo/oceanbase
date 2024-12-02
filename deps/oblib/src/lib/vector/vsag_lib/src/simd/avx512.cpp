@@ -118,8 +118,8 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    uint8_t* x = (uint8_t*)pVect1v;
-    uint8_t* y = (uint8_t*)pVect2v;
+    int8_t* x = (int8_t*)pVect1v;
+    int8_t* y = (int8_t*)pVect2v;
 
     __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero 
     for (int i = 0; i + 31 < 128; i += 32) {   
@@ -141,16 +141,16 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     }   
  
     // // Sum up all elements in the 512-bit register 
-    uint16_t result[32];  // Store results in a 32-element array
+    int result[16];  // Store results in a 32-element array
     _mm512_storeu_si512(result, sum);  
 
     int total_sum = 0;  
-    // for (int i = 0; i < 32; ++i) {  
-    //     total_sum += static_cast<int>(result[i]); // Total sum of squared differences 
-    // }  
+    auto re = reinterpret_cast<const uint16_t*>(result);
+    for (int i = 0; i < 32; ++i) {  
+        total_sum += static_cast<int>(re[i]); // Total sum of squared differences 
+    }  
 
     return static_cast<float>(total_sum);
-    // return 0.0f;
 }
 
 
