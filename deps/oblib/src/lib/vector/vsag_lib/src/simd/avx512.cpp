@@ -85,35 +85,72 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 }
 
 
+// float 
+// SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+//     uint8_t* x = (uint8_t*)pVect1v;
+//     uint8_t* y = (uint8_t*)pVect2v;
+
+//     __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero
+//     for (int i = 0; i + 15 < 128; i += 16) { 
+//         __m128i code1_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i)); 
+//         __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i)); 
+
+//         __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values); 
+//         __m512i codes2_512 = _mm512_cvtepu8_epi32(code2_values); 
+
+//         __m512i diff = _mm512_sub_epi32(codes1_512, codes2_512); 
+//         __m512i diff_squared = _mm512_mullo_epi32(diff, diff); 
+
+//         sum = _mm512_add_epi32(sum, diff_squared); // Accumulate squared differences
+//     } 
+
+//     // Sum up all elements in the 512-bit register
+//     int result[16];
+//     _mm512_storeu_si512(result, sum);
+
+//     int total_sum = 0;
+//     for (int i = 0; i < 16; ++i) {
+//         total_sum += result[i]; // Total sum of squared differences
+//     }
+
+//     return static_cast<float>(total_sum); 
+// }
+
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     uint8_t* x = (uint8_t*)pVect1v;
     uint8_t* y = (uint8_t*)pVect2v;
 
-    __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero
-    for (int i = 0; i + 15 < 128; i += 16) { 
-        __m128i code1_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i)); 
-        __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i)); 
+    __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero 
+    for (int i = 0; i + 31 < 128; i += 32) {   
+        __m256i code1_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));   
+        __m256i code2_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));   
+ 
+        // Convert uint8_t to int16_t 
+        __m512i codes1_512 = _mm512_cvtepu8_epi16(code1_values);   
+        __m512i codes2_512 = _mm512_cvtepu8_epi16(code2_values);   
+ 
+        // Compute the difference 
+        __m512i diff = _mm512_sub_epi16(codes1_512, codes2_512);   
+         
+        // Compute the square of the differences 
+        __m512i diff_squared = _mm512_mullo_epi16(diff, diff);   
+ 
+        // Accumulate the squared differences (using int16)
+        sum = _mm512_add_epi16(sum, diff_squared);  // Using 16-bit addition
+    }   
+ 
+    // // Sum up all elements in the 512-bit register 
+    uint16_t result[32];  // Store results in a 32-element array
+    _mm512_storeu_si512(result, sum);  
 
-        __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values); 
-        __m512i codes2_512 = _mm512_cvtepu8_epi32(code2_values); 
+    int total_sum = 0;  
+    // for (int i = 0; i < 32; ++i) {  
+    //     total_sum += static_cast<int>(result[i]); // Total sum of squared differences 
+    // }  
 
-        __m512i diff = _mm512_sub_epi32(codes1_512, codes2_512); 
-        __m512i diff_squared = _mm512_mullo_epi32(diff, diff); 
-
-        sum = _mm512_add_epi32(sum, diff_squared); // Accumulate squared differences
-    } 
-
-    // Sum up all elements in the 512-bit register
-    int result[16];
-    _mm512_storeu_si512(result, sum);
-
-    int total_sum = 0;
-    for (int i = 0; i < 16; ++i) {
-        total_sum += result[i]; // Total sum of squared differences
-    }
-
-    return static_cast<float>(total_sum); 
+    return static_cast<float>(total_sum);
+    // return 0.0f;
 }
 
 
