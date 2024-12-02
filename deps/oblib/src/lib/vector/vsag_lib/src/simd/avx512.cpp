@@ -146,12 +146,12 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
 
     int total_sum = 0;  
     // auto re = reinterpret_cast<uint16_t*>(result);
-    for (int i = 0; i < 32; ++i) {  
-        total_sum += static_cast<int>(result[i]); // Total sum of squared differences 
-    }  
+    // for (int i = 0; i < 32; ++i) {  
+    //     total_sum += static_cast<int>(result[i]); // Total sum of squared differences 
+    // }  
 
-    // return static_cast<float>(total_sum);
-    return 0.0f;
+    return static_cast<float>(total_sum);
+    // return 0.0f;
 }
 
 
