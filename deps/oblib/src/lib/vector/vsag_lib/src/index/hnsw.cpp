@@ -170,12 +170,12 @@ HNSW::add(const DatasetPtr& base) {
             return tl::unexpected(result.error());
         }
         for (int64_t i = 0; i < num_elements; ++i) {
-            std::vector<uint8_t> temp(128);
+            std::vector<int8_t> temp(128);
             for (size_t j = 0; j < 128; ++j) {
                 float value = vectors[j];
                 // logger::warn("yhh HNSW::float: {}", vectors[j]);
                 // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-                temp[j] = static_cast<uint8_t>(value);
+                temp[j] = static_cast<int8_t>(value);
                 // logger::warn("yhh HNSW::temp: {}", temp[j]);
             }
             // noexcept runtime
@@ -224,12 +224,12 @@ HNSW::knn_search(const DatasetPtr& query,
         // check query vector
         CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
-        std::vector<uint8_t> temp(128);
+        std::vector<int8_t> temp(128);
 
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            temp[i] = static_cast<uint8_t>(value);
+            temp[i] = static_cast<int8_t>(value);
         }
 
 

@@ -86,40 +86,44 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    uint8_t* x = (uint8_t*)pVect1v; 
-    uint8_t* y = (uint8_t*)pVect2v; 
+    int8_t* x = (int8_t*)pVect1v;  
+    int8_t* y = (int8_t*)pVect2v;  
     
-    __m512i sum = _mm512_setzero_si512(); // 初始化累加向量为零
-    int dim = 128;
+    __m512i sum = _mm512_setzero_si512();  // 初始化累加器为0
+    int dim = 128;  // 假设每个向量的维度为 128
 
-    for (int i = 0; i < dim; i += 32) { // 每次处理32个uint8（256 bits = 32 bytes）
-        // 加载32个元素
-        __m512i x_values = _mm512_loadu_epi8(x + i);
-        __m512i y_values = _mm512_loadu_epi8(y + i);
+    for (int i = 0; i < dim; i += 32) {  // 每次处理32个int8（256 bits = 32 bytes）
+        // 加载32个元素（32个int8元素，256 bits）
+        __m512i x_values = _mm512_loadu_si512(x + i);  
+        __m512i y_values = _mm512_loadu_si512(y + i);  
 
-        // 计算差值
-        __m512i diff = _mm512_sub_epi8(x_values, y_values);
+        // 计算带符号差值
+        __m512i diff = _mm512_sub_epi8(x_values, y_values);  // 计算差值（带符号）
 
-        // 计算差值的平方
-        __m512i diff_squared = _mm512_maddubs_epi16(diff, diff);
+        // 计算差值的平方（差值的绝对值平方）
+        __m512i diff_squared = _mm512_maddubs_epi16(diff, diff);  // 计算差值的平方，结果为16位
 
-        // 累加到sum中
+        // 累加结果
         sum = _mm512_add_epi16(sum, diff_squared);
     }
 
-    // 将结果从_epi16转换为_epi32，并进行水平加和
-    __m256i sum256 = _mm256_add_epi32(
-        _mm512_castsi512_si256(sum),
-        _mm512_extracti32x8_epi32(sum, 1)
-    );
-    sum256 = _mm256_hadd_epi32(sum256, sum256);
-    sum256 = _mm256_hadd_epi32(sum256, sum256);
+    // 将16位累加结果转换为32位整数
+    __m512i sum_32 = _mm512_cvtepi16_epi32(sum);  // 转换为32位
 
-    // 提取最终的 L2 距离平方
-    int result = _mm_cvtsi128_si32(_mm256_castsi256_si128(sum256)) +
+    // 水平加和
+    __m256i sum256 = _mm256_add_epi32(
+        _mm512_castsi512_si256(sum_32), 
+        _mm512_extracti32x8_epi32(sum_32, 1)
+    );
+
+    sum256 = _mm256_hadd_epi32(sum256, sum256);  // 水平加和
+    sum256 = _mm256_hadd_epi32(sum256, sum256);  // 再次水平加和
+
+    // 提取最终的 L2 距离平方结果
+    int result = _mm_cvtsi128_si32(_mm256_castsi256_si128(sum256)) + 
                  _mm_cvtsi128_si32(_mm256_extracti128_si256(sum256, 1));
 
-    return static_cast<float>(result); // 返回 L2 距离的平方
+    return static_cast<float>(result);  // 返回 L2 距离的平方
 }
 
 
