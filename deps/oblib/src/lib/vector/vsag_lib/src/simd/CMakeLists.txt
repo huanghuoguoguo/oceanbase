@@ -1,5 +1,5 @@
 
-set (SIMD_SRCS generic.cpp simd.cpp)
+set (SIMD_SRCS generic.cpp simd.cpp avx512.cpp)
 if (DIST_CONTAINS_SSE)
   set (SIMD_SRCS ${SIMD_SRCS} sse.cpp)
   set_source_files_properties (sse.cpp PROPERTIES COMPILE_FLAGS "-msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2")
