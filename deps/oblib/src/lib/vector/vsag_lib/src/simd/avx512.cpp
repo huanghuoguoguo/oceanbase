@@ -97,8 +97,8 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes2 + i));
         __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values);
         __m512i codes2_512 = _mm512_cvtepu8_epi32(code2_values);
-        __m512 code1_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes1_512), _mm512_set1_ps(255.0f));
-        __m512 code2_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes2_512), _mm512_set1_ps(255.0f));
+        __m512 code1_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes1_512), _mm512_set1_ps(127.0f));
+        __m512 code2_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes2_512), _mm512_set1_ps(127.0f));
 
         __m512 val = _mm512_sub_ps(code1_floats, code2_floats);
         val = _mm512_mul_ps(val, val);
