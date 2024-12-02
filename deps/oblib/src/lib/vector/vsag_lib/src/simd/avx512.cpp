@@ -99,15 +99,14 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         // 计算差值
         __m512i diff = _mm512_subs_epi8(v1, v2);  // 有符号数据使用_mm512_subs_epi8
 
-        // 处理前32个元素
-        __m512i diff_low = _mm512_maskz_loadu_epi8((__mmask64)-1, &x[i]);  // 获取低32个差值
-        __m512i square_low = _mm512_maddubs_epi16(diff_low, diff_low);  // 差值平方
-        sum = _mm512_add_epi32(sum, _mm512_cvtepi16_epi32(square_low));  // 加入sum
+        // 计算差值平方
+        __m512i square = _mm512_maddubs_epi16(diff, diff);  // 差值平方
 
-        // 处理后32个元素
-        __m512i diff_high = _mm512_maskz_loadu_epi8((__mmask64)-1, &x[i + 32]);  // 获取高32个差值
-        __m512i square_high = _mm512_maddubs_epi16(diff_high, diff_high);  // 差值平方
-        sum = _mm512_add_epi32(sum, _mm512_cvtepi16_epi32(square_high));  // 加入sum
+        // 将16位结果扩展到32位并加到sum中
+        __m512i square_low = _mm512_cvtepi16_epi32(square);
+        __m512i square_high = _mm512_cvtepi16_epi32(_mm512_srli_epi64(square, 32));
+        sum = _mm512_add_epi32(sum, square_low);
+        sum = _mm512_add_epi32(sum, square_high);
     }
 
     // 对结果求和并返回L2距离
