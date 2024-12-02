@@ -105,7 +105,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         
         // 将16位的结果转换为32位，分开处理两个256位部分
         __m256i low_256 = _mm512_castsi512_si256(diff_squared); // 低256位
-        __m256i high_256 = _mm512_castsi512_si256(_mm512_srli_si512(diff_squared, 256)); // 高256位
+        __m256i high_256 = _mm512_castsi512_si256(_mm512_shuffle_epi32(diff_squared, _MM_SHUFFLE(3, 2, 1, 0))); // 高256位
         
         // 将16位差值转换为32位
         low_256 = _mm256_cvtepi16_epi32(low_256); // 转换低部分为32位
@@ -128,7 +128,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     int result = _mm_cvtsi128_si32(_mm256_castsi256_si128(sum256)) + 
                  _mm_cvtsi128_si32(_mm256_extracti128_si256(sum256, 1)); 
  
-    return static_cast<float>(result); // 返回 L2 距离的平方
+    return static_cast<float>(result); // 返回 L2 距离的平方 
 }
 
 
