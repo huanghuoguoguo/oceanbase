@@ -92,7 +92,6 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     size_t dim = 128; 
     __m512i sum = _mm512_setzero_si512(); // 初始化累加向量为零 
  
-    // 处理64个int8元素每次循环 
     size_t i = 0; 
     for (; i < dim; i += 64) { 
         // 加载64个int8元素
@@ -102,23 +101,25 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         // 计算差值
         __m512i diff = _mm512_sub_epi8(x_values, y_values); 
 
-        // 将前32个差值扩展到int16（平方）
-        __m512i diff_lower = _mm512_cvtepi8_epi16(_mm512_and_si512(diff, _mm512_set1_epi8(0xFF))); // 处理低32个差值
-        __m512i diff_lower_squared = _mm512_mullo_epi16(diff_lower, diff_lower); // 计算低32个差值的平方
-        
-        // 将后32个差值扩展到int16（平方）
-        __m512i diff_upper = _mm512_cvtepi8_epi16(_mm512_srli_epi64(diff, 32)); // 处理高32个差值
-        __m512i diff_upper_squared = _mm512_mullo_epi16(diff_upper, diff_upper); // 计算高32个差值的平方
-        
-        // 将结果扩展到32位并进行加和
-        __m256i lower_256 = _mm512_castsi512_si256(diff_lower_squared);
-        __m256i upper_256 = _mm512_castsi512_si256(diff_upper_squared);
-        
-        // 将16位扩展为32位
-        lower_256 = _mm256_cvtepi16_epi32(lower_256);
-        upper_256 = _mm256_cvtepi16_epi32(upper_256);
+        // 将前32个差值扩展到int16并平方
+        __m512i diff_lower = _mm512_and_si512(diff, _mm512_set1_epi8(0xFF)); // 提取低32位
+        __m512i diff_lower_int16 = _mm512_cvtepi8_epi16(diff_lower); // 扩展到int16
+        __m512i diff_lower_squared = _mm512_mullo_epi16(diff_lower_int16, diff_lower_int16); // 计算平方
 
-        // 将32位结果加和
+        // 将后32个差值扩展到int16并平方
+        __m512i diff_upper = _mm512_srli_epi64(diff, 32); // 提取高32位
+        __m512i diff_upper_int16 = _mm512_cvtepi8_epi16(diff_upper); // 扩展到int16
+        __m512i diff_upper_squared = _mm512_mullo_epi16(diff_upper_int16, diff_upper_int16); // 计算平方
+
+        // 将结果扩展到32位
+        __m256i lower_256 = _mm512_castsi512_si256(diff_lower_squared); // 低32个元素
+        __m256i upper_256 = _mm512_castsi512_si256(diff_upper_squared); // 高32个元素
+        
+        // 扩展为32位
+        lower_256 = _mm256_cvtepi16_epi32(lower_256); 
+        upper_256 = _mm256_cvtepi16_epi32(upper_256); 
+
+        // 将32位结果累加
         __m512i lower_sum = _mm512_castsi256_si512(lower_256);
         __m512i upper_sum = _mm512_castsi256_si512(upper_256);
         sum = _mm512_add_epi32(sum, lower_sum);
@@ -126,12 +127,9 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     } 
  
     // 将结果水平加和，得到最终的L2距离平方
-    sum = _mm512_reduce_add_epi32(sum); 
- 
-    // 提取最终的L2距离平方 
-    int result = 0; 
+    int result = 0;
     for (int j = 0; j < 16; ++j) { 
-        result += _mm512_extract_epi32(sum, j); 
+        result += _mm512_extract_epi32(sum, j); // 提取每个32位元素并累加
     } 
  
     return static_cast<float>(result); // 返回L2距离的平方 
