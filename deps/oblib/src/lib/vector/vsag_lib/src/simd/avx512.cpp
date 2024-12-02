@@ -146,11 +146,11 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
 
         __m512i diff_sqr = _mm512_mullo_epi16(diff, diff);  // 计算差值的平方（保持16位整数）
 
-        // 将__m512i拆分为两个__m256i
-        __m256i low = _mm512_extracti64x4_si512(diff_sqr, 0);   // 获取低256位
-        __m256i high = _mm512_extracti64x4_si512(diff_sqr, 1);  // 获取高256位
+        // 正确的提取 512 位寄存器为 256 位寄存器
+        __m256i low = _mm512_extract_epi64x4_si512(diff_sqr, 0);   // 获取低256位
+        __m256i high = _mm512_extract_epi64x4_si512(diff_sqr, 1);  // 获取高256位
 
-        // 扩展每个256位的16位整数为32位
+        // 扩展16位到32位
         __m256i low_sqr_32 = _mm256_cvtepu16_epi32(low);  // 扩展低256位
         __m256i high_sqr_32 = _mm256_cvtepu16_epi32(high);  // 扩展高256位
 
