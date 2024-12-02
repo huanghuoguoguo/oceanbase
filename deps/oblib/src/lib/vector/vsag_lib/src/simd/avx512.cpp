@@ -89,7 +89,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     int8_t* x = (int8_t*)pVect1v; 
     int8_t* y = (int8_t*)pVect2v; 
     int dim = 128;
-    __m512i sum32 = _mm512_setzero_si512();  // 32位累加寄存器
+    __m512i sum  = _mm512_setzero_si512();  // 32位累加寄存器
     for (int i = 0; i < dim; i += 32) { // 每次处理32个int8（256 bits = 32 bytes） 
         // 加载32个元素 
         __m512i x_values = _mm512_loadu_epi8(x + i); 
