@@ -86,39 +86,28 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    const int8_t* x = (const int8_t*)pVect1v; 
-    const int8_t* y = (const int8_t*)pVect2v; 
+    const int8_t* codes1 = (const int8_t*)pVect1v; 
+    const int8_t* codes2 = (const int8_t*)pVect2v; 
  
-    __m512i sum = _mm512_setzero_si512();  // 结果初始化为 0
+    __m512 sum = _mm512_setzero_ps();
+    uint64_t i = 0;
 
-    for (int i = 0; i < 128; i += 64) {
-        // 加载 64 个元素
-        __m512i v1 = _mm512_loadu_si512(&x[i]);
-        __m512i v2 = _mm512_loadu_si512(&y[i]);
+    for (; i + 15 < 128; i += 16) {
+        __m128i code1_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes1 + i));
+        __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(codes2 + i));
+        __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values);
+        __m512i codes2_512 = _mm512_cvtepu8_epi32(code2_values);
+        __m512 code1_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes1_512), _mm512_set1_ps(255.0f));
+        __m512 code2_floats = _mm512_div_ps(_mm512_cvtepi32_ps(codes2_512), _mm512_set1_ps(255.0f));
 
-        // 计算差值
-        __m512i diff = _mm512_subs_epi8(v1, v2);  // 有符号数据使用 _mm512_subs_epi8
-
-        // 计算差值平方
-        __m512i square = _mm512_maddubs_epi16(diff, diff);  // 差值平方
-
-        // 将 16 位结果扩展到 32 位并加到 sum 中
-        __m512i square_low = _mm512_cvtepi16_epi32(_mm512_castsi512_si256(square));
-        __m512i square_high = _mm512_cvtepi16_epi32(_mm512_extracti64x4_epi64(square, 1));
-        sum = _mm512_add_epi32(sum, square_low);
-        sum = _mm512_add_epi32(sum, square_high);
+        __m512 val = _mm512_sub_ps(code1_floats, code2_floats);
+        val = _mm512_mul_ps(val, val);
+        sum = _mm512_add_ps(sum, val);
     }
 
-    // 对结果求和并返回 L2 距离
-    int32_t result[16];
-    _mm512_storeu_si512(result, sum);
-
-    int l2_distance = 0;
-    for (int i = 0; i < 16; i++) {
-        l2_distance += result[i];
-    }
-
-    return static_cast<float>(l2_distance);
+    // Horizontal addition
+    float result = _mm512_reduce_add_ps(sum);
+    return result;
 }
 
 
