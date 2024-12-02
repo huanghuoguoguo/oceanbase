@@ -105,18 +105,15 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         
         // 将16位的结果转换为32位，分开处理两个256位部分
         __m256i low_256 = _mm512_castsi512_si256(diff_squared); // 低256位
-        __m256i high_256 = _mm512_extracti32x8_si512(diff_squared, 1); // 高256位
+        __m256i high_256 = _mm512_castsi512_si256(_mm512_srli_si512(diff_squared, 256)); // 高256位
         
-        // 将低高256位的16位差值转换为32位
-        __m128i low_128 = _mm256_castsi256_si128(low_256); // 将256位低部分转为128位
-        __m128i high_128 = _mm256_castsi256_si128(high_256); // 将256位高部分转为128位
-
-        __m128i low_32 = _mm256_cvtepi16_epi32(low_128); // 转换低部分
-        __m128i high_32 = _mm256_cvtepi16_epi32(high_128); // 转换高部分
+        // 将16位差值转换为32位
+        low_256 = _mm256_cvtepi16_epi32(low_256); // 转换低部分为32位
+        high_256 = _mm256_cvtepi16_epi32(high_256); // 转换高部分为32位
 
         // 将结果累加到 sum 中
-        sum = _mm512_add_epi32(sum, _mm512_castsi128_si512(low_32));
-        sum = _mm512_add_epi32(sum, _mm512_castsi128_si512(high_32));
+        sum = _mm512_add_epi32(sum, _mm512_castsi256_si512(low_256));
+        sum = _mm512_add_epi32(sum, _mm512_castsi256_si512(high_256));
     } 
 
     // 将结果水平加和，得到最终的 L2 距离平方
