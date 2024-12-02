@@ -146,10 +146,8 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
 
         __m512i diff_sqr = _mm512_mullo_epi16(diff, diff);  // 计算差值的平方（保持16位整数）
 
-        // 将diff_sqr从16位扩展到32位
-        __m512i diff_sqr_32 = _mm512_cvtepu16_epi32(diff_sqr);
-
-        sum = _mm512_add_epi32(sum, diff_sqr_32);  // 将结果聚合到sum中
+        // 使用32位加法直接处理
+        sum = _mm512_add_epi32(sum, _mm512_cvtepu16_epi32(diff_sqr));  // 将16位扩展为32位并求和
     }
 
     // 聚合最终结果（将sum中的所有值加起来）
