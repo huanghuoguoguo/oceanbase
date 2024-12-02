@@ -88,38 +88,45 @@ float
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
     int8_t* x = (int8_t*)pVect1v; 
     int8_t* y = (int8_t*)pVect2v; 
-    
+    int dim = 128;
     __m512i sum32 = _mm512_setzero_si512();  // 32位累加寄存器
-    for (int i = 0; i < dim; i += 32) {
-        __m512i x_values = _mm512_loadu_epi8(x + i);
-        __m512i y_values = _mm512_loadu_epi8(y + i);
-
-        // 计算差值
-        __m512i diff = _mm512_sub_epi8(x_values, y_values);
-
-        // 计算差值的平方
+    for (int i = 0; i < dim; i += 32) { // 每次处理32个int8（256 bits = 32 bytes） 
+        // 加载32个元素 
+        __m512i x_values = _mm512_loadu_epi8(x + i); 
+        __m512i y_values = _mm512_loadu_epi8(y + i); 
+ 
+        // 计算差值 
+        __m512i diff = _mm512_sub_epi8(x_values, y_values); 
+ 
+        // 计算差值的平方 
         __m512i diff_squared = _mm512_maddubs_epi16(diff, diff); // 16位结果
-
-        // 扩展为32位累加
-        __m512i diff_squared_32 = _mm512_cvtepi16_epi32(diff_squared);  // 转换为32位
         
-        // 累加
-        sum32 = _mm512_add_epi32(sum32, diff_squared_32);
-    }
+        // 将16位的结果转换为32位，分开处理两个256位部分
+        __m256i low_256 = _mm512_castsi512_si256(diff_squared); // 低256位
+        __m256i high_256 = _mm512_extracti64x4_si512(diff_squared, 1); // 高256位
+        
+        // 将低高256位的16位差值转换为32位
+        __m256i low_32 = _mm256_cvtepi16_epi32(low_256);
+        __m256i high_32 = _mm256_cvtepi16_epi32(high_256);
 
-    // 水平加和
+        // 将结果累加到 sum 中
+        sum = _mm512_add_epi32(sum, _mm512_castsi256_si512(low_32));
+        sum = _mm512_add_epi32(sum, _mm512_castsi256_si512(high_32));
+    } 
+
+    // 将结果水平加和，得到最终的 L2 距离平方
     __m256i sum256 = _mm256_add_epi32(
-        _mm512_castsi512_si256(sum32),
-        _mm512_extracti32x8_epi32(sum32, 1)
+        _mm512_castsi512_si256(sum),
+        _mm512_extracti32x8_epi32(sum, 1)
     );
     sum256 = _mm256_hadd_epi32(sum256, sum256);
     sum256 = _mm256_hadd_epi32(sum256, sum256);
 
-    // 提取最终结果
-    int result = _mm_cvtsi128_si32(_mm256_castsi256_si128(sum256)) +
-                _mm_cvtsi128_si32(_mm256_extracti128_si256(sum256, 1));
-
-    return static_cast<float>(result);
+    // 提取最终的 L2 距离平方
+    int result = _mm_cvtsi128_si32(_mm256_castsi256_si128(sum256)) + 
+                 _mm_cvtsi128_si32(_mm256_extracti128_si256(sum256, 1)); 
+ 
+    return static_cast<float>(result); // 返回 L2 距离的平方 
 }
 
 
