@@ -134,33 +134,37 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     uint8_t* x = (uint8_t*)pVect1v; 
     uint8_t* y = (uint8_t*)pVect2v; 
     
-    __m512i sum = _mm512_setzero_si512();  // 初始化sum为零
+    __m512i sum = _mm512_setzero_si512(); // 初始化累加向量为零
     int dim = 128;
 
-    // 每次处理64字节（8个uint8向量），利用AVX-512并行处理
-    for (int i = 0; i < dim; i += 64) {  
-        __m512i vec_x = _mm512_loadu_si512(&x[i]);  // 加载向量1（64字节）
-        __m512i vec_y = _mm512_loadu_si512(&y[i]);  // 加载向量2（64字节）
+    for (int i = 0; i < dim; i += 32) { // 每次处理32个uint8（256 bits = 32 bytes）
+        // 加载32个元素
+        __m512i x_values = _mm512_loadu_epi8(x + i);
+        __m512i y_values = _mm512_loadu_epi8(y + i);
 
-        __m512i diff = _mm512_subs_epu8(vec_x, vec_y);  // 计算差值，结果是无符号8位整数
+        // 计算差值
+        __m512i diff = _mm512_sub_epi8(x_values, y_values);
 
-        __m512i diff_sqr = _mm512_mullo_epi16(diff, diff);  // 计算差值的平方（保持16位整数）
+        // 计算差值的平方
+        __m512i diff_squared = _mm512_maddubs_epi16(diff, diff);
 
-        // 扩展16位整数为32位
-        __m512i diff_sqr_32 = _mm512_cvtepu16_epi32(diff_sqr);  // 扩展为32位整数
-
-        // 将扩展后的32位加到sum中
-        sum = _mm512_add_epi32(sum, diff_sqr_32);  // 直接进行32位加法
+        // 累加到sum中
+        sum = _mm512_add_epi16(sum, diff_squared);
     }
 
-    // 聚合最终结果（将sum中的所有值加起来）
-    int result = 0;
-    int* sum_array = (int*)&sum;  // 将__m512i转换为int数组
-    for (int i = 0; i < 16; i++) {  // 512位寄存器有16个32位整数
-        result += sum_array[i];
-    }
+    // 将结果从_epi16转换为_epi32，并进行水平加和
+    __m256i sum256 = _mm256_add_epi32(
+        _mm512_castsi512_si256(sum),
+        _mm512_extracti32x8_epi32(sum, 1)
+    );
+    sum256 = _mm256_hadd_epi32(sum256, sum256);
+    sum256 = _mm256_hadd_epi32(sum256, sum256);
 
-    return static_cast<float>(result);  // 返回最终的L2距离
+    // 提取最终的 L2 距离平方
+    int result = _mm_cvtsi128_si32(_mm256_castsi256_si128(sum256)) +
+                 _mm_cvtsi128_si32(_mm256_extracti128_si256(sum256, 1));
+
+    return static_cast<float>(result); // 返回 L2 距离的平方
 }
 
 // float SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
