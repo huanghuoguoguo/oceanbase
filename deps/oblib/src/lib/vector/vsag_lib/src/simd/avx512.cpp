@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #include <x86intrin.h>
+#include <immintrin.h>
 #include <iostream>
 
 // #include "../logger.h"
