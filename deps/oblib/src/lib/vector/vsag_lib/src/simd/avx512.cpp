@@ -136,7 +136,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     
     __m512i sum = _mm512_setzero_si512(); // AVX-512 sum初始化为零
     
-    for (int i = 0; i < 128; i += 64) { // 每次处理64字节
+    for (int i = 0; i < 128; i += 64) { // 每次处理 64 字节
         // 加载 64 字节数据到 AVX-512 寄存器
         __m512i vec_x = _mm512_loadu_si512((__m512i*)&x[i]);
         __m512i vec_y = _mm512_loadu_si512((__m512i*)&y[i]);
@@ -144,14 +144,17 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         // 计算差值
         __m512i diff = _mm512_subs_epu8(vec_x, vec_y);
         
-        // 将差值扩展为16位
-        __m512i diff_16 = _mm512_cvtepu8_epi16(diff);  // 扩展到 16 位
+        // 使用 AVX2 (256位) 来转换 uint8 到 int16
+        __m256i diff_16_low = _mm256_cvtepu8_epi16(_mm512_extracti64x4_si512(diff, 0));  // 低 256 位
+        __m256i diff_16_high = _mm256_cvtepu8_epi16(_mm512_extracti64x4_si512(diff, 1)); // 高 256 位
         
         // 计算平方
-        __m512i squared = _mm512_mullo_epi16(diff_16, diff_16);
+        __m256i squared_low = _mm256_mullo_epi16(diff_16_low, diff_16_low);
+        __m256i squared_high = _mm256_mullo_epi16(diff_16_high, diff_16_high);
         
-        // 累加结果
-        sum = _mm512_adds_epu8(sum, squared);
+        // 将结果聚合到 sum 寄存器中
+        sum = _mm512_add_epi32(sum, _mm512_castsi256_si512(squared_low));
+        sum = _mm512_add_epi32(sum, _mm512_castsi256_si512(squared_high));
     }
     
     // 聚合最终结果
