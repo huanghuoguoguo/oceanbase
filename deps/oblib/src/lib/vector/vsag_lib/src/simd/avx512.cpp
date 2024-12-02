@@ -16,7 +16,7 @@
 
 #include <x86intrin.h>
 #include <iostream>
-#include <omp.h>
+
 // #include "../logger.h"
 namespace vsag {
 
