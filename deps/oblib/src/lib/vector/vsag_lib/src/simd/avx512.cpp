@@ -131,16 +131,33 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 // }
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    uint8_t* x = (uint8_t*)pVect1v;
-    uint8_t* y = (uint8_t*)pVect2v;
-
-    int sum = 0;
-    for (int i = 0; i < 128; ++i) {
-        int diff = static_cast<int>(x[i]) - static_cast<int>(y[i]);  // 计算差值
-        sum += diff * diff;  // 累加差值的平方
+    uint8_t* x = (uint8_t*)pVect1v; 
+    uint8_t* y = (uint8_t*)pVect2v; 
+    
+    __m256i sum = _mm256_setzero_si256(); // AVX2 sum初始化为零
+    
+    for (int i = 0; i < 128; i += 32) {
+        // 每次加载 32 个 uint8_t（32字节）
+        __m256i vec_x = _mm256_loadu_si256((__m256i*)&x[i]);
+        __m256i vec_y = _mm256_loadu_si256((__m256i*)&y[i]);
+        
+        // 计算每个元素的差值（在 32 个元素上并行）
+        __m256i diff = _mm256_subs_epu8(vec_x, vec_y);
+        
+        // 将差值转为 int16_t 进行平方计算
+        __m256i diff_16 = _mm256_cvtepu8_epi16(diff);  // 扩展到 16 位
+        __m256i squared = _mm256_mullo_epi16(diff_16, diff_16);  // 计算平方
+        
+        // 将平方和累加
+        sum = _mm256_adds_epu8(sum, squared);
     }
-    return static_cast<float>(sum);
-    // return 3.0f;
+    
+    // 对 SIMD 中的结果进行合并并返回最终值
+    int result = 0;
+    for (int i = 0; i < 32; i++) {
+        result += sum[i]; // 聚合结果
+    }
+    return static_cast<float>(result);
 }
 
 // float SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
