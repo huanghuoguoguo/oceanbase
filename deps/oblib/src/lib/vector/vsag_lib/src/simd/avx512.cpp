@@ -141,14 +141,14 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     }   
  
     // // Sum up all elements in the 512-bit register 
-    uint16_t result[32];  // Store results in a 32-element array
+    int result[16];  // Store results in a 32-element array
     _mm512_storeu_si512(result, sum);  
 
     int total_sum = 0;  
-    // auto re = reinterpret_cast<uint16_t*>(result);
-    // for (int i = 0; i < 32; ++i) {  
-    //     total_sum += static_cast<int>(result[i]); // Total sum of squared differences 
-    // }  
+    uint16_t* uint16_ptr = (uint16_t*)result;
+    for (int i = 0; i < 32; ++i) {  
+        total_sum += uint16_ptr[i]; // Total sum of squared differences 
+    }  
 
     return static_cast<float>(total_sum);
     // return 0.0f;
