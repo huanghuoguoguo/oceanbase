@@ -87,46 +87,37 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    uint8_t* x = (uint8_t*)pVect1v;
-    uint8_t* y = (uint8_t*)pVect2v;
+    int8_t* x = (int8_t*)pVect1v;
+    int8_t* y = (int8_t*)pVect2v;
 
-    __m512i sum_low = _mm512_setzero_si512();  // For lower 16 elements
-    __m512i sum_high = _mm512_setzero_si512(); // For higher 16 elements
-    
-    for (int i = 0; i < 128; i += 32) {   
+    __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero 
+    for (int i = 0; i + 31 < 128; i += 32) {   
         __m256i code1_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));   
         __m256i code2_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));   
-        
+ 
         // Convert uint8_t to int16_t 
         __m512i codes1_512 = _mm512_cvtepu8_epi16(code1_values);   
         __m512i codes2_512 = _mm512_cvtepu8_epi16(code2_values);   
-        
+ 
         // Compute the difference 
-        __m512i diff_squared = _mm512_sub_epi16(codes1_512, codes2_512);   
-        
+        __m512i diff = _mm512_sub_epi16(codes1_512, codes2_512);   
+         
         // Compute the square of the differences 
-        // __m512i diff_squared = _mm512_mullo_epi16(diff, diff);   
-        
-        // Unpack and accumulate to 32-bit integers to prevent overflow
-        __m512i diff_squared_low = _mm512_unpacklo_epi16(diff_squared, _mm512_setzero_si512());
-        __m512i diff_squared_high = _mm512_unpackhi_epi16(diff_squared, _mm512_setzero_si512());
-        
-        sum_low = _mm512_add_epi32(sum_low, diff_squared_low);
-        sum_high = _mm512_add_epi32(sum_high, diff_squared_high);
+        __m512i diff_squared = _mm512_mullo_epi16(diff, diff);   
+ 
+        // Accumulate the squared differences (using int16)
+        sum = _mm512_add_epi16(sum, diff_squared);  // Using 16-bit addition
     }   
-    
+ 
+    // // Sum up all elements in the 512-bit register 
+    uint16_t result[32];  // Store results in a 32-element array
+    _mm512_storeu_si512(result, sum);  
 
-    int PORTABLE_ALIGN64 result_low[16];
-    int PORTABLE_ALIGN64 result_high[16];
-    _mm512_storeu_si512(result_low, sum_low);
-    _mm512_storeu_si512(result_high, sum_high);
-    
+    int total_sum = 0;  
+    for (int i = 0; i < 32; ++i) {  
+        total_sum += result[i]; // Total sum of squared differences 
+    }  
 
-    int total_sum = 0;
-    for (int i = 0; i < 16; ++i) {
-        total_sum += result_low[i] + result_high[i];
-    }
-    
     return static_cast<float>(total_sum);
 }
 
