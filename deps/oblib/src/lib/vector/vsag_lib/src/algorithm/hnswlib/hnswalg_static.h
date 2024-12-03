@@ -33,7 +33,7 @@
 #include "../../default_allocator.h"
 #include "hnswlib.h"
 #include "visited_list_pool.h"
-
+#include "../../logger.h"
 namespace hnswlib {
 typedef unsigned int tableint;
 typedef unsigned int linklistsizeint;
@@ -1709,6 +1709,7 @@ public:
         }
 
         if(cur_element_count_ == 1000000){
+            vsag::logger::warn("yhh start encode");
             this->encode_hnsw_data();
         }
         return cur_c;
@@ -2025,7 +2026,7 @@ public:
 
     void
     encode_hnsw_data_with_codebook(int left_range, int right_range) {
-        assert(is_trained_pq);
+        // assert(is_trained_pq);
         is_trained_infer = true;
         pq_map = (uint8_t*)allocator_->Allocate(max_elements_ * pq_chunk * sizeof(uint8_t));
         if (use_node_centroid)
@@ -2057,8 +2058,8 @@ public:
             if (use_node_centroid)
                 node_cluster_dist_[i] = dist_to_centroid;
         }
-        std::cout << "encode HNSW finished with ave encode loss:: "
-                  << ave_encode_loss / (float)(right_range - left_range) << std::endl;
+                  
+            vsag::logger::warn("yhh encode HNSW finished with ave encode loss::{}",vsag::logger::warn("yhh encode_with_codebook start"););
     }
 
     void
@@ -2079,6 +2080,7 @@ public:
         }
         pq_dim = vec_dim;
         pq_cluster = cluster_size;
+        vsag::logger::warn("yhh encode:{},{}",pq_dim,pq_cluster);
         if (cur_element_count_ < pq_train_bound)
             pq_train_bound = cur_element_count_;
         auto pq_training_data = std::shared_ptr<float[]>(new float[pq_train_bound * vec_dim]);
@@ -2097,7 +2099,9 @@ public:
         diskann::generate_pq_pivots(
             pq_training_data.get(), pq_train_bound, vec_dim, pq_cluster, pq_chunk, 12, pq_book);
         is_trained_pq = true;
+        vsag::logger::warn("yhh encode_with_codebook start");
         encode_hnsw_data_with_codebook(0, cur_element_count_);
+        vsag::logger::warn("yhh encode_with_codebook end");
     }
 
     static __attribute__((always_inline)) inline float
