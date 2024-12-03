@@ -93,7 +93,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     __m512i sum_low = _mm512_setzero_si512();  // For lower 16 elements
     __m512i sum_high = _mm512_setzero_si512(); // For higher 16 elements
     
-    for (int i = 0; i + 31 < 128; i += 32) {   
+    for (int i = 0; i < 128; i += 32) {   
         __m256i code1_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));   
         __m256i code2_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));   
         
@@ -115,12 +115,12 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         sum_high = _mm512_add_epi32(sum_high, diff_squared_high);
     }   
     
-    // Combine both sums and store results
+
     int result_low[16], result_high[16];
     _mm512_storeu_si512(result_low, sum_low);
     _mm512_storeu_si512(result_high, sum_high);
     
-    // Use 64-bit accumulator to prevent overflow
+
     int total_sum = 0;
     for (int i = 0; i < 16; ++i) {
         total_sum += result_low[i] + result_high[i];
