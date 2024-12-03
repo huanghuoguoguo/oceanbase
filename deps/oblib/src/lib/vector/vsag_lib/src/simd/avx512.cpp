@@ -102,10 +102,10 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         __m512i codes2_512 = _mm512_cvtepu8_epi16(code2_values);   
         
         // Compute the difference 
-        __m512i diff = _mm512_sub_epi16(codes1_512, codes2_512);   
+        __m512i diff_squared = _mm512_sub_epi16(codes1_512, codes2_512);   
         
         // Compute the square of the differences 
-        __m512i diff_squared = _mm512_mullo_epi16(diff, diff);   
+        // __m512i diff_squared = _mm512_mullo_epi16(diff, diff);   
         
         // Unpack and accumulate to 32-bit integers to prevent overflow
         __m512i diff_squared_low = _mm512_unpacklo_epi16(diff_squared, _mm512_setzero_si512());
