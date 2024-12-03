@@ -2059,7 +2059,7 @@ public:
                 node_cluster_dist_[i] = dist_to_centroid;
         }
                   
-            vsag::logger::warn("yhh encode HNSW finished with ave encode loss::{}",vsag::logger::warn("yhh encode_with_codebook start"));
+            vsag::logger::warn("yhh encode HNSW finished with ave encode loss::{}",ave_encode_loss / (float)(right_range - left_range));
     }
 
     void
