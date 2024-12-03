@@ -120,7 +120,7 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     int8_t* x = (int8_t*)pVect1v;
     int8_t* y = (int8_t*)pVect2v;
 
-    __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero 
+    __m512i sum = _mm512_set1_epi16(0); // Initialize sum as zero 
     for (int i = 0; i + 31 < 128; i += 32) {   
         __m256i code1_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(x + i));   
         __m256i code2_values = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y + i));   
@@ -143,9 +143,9 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     uint16_t result[32];  // Store results in a 32-element array
     _mm512_storeu_si512(result, sum);  
 
-    long total_sum = 0;  
+    int total_sum = 0;  
     for (int i = 0; i < 32; ++i) {  
-        total_sum += static_cast<long>(result[i]); // Total sum of squared differences 
+        total_sum += static_cast<int>(result[i]); // Total sum of squared differences 
     } 
 
 
