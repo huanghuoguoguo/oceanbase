@@ -91,18 +91,33 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     uint8_t* y = (uint8_t*)pVect2v;
 
     __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero
-    for (int i = 0; i + 15 < 128; i += 16) { 
-        __m128i code1_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i)); 
-        __m128i code2_values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i)); 
+    for (int i = 0; i < 128; i += 32) {  
+        // Load 32 bytes (256 bits) from each vector
+        __m128i code1_values1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i));  
+        __m128i code1_values2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i + 16));  
+        
+        __m128i code2_values1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i));  
+        __m128i code2_values2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i + 16));  
 
-        __m512i codes1_512 = _mm512_cvtepu8_epi32(code1_values); 
-        __m512i codes2_512 = _mm512_cvtepu8_epi32(code2_values); 
+        // Convert to 32-bit integers
+        __m512i codes1_512_1 = _mm512_cvtepu8_epi32(code1_values1);  
+        __m512i codes1_512_2 = _mm512_cvtepu8_epi32(code1_values2);  
+        
+        __m512i codes2_512_1 = _mm512_cvtepu8_epi32(code2_values1);  
+        __m512i codes2_512_2 = _mm512_cvtepu8_epi32(code2_values2);  
 
-        __m512i diff = _mm512_sub_epi32(codes1_512, codes2_512); 
-        __m512i diff_squared = _mm512_mullo_epi32(diff, diff); 
+        // Calculate differences
+        __m512i diff_1 = _mm512_sub_epi32(codes1_512_1, codes2_512_1);  
+        __m512i diff_2 = _mm512_sub_epi32(codes1_512_2, codes2_512_2);  
 
-        sum = _mm512_add_epi32(sum, diff_squared); // Accumulate squared differences
-    } 
+        // Square differences
+        __m512i diff_squared_1 = _mm512_mullo_epi32(diff_1, diff_1);  
+        __m512i diff_squared_2 = _mm512_mullo_epi32(diff_2, diff_2);  
+
+        // Accumulate squared differences
+        sum = _mm512_add_epi32(sum, diff_squared_1);
+        sum = _mm512_add_epi32(sum, diff_squared_2);
+    }  
 
     // Sum up all elements in the 512-bit register
     int PORTABLE_ALIGN64 TmpRes[16];
