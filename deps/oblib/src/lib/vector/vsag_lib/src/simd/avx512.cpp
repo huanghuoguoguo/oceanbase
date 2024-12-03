@@ -105,13 +105,12 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     } 
 
     // Sum up all elements in the 512-bit register
-    int result[16];
+    int PORTABLE_ALIGN64 TmpRes[16];
     _mm512_storeu_si512(result, sum);
 
-    int total_sum = 0;
-    for (int i = 0; i < 16; ++i) {
-        total_sum += result[i]; // Total sum of squared differences
-    }
+    int total_su = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
+                TmpRes[7] + TmpRes[8] + TmpRes[9] + TmpRes[10] + TmpRes[11] + TmpRes[12] +
+                TmpRes[13] + TmpRes[14] + TmpRes[15];
 
     return static_cast<float>(total_sum); 
 }
