@@ -116,7 +116,8 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     }   
     
 
-    int result_low[16], result_high[16];
+    int PORTABLE_ALIGN64 result_low[16];
+    int PORTABLE_ALIGN64 result_high[16];
     _mm512_storeu_si512(result_low, sum_low);
     _mm512_storeu_si512(result_high, sum_high);
     
@@ -126,8 +127,8 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         total_sum += result_low[i] + result_high[i];
     }
     
-    // return static_cast<float>(total_sum);
-    return 0.0f;
+    return static_cast<float>(total_sum);
+    // return 0.0f;
 }
 
 
