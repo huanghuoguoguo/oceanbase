@@ -144,13 +144,13 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     _mm512_storeu_si512(result, sum);  
 
     int total_sum = 0;  
-    // for (int i = 0; i < 32; ++i) {  
-    //     total_sum += result[i]; // Total sum of squared differences 
-    // } 
-    total_sum += static_cast<int>(result[0]); 
+    for (int i = 0; i < 32; ++i) {  
+        total_sum += result[i]; // Total sum of squared differences 
+    } 
+    std::cout<<total_sum;
 
-    return static_cast<float>(total_sum);
-    // return 0.0f;
+    // return static_cast<float>(total_sum);
+    return 0.0f;
 }
 
 
