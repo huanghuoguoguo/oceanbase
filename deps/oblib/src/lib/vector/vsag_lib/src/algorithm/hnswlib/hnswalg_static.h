@@ -1709,7 +1709,6 @@ public:
         }
 
         if(cur_element_count_ == 1000000){
-            vsag::logger::warn("yhh start encode");
             this->encode_hnsw_data();
         }
         return cur_c;
@@ -2095,7 +2094,7 @@ public:
                 pq_book[i][j].resize(pq_sub_dim);
             }
         }
-
+        vsag::logger::warn("yhh generate_pq_pivots");
         diskann::generate_pq_pivots(
             pq_training_data.get(), pq_train_bound, vec_dim, pq_cluster, pq_chunk, 12, pq_book);
         is_trained_pq = true;
