@@ -116,12 +116,12 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     }   
     
     // Combine both sums and store results
-    uint32_t result_low[16], result_high[16];
+    int result_low[16], result_high[16];
     _mm512_storeu_si512(result_low, sum_low);
     _mm512_storeu_si512(result_high, sum_high);
     
     // Use 64-bit accumulator to prevent overflow
-    uint64_t total_sum = 0;
+    int total_sum = 0;
     for (int i = 0; i < 16; ++i) {
         total_sum += result_low[i] + result_high[i];
     }
