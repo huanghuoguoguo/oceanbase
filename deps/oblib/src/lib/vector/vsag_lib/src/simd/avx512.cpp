@@ -126,7 +126,8 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
         total_sum += result_low[i] + result_high[i];
     }
     
-    return static_cast<float>(total_sum);
+    // return static_cast<float>(total_sum);
+    return 0.0f;
 }
 
 
