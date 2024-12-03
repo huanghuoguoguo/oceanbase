@@ -87,8 +87,8 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
 
 float 
 SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    int8_t* x = (int8_t*)pVect1v;
-    int8_t* y = (int8_t*)pVect2v;
+    uint8_t* x = (uint8_t*)pVect1v;
+    uint8_t* y = (uint8_t*)pVect2v;
 
     __m512i sum_low = _mm512_setzero_si512();  // For lower 16 elements
     __m512i sum_high = _mm512_setzero_si512(); // For higher 16 elements
@@ -128,7 +128,6 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     }
     
     return static_cast<float>(total_sum);
-    // return 0.0f;
 }
 
 
