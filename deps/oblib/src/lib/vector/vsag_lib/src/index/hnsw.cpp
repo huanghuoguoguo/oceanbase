@@ -215,17 +215,10 @@ HNSW::knn_search(const DatasetPtr& query,
         // 加载浮点数组
         auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
-        for (size_t i = 0; i < 128; i += 8) {
-            // 使用 AVX2 加载 8 个 float 数据
-            __m256 float_vec = _mm256_loadu_ps(vector + i);
-
-            // 截断为 int32，然后截断为 uint8
-            __m256i int_vec = _mm256_cvtps_epi32(float_vec);
-            __m256i uint8_vec = _mm256_packus_epi32(int_vec, int_vec); // 打包为 uint16
-
-            // 提取前 8 个 uint8 数据（低 128 位）
-            uint8_t* dst = temp.data() + i;
-            _mm_storel_epi64(reinterpret_cast<__m128i*>(dst), _mm256_castsi256_si128(uint8_vec));
+        #pragma omp parallel for
+        for (size_t i = 0; i < 128; ++i) {
+            float value = vector[i];
+            temp[i] = static_cast<uint8_t>(value); // 类型截断
         }
 
 
