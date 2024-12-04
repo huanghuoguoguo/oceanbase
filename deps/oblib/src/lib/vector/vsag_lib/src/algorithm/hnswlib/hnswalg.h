@@ -542,11 +542,11 @@ public:
         visited_array[ep_id] = visited_array_tag;
         int dynamic_ef = ef; 
         while (!candidate_set.empty()) {
-            vsag::logger::warn("yhh lowerBound log:{},ef-{}",lowerBound , ef);
+            vsag::logger::warn("yhh lowerBound log:{},dynamic_ef-{}",lowerBound , dynamic_ef);
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= dynamic_ef || (!isIdAllowed && !has_deletions))) {
+                (top_candidates.size() >= dynamic_ef || !isIdAllowed)) {
                 break;
             }
             candidate_set.pop();
@@ -566,13 +566,20 @@ public:
 
             for (size_t j = 1; j <= size; j++) {
                 int candidate_id = *(data + j);
-                size_t pre_l = std::min(j, size - 2);
-                auto vector_data_ptr =
-                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
-#ifdef USE_SSE
-                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
-                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
-#endif
+            // **预取逻辑：预取当前节点和后续两个节点的相关数据**
+                size_t pre_l1 = std::min(j + 1, size - 1); 
+                size_t pre_l2 = std::min(j + 2, size); 
+                auto vector_data_ptr1 = data_level0_memory_->GetElementPtr((*(data + pre_l1)), offsetData_); 
+                auto vector_data_ptr2 = data_level0_memory_->GetElementPtr((*(data + pre_l2)), offsetData_); 
+            #ifdef USE_SSE 
+                // 对后续第一个节点的预取
+                _mm_prefetch((char*)(visited_array + *(data + pre_l1)), _MM_HINT_T0); 
+                _mm_prefetch(vector_data_ptr1, _MM_HINT_T0);
+
+                // 对后续第二个节点的预取
+                _mm_prefetch((char*)(visited_array + *(data + pre_l2)), _MM_HINT_T0); 
+                _mm_prefetch(vector_data_ptr2, _MM_HINT_T0);
+            #endif 
                 if (!(visited_array[candidate_id] == visited_array_tag)) {
                     visited_array[candidate_id] = visited_array_tag;
 
