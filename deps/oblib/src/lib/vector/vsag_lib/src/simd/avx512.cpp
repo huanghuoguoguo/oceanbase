@@ -90,44 +90,38 @@ SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_p
     uint8_t* x = (uint8_t*)pVect1v;
     uint8_t* y = (uint8_t*)pVect2v;
 
-    __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero
-    for (int i = 0; i < 128; i += 32) {  
+    __m512 sum = _mm512_set1_ps(0); // Initialize sum as zero for floating-point values
+    for (int i = 0; i < 128; i += 16) {   
         // Load 32 bytes (256 bits) from each vector
-        __m128i code1_values1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i));  
-        __m128i code1_values2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i + 16));  
-        
-        __m128i code2_values1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i));  
-        __m128i code2_values2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i + 16));  
-
-        // Convert to 32-bit integers
-        __m512i codes1_512_1 = _mm512_cvtepu8_epi32(code1_values1);  
-        __m512i codes1_512_2 = _mm512_cvtepu8_epi32(code1_values2);  
-        
-        __m512i codes2_512_1 = _mm512_cvtepu8_epi32(code2_values1);  
-        __m512i codes2_512_2 = _mm512_cvtepu8_epi32(code2_values2);  
-
-        // Calculate differences
-        __m512i diff_1 = _mm512_sub_epi32(codes1_512_1, codes2_512_1);  
-        __m512i diff_2 = _mm512_sub_epi32(codes1_512_2, codes2_512_2);  
-
-        // Square differences
-        __m512i diff_squared_1 = _mm512_mullo_epi32(diff_1, diff_1);  
-        __m512i diff_squared_2 = _mm512_mullo_epi32(diff_2, diff_2);  
-
+        __m128i code1_values1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i));     
+         
+        __m128i code2_values1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i));   
+ 
+        // Convert uint8_t to float (by first converting to 32-bit integer, then to float)
+        __m512 codes1_512_1 = _mm512_cvtepu8_epi32(code1_values1); 
+         
+        __m512 codes2_512_1 = _mm512_cvtepu8_epi32(code2_values1);   
+ 
+        // Convert integer differences to floats
+        __m512 diff_1 = _mm512_cvtepi32_ps(_mm512_sub_epi32(codes1_512_1, codes2_512_1));   
+ 
+        // Square differences (now as floats)
+        __m512 diff_squared_1 = _mm512_mul_ps(diff_1, diff_1);   
+ 
         // Accumulate squared differences
-        sum = _mm512_add_epi32(sum, diff_squared_1);
-        sum = _mm512_add_epi32(sum, diff_squared_2);
-    }    
+        sum = _mm512_add_ps(sum, diff_squared_1);
+    }     
+ 
+    // Sum up all elements in the 512-bit register (now a floating-point sum)
+    float PORTABLE_ALIGN64 TmpRes[16];
 
-    // Sum up all elements in the 512-bit register
-    int PORTABLE_ALIGN64 TmpRes[16];
-    _mm512_storeu_si512(TmpRes, sum);
-
-    int total_sum = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
+ 
+    _mm512_store_ps(TmpRes, sum);
+    float res = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
                 TmpRes[7] + TmpRes[8] + TmpRes[9] + TmpRes[10] + TmpRes[11] + TmpRes[12] +
                 TmpRes[13] + TmpRes[14] + TmpRes[15];
 
-    return static_cast<float>(total_sum); 
+    return (res);
 }
 
 
