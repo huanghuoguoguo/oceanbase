@@ -23,7 +23,7 @@
 #include <new>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
-#include <x86intrin.h>
+
 #include "../algorithm/hnswlib/hnswlib.h"
 #include "../common.h"
 #include "../logger.h"
@@ -220,7 +220,7 @@ HNSW::knn_search(const DatasetPtr& query,
             float value = vector[i];
             temp[i] = static_cast<uint8_t>(value); // 类型截断
         }
-
+        logger::warn("yhh omp");
 
         std::shared_lock lock(rw_mutex_);
 

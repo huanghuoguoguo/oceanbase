@@ -517,7 +517,7 @@ public:
         auto vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
-
+        vsag::logger::warn("yhh search start");
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
@@ -546,7 +546,7 @@ public:
             min_ef = 10000;
         }
         while (!candidate_set.empty()) {
-            
+            vsag::logger::warn("yhh search dynamic_ef:{}",dynamic_ef);
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
