@@ -72,10 +72,7 @@ private:
     size_t ef_construction_{0};
     size_t dim_{0};
 
-    // 定义阈值：距离较小的阈值和距离较大的阈值
-    float threshold_near = 40000.0f;  // 距离小于这个值时，减少 efSearch
-    float threshold_far = 100000.0f;   // 距离大于这个值时，增加 efSearch
-    uint64_t max_ef = 10000;
+
     
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
@@ -531,6 +528,7 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
+        float some_threshold = 1000.f;
         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
             lowerBound = dist;
@@ -542,12 +540,13 @@ public:
         }
 
         visited_array[ep_id] = visited_array_tag;
-
+        size_t dynamic_ef = ef; 
         while (!candidate_set.empty()) {
+            vsag::logger::warn("yhh lowerBound log:{},ef-{}",lowerBound , ef);
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() == ef || (!isIdAllowed && !has_deletions))) {
+                (top_candidates.size() >= dynamic_ef || (!isIdAllowed && !has_deletions))) {
                 break;
             }
             candidate_set.pop();
@@ -579,7 +578,7 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (top_candidates.size() < ef || lowerBound > dist) {
+                    if (top_candidates.size() < dynamic_ef || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -597,6 +596,10 @@ public:
                             lowerBound = top_candidates.top().first;
                     }
                 }
+            }
+            // 动态调整 ef 的大小
+            if (lowerBound < some_threshold) {  // 比如某个阈值
+                dynamic_ef = std::max(ef / 2, 10);  // 将 ef 降到原来的50%，最低为10
             }
         }
 
@@ -1577,7 +1580,7 @@ public:
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
-        vsag::logger::warn("yhh data_size_ log:{}",data_size_);
+
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1591,7 +1594,6 @@ public:
             if (curlevel < maxlevelcopy) {
                 float curdist =
                     fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
-                vsag::logger::warn("yhh curdist log:{}",curdist);
                 for (int level = maxlevelcopy; level > curlevel; level--) {
                     bool changed = true;
                     while (changed) {
@@ -1664,9 +1666,6 @@ public:
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
-        
-
-        
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
@@ -1699,14 +1698,6 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-
-        // 动态调整ef
-        vsag::logger::warn("yhh curdist log:{}",curdist);
-        if (curdist < threshold_near) {
-            ef = std::max(k, ef / 2);  // 距离小，减少 efSearch
-        } else if (curdist > threshold_far) {
-            ef = std::min(ef * 2, max_ef);  // 距离大，增加 efSearch
-        }
 
         top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
