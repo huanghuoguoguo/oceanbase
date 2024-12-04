@@ -72,6 +72,11 @@ private:
     size_t ef_construction_{0};
     size_t dim_{0};
 
+    // 定义阈值：距离较小的阈值和距离较大的阈值
+    float threshold_near = 40000.0f;  // 距离小于这个值时，减少 efSearch
+    float threshold_far = 100000.0f;   // 距离大于这个值时，增加 efSearch
+    uint64_t max_ef = 10000;
+    
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
 
@@ -220,13 +225,13 @@ public:
         std::unique_lock<std::mutex> lock_table(label_lookup_lock_);
 
         auto search = label_lookup_.find(label);
-        if (search == label_lookup_.end()) {
-            throw std::runtime_error("Label not found");
-        }
+        // if (search == label_lookup_.end()) {
+        //     throw std::runtime_error("Label not found");
+        // }
         tableint internal_id = search->second;
         lock_table.unlock();
-        std::shared_ptr<float[]> normalize_query;
-        normalize_vector(data_point, normalize_query);
+        // std::shared_ptr<float[]> normalize_query;
+        // normalize_vector(data_point, normalize_query);
         float dist = fstdistfunc_(data_point, getDataByInternalId(internal_id), dist_func_param_);
         return dist;
     }
@@ -526,8 +531,7 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
-        if ((!has_deletions || !isMarkedDeleted(ep_id)) &&
-            ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id)))) {
+        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
             lowerBound = dist;
             top_candidates.emplace(dist, ep_id);
@@ -551,11 +555,7 @@ public:
             tableint current_node_id = current_node_pair.second;
             int* data = (int*)get_linklist0(current_node_id);
             size_t size = getListCount((linklistsizeint*)data);
-            //                bool cur_node_deleted = isMarkedDeleted(current_node_id);
-            if (collect_metrics) {
-                metric_hops_++;
-                metric_distance_computations_ += size;
-            }
+
 
             auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
 #ifdef USE_SSE
@@ -587,8 +587,7 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
 
-                        if ((!has_deletions || !isMarkedDeleted(candidate_id)) &&
-                            ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))))
+                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
                             top_candidates.emplace(dist, candidate_id);
 
                         if (top_candidates.size() > ef)
@@ -690,8 +689,7 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////////////////
 #endif
 
-                        if ((!has_deletions || !isMarkedDeleted(candidate_id)) &&
-                            ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))))
+                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
                             top_candidates.emplace(dist, candidate_id);
 
                         if (!top_candidates.empty())
@@ -1668,10 +1666,7 @@ public:
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
         
 
-        // 定义阈值：距离较小的阈值和距离较大的阈值
-        float threshold_near = 40000.0f;  // 距离小于这个值时，减少 efSearch
-        float threshold_far = 100000.0f;   // 距离大于这个值时，增加 efSearch
-        uint64_t max_ef = static_cast<uint64_t>(10000);
+        
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
@@ -1704,6 +1699,7 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
+
         // 动态调整ef
         vsag::logger::warn("yhh curdist log:{}",curdist);
         if (curdist < threshold_near) {
@@ -1711,13 +1707,9 @@ public:
         } else if (curdist > threshold_far) {
             ef = std::min(ef * 2, max_ef);  // 距离大，增加 efSearch
         }
-        if (num_deleted_) {
-            top_candidates =
-                searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
-        } else {
-            top_candidates =
+
+        top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
-        }
 
         while (top_candidates.size() > k) {
             top_candidates.pop();
