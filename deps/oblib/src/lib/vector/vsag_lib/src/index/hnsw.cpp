@@ -213,11 +213,11 @@ HNSW::knn_search(const DatasetPtr& query,
     try {
 
         // 加载浮点数组
-        const float* float_ptr = query->GetFloat32Vectors();
+        auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
         for (size_t i = 0; i < 128; i += 8) {
             // 使用 AVX2 加载 8 个 float 数据
-            __m256 float_vec = _mm256_loadu_ps(float_ptr + i);
+            __m256 float_vec = _mm256_loadu_ps(vector + i);
 
             // 截断为 int32，然后截断为 uint8
             __m256i int_vec = _mm256_cvtps_epi32(float_vec);
@@ -250,7 +250,7 @@ HNSW::knn_search(const DatasetPtr& query,
             std::lock_guard<std::mutex> lock(stats_mutex_);
         }
 
-
+        auto result = Dataset::Make();
         // perform conjugate graph enhancement
         if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
             std::shared_lock lock(rw_mutex_);
