@@ -528,7 +528,7 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
-        float some_threshold = 1000.f;
+        float some_threshold = 50000.f;
         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
             lowerBound = dist;
@@ -542,7 +542,7 @@ public:
         visited_array[ep_id] = visited_array_tag;
         int dynamic_ef = ef; 
         while (!candidate_set.empty()) {
-            vsag::logger::warn("yhh lowerBound log:{},ef-{}",lowerBound , ef);
+            
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
@@ -600,8 +600,10 @@ public:
             // 动态调整 ef 的大小
             if (lowerBound < some_threshold) {  // 比如某个阈值
                 dynamic_ef = std::max(dynamic_ef / 2, 10);  // 将 ef 降到原来的50%，最低为10
+                some_threshold /= 2;
             }
         }
+        vsag::logger::warn("yhh lowerBound:{},ef:{},some_threshold:{}",lowerBound , ef, some_threshold);
 
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
