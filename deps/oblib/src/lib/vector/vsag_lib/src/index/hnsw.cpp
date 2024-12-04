@@ -23,7 +23,7 @@
 #include <new>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
-
+#include <x86intrin.h>
 #include "../algorithm/hnswlib/hnswlib.h"
 #include "../common.h"
 #include "../logger.h"
@@ -173,10 +173,7 @@ HNSW::add(const DatasetPtr& base) {
             std::vector<uint8_t> temp(128);
             for (size_t j = 0; j < 128; ++j) {
                 float value = vectors[j];
-                // logger::warn("yhh HNSW::float: {}", vectors[j]);
-                // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
                 temp[j] = static_cast<uint8_t>(value);
-                // logger::warn("yhh HNSW::temp: {}", temp[j]);
             }
             // noexcept runtime
             if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
@@ -214,28 +211,23 @@ HNSW::knn_search(const DatasetPtr& query,
     SlowTaskTimer t("hnsw knnsearch", 20);
 
     try {
-        // cannot perform search on empty index
-        if (empty_index_) {
-            auto ret = Dataset::Make();
-            ret->Dim(0)->NumElements(1);
-            return ret;
-        }
-        
-        // check query vector
-        CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
-        auto vector = query->GetFloat32Vectors();
+
+        // 加载浮点数组
+        const float* float_ptr = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
+        for (size_t i = 0; i < 128; i += 8) {
+            // 使用 AVX2 加载 8 个 float 数据
+            __m256 float_vec = _mm256_loadu_ps(float_ptr + i);
 
-        for (size_t i = 0; i < 128; ++i) {
-            float value = vector[i];
-            // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            temp[i] = static_cast<uint8_t>(value);
+            // 截断为 int32，然后截断为 uint8
+            __m256i int_vec = _mm256_cvtps_epi32(float_vec);
+            __m256i uint8_vec = _mm256_packus_epi32(int_vec, int_vec); // 打包为 uint16
+
+            // 提取前 8 个 uint8 数据（低 128 位）
+            uint8_t* dst = temp.data() + i;
+            _mm_storel_epi64(reinterpret_cast<__m128i*>(dst), _mm256_castsi256_si128(uint8_vec));
         }
 
-
-        // check k
-        CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
-        k = std::min(k, GetNumElements());
 
         std::shared_lock lock(rw_mutex_);
 
@@ -244,9 +236,7 @@ HNSW::knn_search(const DatasetPtr& query,
 
         // perform search
         std::priority_queue<std::pair<float, size_t>> results;
-        double time_cost;
         try {
-            Timer t(time_cost);
             results = alg_hnsw->searchKnn(
                 (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
@@ -258,21 +248,12 @@ HNSW::knn_search(const DatasetPtr& query,
         // update stats
         {
             std::lock_guard<std::mutex> lock(stats_mutex_);
-            result_queues_[STATSTIC_KNN_TIME].Push(time_cost);
         }
 
-        // return result
-        auto result = Dataset::Make();
-        if (results.size() == 0) {
-            result->Dim(0)->NumElements(1);
-            return result;
-        }
 
         // perform conjugate graph enhancement
         if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
             std::shared_lock lock(rw_mutex_);
-            time_cost = 0;
-            Timer t(time_cost);
 
             auto func = [this, vector](int64_t label) {
                 return this->alg_hnsw->getDistanceByLabel(label, vector);
@@ -292,7 +273,6 @@ HNSW::knn_search(const DatasetPtr& query,
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results.top().first;
             ids[j] = results.top().second;
-            logger::warn("yhh search result log:{} - {}",results.top().first,results.top().second);
             results.pop();
         }
 
