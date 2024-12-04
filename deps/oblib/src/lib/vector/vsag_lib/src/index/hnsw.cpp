@@ -215,12 +215,12 @@ HNSW::knn_search(const DatasetPtr& query,
         // 加载浮点数组
         auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
             temp[i] = static_cast<uint8_t>(value); // 类型截断
         }
-        logger::warn("yhh omp");
+
 
         std::shared_lock lock(rw_mutex_);
 
