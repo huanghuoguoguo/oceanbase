@@ -540,7 +540,7 @@ public:
         }
 
         visited_array[ep_id] = visited_array_tag;
-        size_t dynamic_ef = ef; 
+        int dynamic_ef = ef; 
         while (!candidate_set.empty()) {
             vsag::logger::warn("yhh lowerBound log:{},ef-{}",lowerBound , ef);
             std::pair<float, tableint> current_node_pair = candidate_set.top();
@@ -599,7 +599,7 @@ public:
             }
             // 动态调整 ef 的大小
             if (lowerBound < some_threshold) {  // 比如某个阈值
-                dynamic_ef = std::max(ef / 2, 10);  // 将 ef 降到原来的50%，最低为10
+                dynamic_ef = std::max(dynamic_ef / 2, 10);  // 将 ef 降到原来的50%，最低为10
             }
         }
 
