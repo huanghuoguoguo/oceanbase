@@ -541,12 +541,16 @@ public:
 
         visited_array[ep_id] = visited_array_tag;
         int dynamic_ef = ef; 
+        int min_ef = 10;
+        if(ef == 10000){
+            min_ef = 10000;
+        }
         while (!candidate_set.empty()) {
             
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= dynamic_ef || (!isIdAllowed && !has_deletions))) {
+                (top_candidates.size() >= dynamic_ef*2 || (!isIdAllowed && !has_deletions))) {
                 break;
             }
             candidate_set.pop();
@@ -589,7 +593,7 @@ public:
                         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
                             top_candidates.emplace(dist, candidate_id);
 
-                        if (top_candidates.size() > dynamic_ef)
+                        while (top_candidates.size() > dynamic_ef)
                             top_candidates.pop();
 
                         if (!top_candidates.empty())
@@ -599,7 +603,7 @@ public:
             }
             // 动态调整 ef 的大小
             if (lowerBound < some_threshold) {  // 比如某个阈值
-                dynamic_ef = std::max(dynamic_ef / 2, 10);  // 将 ef 降到原来的50%，最低为10
+                dynamic_ef = std::max(dynamic_ef / 2, min_ef);  // 将 ef 降到原来的50%，最低为10
                 some_threshold /= 2;
             }
         }
