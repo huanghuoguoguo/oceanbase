@@ -589,7 +589,7 @@ public:
                         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
                             top_candidates.emplace(dist, candidate_id);
 
-                        if (top_candidates.size() > ef)
+                        if (top_candidates.size() > dynamic_ef)
                             top_candidates.pop();
 
                         if (!top_candidates.empty())
