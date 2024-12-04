@@ -214,15 +214,8 @@ HNSW::knn_search(const DatasetPtr& query,
     SlowTaskTimer t("hnsw knnsearch", 20);
 
     try {
-        // cannot perform search on empty index
-        if (empty_index_) {
-            auto ret = Dataset::Make();
-            ret->Dim(0)->NumElements(1);
-            return ret;
-        }
-        
-        // check query vector
-        CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
+
+
         auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
 
@@ -233,10 +226,6 @@ HNSW::knn_search(const DatasetPtr& query,
         }
 
 
-        // check k
-        CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
-        k = std::min(k, GetNumElements());
-
         std::shared_lock lock(rw_mutex_);
 
         // check search parameters
@@ -244,9 +233,8 @@ HNSW::knn_search(const DatasetPtr& query,
 
         // perform search
         std::priority_queue<std::pair<float, size_t>> results;
-        double time_cost;
+
         try {
-            Timer t(time_cost);
             results = alg_hnsw->searchKnn(
                 (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
@@ -258,21 +246,13 @@ HNSW::knn_search(const DatasetPtr& query,
         // update stats
         {
             std::lock_guard<std::mutex> lock(stats_mutex_);
-            result_queues_[STATSTIC_KNN_TIME].Push(time_cost);
         }
-
         // return result
         auto result = Dataset::Make();
-        if (results.size() == 0) {
-            result->Dim(0)->NumElements(1);
-            return result;
-        }
 
         // perform conjugate graph enhancement
         if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
             std::shared_lock lock(rw_mutex_);
-            time_cost = 0;
-            Timer t(time_cost);
 
             auto func = [this, vector](int64_t label) {
                 return this->alg_hnsw->getDistanceByLabel(label, vector);
@@ -292,7 +272,6 @@ HNSW::knn_search(const DatasetPtr& query,
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results.top().first;
             ids[j] = results.top().second;
-            logger::warn("yhh search result log:{} - {}",results.top().first,results.top().second);
             results.pop();
         }
 
