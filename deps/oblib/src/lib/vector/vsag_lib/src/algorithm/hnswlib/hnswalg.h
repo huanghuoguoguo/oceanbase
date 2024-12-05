@@ -545,7 +545,7 @@ public:
         float last_lowerBound = lowerBound;  // 上一次的 lowerBound 用于计算变化率
         float dist_max = -std::numeric_limits<float>::infinity();
         float dist_min = std::numeric_limits<float>::infinity();
-        bool is_top_stable = true;
+//        bool is_top_stable = true;
         while (!candidate_set.empty()) {
             
             std::pair<float, tableint> current_node_pair = candidate_set.top();
@@ -607,29 +607,29 @@ public:
             }
             // 调整 ef 基于指标
             // 1. 队列中最优节点的稳定性
-            if (top_candidates.size() > 10) {
-                auto top_stable = std::all_of(top_candidates.begin(), top_candidates.begin() + 10,
-                                              [&top_candidates](const auto& node) {
-                                                  return node.first == top_candidates.top().first;
-                                              });
-                is_top_stable = top_stable;
-            }
+//            if (top_candidates.size() > 6) {
+//                auto top_stable = std::all_of(top_candidates.begin(), top_candidates.begin() + 6,
+//                                              [&top_candidates](const auto& node) {
+//                                                  return node.first == top_candidates.top().first;
+//                                              });
+//                is_top_stable = top_stable;
+//            }
 
             // 2. 候选节点的搜索空间（根据 candidate_set 的大小）
             if (candidate_set.size() < dynamic_ef / 2) {
-                dynamic_ef = std::max(dynamic_ef / 2, 10);
+                dynamic_ef = std::max(dynamic_ef / 2, dynamic_ef = std::max(dynamic_ef / 2, static_cast<int64_t>(10));
             } else {
                 dynamic_ef = std::min(dynamic_ef * 2, ef * 2);
             }
 
             // 3. 距离分布：如果最大最小距离差异小，可以降低 ef
-            if (dist_max - dist_min < 0.1) {
-                dynamic_ef = std::max(dynamic_ef / 2, 10);
+            if (dist_max - dist_min < 30000.f) {
+                dynamic_ef = std::max(dynamic_ef / 2,  static_cast<int64_t>(10));
             }
 
             // 4. 查询点与目标点之间的距离变化率
-            if (std::abs(lowerBound - last_lowerBound) < 0.01) {
-                dynamic_ef = std::max(dynamic_ef / 2, 10);  // 如果变化小，减小 ef
+            if (std::abs(lowerBound - last_lowerBound) < 0.1) {
+                dynamic_ef = std::max(dynamic_ef / 2,  static_cast<int64_t>(10));  // 如果变化小，减小 ef
             }
             last_lowerBound = lowerBound;
         }
