@@ -528,6 +528,7 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
+        float some_threshold = 50000.f;
         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
             lowerBound = dist;
@@ -538,12 +539,18 @@ public:
             candidate_set.emplace(-lowerBound, ep_id);
         }
 
-        visited_array[ep_id] = visited_array_tag; 
+        visited_array[ep_id] = visited_array_tag;
+        int dynamic_ef = ef; 
+        int min_ef = 10;
+        if(ef == 10000){
+            min_ef = 10000;
+        }
         while (!candidate_set.empty()) {
+            
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+                (top_candidates.size() >= dynamic_ef*2 || !isIdAllowed )) {
                 break;
             }
             candidate_set.pop();
@@ -563,26 +570,19 @@ public:
 
             for (size_t j = 1; j <= size; j++) {
                 int candidate_id = *(data + j);
-            // **预取逻辑：预取当前节点和后续两个节点的相关数据**
-                size_t pre_l1 = std::min(j + 1, size - 1); 
-                size_t pre_l2 = std::min(j + 2, size); 
-                auto vector_data_ptr1 = data_level0_memory_->GetElementPtr((*(data + pre_l1)), offsetData_); 
-                auto vector_data_ptr2 = data_level0_memory_->GetElementPtr((*(data + pre_l2)), offsetData_); 
-            #ifdef USE_SSE 
-                // 对后续第一个节点的预取
-                _mm_prefetch((char*)(visited_array + *(data + pre_l1)), _MM_HINT_T0); 
-                _mm_prefetch(vector_data_ptr1, _MM_HINT_T0);
-
-                // 对后续第二个节点的预取
-                _mm_prefetch((char*)(visited_array + *(data + pre_l2)), _MM_HINT_T0); 
-                _mm_prefetch(vector_data_ptr2, _MM_HINT_T0);
-            #endif 
+                size_t pre_l = std::min(j, size - 2);
+                auto vector_data_ptr =
+                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
+#ifdef USE_SSE
+                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
+                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
+#endif
                 if (!(visited_array[candidate_id] == visited_array_tag)) {
                     visited_array[candidate_id] = visited_array_tag;
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (top_candidates.size() < ef || lowerBound > dist) {
+                    if (top_candidates.size() < dynamic_ef || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -593,7 +593,7 @@ public:
                         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
                             top_candidates.emplace(dist, candidate_id);
 
-                        if (top_candidates.size() > ef)
+                        while (top_candidates.size() > dynamic_ef)
                             top_candidates.pop();
 
                         if (!top_candidates.empty())
@@ -601,7 +601,13 @@ public:
                     }
                 }
             }
+            // 动态调整 ef 的大小
+            if (lowerBound < some_threshold) {  // 比如某个阈值
+                dynamic_ef = std::max(dynamic_ef / 2, min_ef);  // 将 ef 降到原来的50%，最低为10
+                some_threshold /= 2;
+            }
         }
+        vsag::logger::warn("yhh lowerBound:{},dist:{},some_threshold:{}",lowerBound , top_candidates.top().first, some_threshold);
 
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
@@ -1705,8 +1711,6 @@ public:
         if (cur_element_count_ == 0)
             return result;
 
-        std::shared_ptr<float[]> normalize_query;
-        // normalize_vector(query_data, normalize_query);
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
@@ -1719,8 +1723,6 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                metric_hops_++;
-                metric_distance_computations_ += size;
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {

@@ -286,7 +286,7 @@ int add_index(VectorIndexPtr& index_handler,float* vector, int64_t* ids, int dim
     HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
     SlowTaskTimer t("add_index");
 
-    vsag::logger::warn("yhh add_index {},{}", vector[0],vector[127]);
+
     // add index
     auto incremental = vsag::Dataset::Make();
         incremental->Dim(dim)
