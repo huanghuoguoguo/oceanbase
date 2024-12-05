@@ -645,6 +645,13 @@ public:
         visited_array[ep_id] = visited_array_tag;
         uint64_t visited_count = 0;
 
+          // 新增：动态调整 ef 的相关变量
+        int64_t dynamic_ef = ef;  // 初始 ef
+        float last_lowerBound = lowerBound;  // 上一次的 lowerBound 用于计算变化率
+        float dist_max = -std::numeric_limits<float>::infinity();
+        float dist_min = std::numeric_limits<float>::infinity();
+        bool is_top_stable = true;
+
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
@@ -682,8 +689,11 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                    // 更新最大、最小距离
+                    dist_max = std::max(dist_max, dist);
+                    dist_min = std::min(dist_min, dist);
 
-                    if (visited_count < ef || dist <= radius + THRESHOLD_ERROR ||
+                    if (visited_count < dynamic_ef  || dist <= radius + THRESHOLD_ERROR ||
                         lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
@@ -700,11 +710,45 @@ public:
                     }
                 }
             }
+            // 动态调整 ef 的大小
+            // 调整 ef 基于指标
+        // 1. 队列中最优节点的稳定性
+            if (top_candidates.size() > 6) {
+                auto top_stable = std::all_of(top_candidates.begin(),
+                                              top_candidates.begin() + 6,
+                                              [&top_candidates](const auto& node) {
+                                                  return node.first == top_candidates.top().first;
+                                              });
+                if (top_stable) {
+                    is_top_stable = true;
+                } else {
+                    is_top_stable = false;
+                }
+            }
+            // 2. 候选节点的搜索空间（根据 candidate_set 的大小）
+            if (candidate_set.size() < dynamic_ef / 2) {
+                dynamic_ef = std::max(dynamic_ef / 2, 10);
+            } else {
+                dynamic_ef = std::min(dynamic_ef * 2, ef * 2);
+            }
+
+            // 3. 距离分布：如果最大最小距离差异小，可以降低 ef
+            if (dist_max - dist_min < 30000.f) {
+                dynamic_ef = std::max(dynamic_ef / 2, 10);
+            }
+
+            // 4. 查询点与目标点之间的距离变化率
+            if (std::abs(lowerBound - last_lowerBound) < 0.1) {
+                dynamic_ef = std::max(dynamic_ef / 2, 10);  // 如果变化小，减小 ef
+            }
+            last_lowerBound = lowerBound;
+        
         }
         while (not top_candidates.empty() &&
                top_candidates.top().first > radius + THRESHOLD_ERROR) {
             top_candidates.pop();
         }
+
 
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
