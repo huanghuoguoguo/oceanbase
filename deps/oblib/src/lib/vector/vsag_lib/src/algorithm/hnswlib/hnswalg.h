@@ -1687,38 +1687,28 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-        if (num_deleted_) {
-            top_candidates =
-                searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
-        } else {
-            top_candidates =
+        top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
-        }
 
         while (top_candidates.size() > k) {
             top_candidates.pop();
         }
 
-        std::vector<std::pair<float, labeltype>> candidates(k);
-        int i = k - 1;
+        std::vector<std::pair<float, labeltype>> candidates(top_candidates.size());
+        int i = top_candidates.size();
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            candidates[i--] = std::pair<float, labeltype>(rez.first, rez.second);
+            candidates[--i] = std::pair<float, labeltype>(rez.first, rez.second);
             top_candidates.pop();
         }
 
         if(k > 10){
             #pragma omp parallel for
-            for(int i = 0;i<candidates.size();i++){
+            for(int i = 0; i < candidates.size(); i++){
                 candidates[i].second = getExternalLabel(candidates[i].second);
             }
         }else{
-#ifdef USE_SSE
-            if (i + 1 < candidates.size()) {
-                _mm_prefetch(reinterpret_cast<const char*>(&candidates[i + 1]), _MM_HINT_T0);
-            }
-#endif
-            for(int i = 0;i<candidates.size();i++){
+            for(int i = 0; i < candidates.size(); i++){
                 candidates[i].second = getExternalLabel(candidates[i].second);
             }
         }
