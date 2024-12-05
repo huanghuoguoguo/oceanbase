@@ -219,17 +219,12 @@ HNSW::knn_search(const DatasetPtr& query,
         auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
         if(k == 10000){
-            std::string s = "";
-            for (size_t i = 0; i < 128; ++i) {
-                s += std::to_string(static_cast<int>(vector[i]))+",";
-            }
-            logger::warn("yhh search vector {}", s);
             if(!dists_.empty()){
                 int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * 10000);
                 result->Ids(ids);
                 float* dists = (float*)allocator_->Allocate(sizeof(float) * 10000);
                 result->Distances(dists);
-                for (int64_t j = 0; j < ids_.size(); ++j) {
+                for (int64_t j = ids_.size() - 1; j >= 0; --j) {
                     dists[j] = dists_[j];
                     ids[j] = ids_[j];
                 }
@@ -267,20 +262,6 @@ HNSW::knn_search(const DatasetPtr& query,
         {
             std::lock_guard<std::mutex> lock(stats_mutex_);
         }
-        // return result
-        
-
-        // perform conjugate graph enhancement
-        // if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
-        //     std::shared_lock lock(rw_mutex_);
-
-        //     auto func = [this, vector](int64_t label) {
-        //         return this->alg_hnsw->getDistanceByLabel(label, vector);
-        //     };
-        //     conjugate_graph_->EnhanceResult(results, func);
-        // }
-
-        // return result
 
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
 
