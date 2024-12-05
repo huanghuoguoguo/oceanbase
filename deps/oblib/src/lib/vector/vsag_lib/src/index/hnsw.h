@@ -302,6 +302,9 @@ private:
     mutable std::map<std::string, WindowResultQueue> result_queues_;
 
     mutable std::shared_mutex rw_mutex_;
+
+    mutable std::vector<int64_t> ids_;
+    mutable std::vector<float> dists_;
 };
 
 }  // namespace vsag

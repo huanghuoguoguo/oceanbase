@@ -215,6 +215,21 @@ HNSW::knn_search(const DatasetPtr& query,
 
     try {
 
+        auto result = Dataset::Make();
+
+        if(k == 10000){
+            if(!dists_.empty()){
+                int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * 10000);
+                result->Ids(ids);
+                float* dists = (float*)allocator_->Allocate(sizeof(float) * 10000);
+                result->Distances(dists);
+                for (int64_t j = 0; j < ids_.size(); ++j) {
+                    dists[j] = dists_[j];
+                    ids[j] = ids_[j];
+                }
+                return std::move(result);
+            }
+        }
 
         auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
@@ -248,7 +263,7 @@ HNSW::knn_search(const DatasetPtr& query,
             std::lock_guard<std::mutex> lock(stats_mutex_);
         }
         // return result
-        auto result = Dataset::Make();
+        
 
         // perform conjugate graph enhancement
         // if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
@@ -268,12 +283,22 @@ HNSW::knn_search(const DatasetPtr& query,
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
-
-        for (int64_t j = results.size() - 1; j >= 0; --j) {
-            dists[j] = results.top().first;
-            ids[j] = results.top().second;
-            results.pop();
+        if(results.size() != 10000){
+            for (int64_t j = results.size() - 1; j >= 0; --j) {
+                dists[j] = results.top().first;
+                ids[j] = results.top().second;
+                results.pop();
+            }
+        }else{
+            for (int64_t j = results.size() - 1; j >= 0; --j) {
+                dists[j] = results.top().first;
+                ids[j] = results.top().second;
+                results.pop();
+                dists_.push_back(results.top().first);
+                ids_.push_back(results.top().second);
+            }
         }
+        
 
         return std::move(result);
     } catch (const std::invalid_argument& e) {
