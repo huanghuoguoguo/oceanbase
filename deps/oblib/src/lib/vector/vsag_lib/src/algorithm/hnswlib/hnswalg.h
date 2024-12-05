@@ -1705,8 +1705,13 @@ public:
         int i = k-1;
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            candidates[i--] = std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second));
+            candidates[i--] = std::pair<float, labeltype>(rez.first, rez.second);
             top_candidates.pop();
+        }
+
+        #pragma omp parallel for
+        for(int i = 0;i<candidates.size();i++){
+            candidates[i].second = getExternalLabel(candidates[i].second);
         }
         return candidates;
     }
