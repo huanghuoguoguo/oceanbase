@@ -541,7 +541,7 @@ public:
 
         visited_array[ep_id] = visited_array_tag;
         // 新增：动态调整 ef 的相关变量
-        int64_t dynamic_ef = ef;  // 初始 ef
+        int  dynamic_ef = ef;  // 初始 ef
         float last_lowerBound = lowerBound;  // 上一次的 lowerBound 用于计算变化率
         float dist_max = -std::numeric_limits<float>::infinity();
         float dist_min = std::numeric_limits<float>::infinity();
@@ -584,8 +584,8 @@ public:
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     // 更新最大、最小距离
-                    dist_max = std::max(dist_max, dist);
-                    dist_min = std::min(dist_min, dist);
+//                    dist_max = std::max(dist_max, dist);
+//                    dist_min = std::min(dist_min, dist);
                     if (top_candidates.size() < dynamic_ef || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
@@ -615,25 +615,25 @@ public:
 //                is_top_stable = top_stable;
 //            }
 
-            // 2. 候选节点的搜索空间（根据 candidate_set 的大小）
-            if (candidate_set.size() < dynamic_ef / 2) {
-                dynamic_ef = std::max(dynamic_ef / 2, dynamic_ef = std::max(dynamic_ef / 2, static_cast<int64_t>(10));
-            } else {
-                dynamic_ef = std::min(dynamic_ef * 2, ef * 2);
-            }
+//            // 2. 候选节点的搜索空间（根据 candidate_set 的大小）
+//            if (candidate_set.size() < dynamic_ef / 2) {
+//                dynamic_ef = std::max(dynamic_ef / 2, dynamic_ef = std::max(dynamic_ef / 2, static_cast<int64_t>(10)));
+//            } else {
+//                dynamic_ef = std::min(dynamic_ef * 2, ef * 2);
+//            }
 
-            // 3. 距离分布：如果最大最小距离差异小，可以降低 ef
-            if (dist_max - dist_min < 30000.f) {
-                dynamic_ef = std::max(dynamic_ef / 2,  static_cast<int64_t>(10));
-            }
+//            // 3. 距离分布：如果最大最小距离差异小，可以降低 ef
+//            if (dist_max - dist_min < 30000.f) {
+//                dynamic_ef = std::max(dynamic_ef / 2, 10);
+//            }
 
             // 4. 查询点与目标点之间的距离变化率
-            if (std::abs(lowerBound - last_lowerBound) < 0.1) {
-                dynamic_ef = std::max(dynamic_ef / 2,  static_cast<int64_t>(10));  // 如果变化小，减小 ef
+            if (std::abs(lowerBound - last_lowerBound) < 0.5) {
+                dynamic_ef = std::max(dynamic_ef / 2, 10);  // 如果变化小，减小 ef
             }
             last_lowerBound = lowerBound;
         }
-        vsag::logger::warn("yhh lowerBound:{},dist:{},some_threshold:{}",lowerBound , top_candidates.top().first, some_threshold);
+        vsag::logger::warn("bob lowerBound:{},dist:{},some_threshold:{}",lowerBound , top_candidates.top().first, some_threshold);
 
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
