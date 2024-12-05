@@ -216,8 +216,14 @@ HNSW::knn_search(const DatasetPtr& query,
     try {
 
         auto result = Dataset::Make();
-
+        auto vector = query->GetFloat32Vectors();
+        std::vector<uint8_t> temp(128);
         if(k == 10000){
+            std::string s = "";
+            for (size_t i = 0; i < 128; ++i) {
+                s += std::to_string(static_cast<int>(vector[i]))+",";
+            }
+            logger::warn("yhh search vector {}", s);
             if(!dists_.empty()){
                 int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * 10000);
                 result->Ids(ids);
@@ -231,8 +237,7 @@ HNSW::knn_search(const DatasetPtr& query,
             }
         }
 
-        auto vector = query->GetFloat32Vectors();
-        std::vector<uint8_t> temp(128);
+        
 
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
