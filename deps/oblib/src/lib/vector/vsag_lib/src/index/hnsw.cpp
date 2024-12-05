@@ -239,7 +239,7 @@ HNSW::knn_search(const DatasetPtr& query,
             auto v = hnsw->searchKnn2(
                 (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
             for(int i = 0;i<10;i++){
-                logger::warn("yhh HNSW::temp: {}", v[i]);
+                logger::warn("yhh HNSW::temp: {}", v[i].first);
             }
             results = alg_hnsw->searchKnn(
                 (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
