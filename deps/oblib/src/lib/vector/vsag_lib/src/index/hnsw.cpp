@@ -286,7 +286,7 @@ HNSW::knn_search(const DatasetPtr& query,
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
                 if(j%1000==0){
-                    logger::warn("yhh hc ids:{},dist:{}", ids[i],dists[i]);
+                    logger::warn("yhh hc ids:{},dist:{}", ids[j],dists[j]);
                 }
                 dists_[j] = results.top().first;
                 ids_[j] = results.top().second;
