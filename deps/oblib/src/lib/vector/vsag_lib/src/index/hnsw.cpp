@@ -280,8 +280,10 @@ HNSW::knn_search(const DatasetPtr& query,
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
                 results.pop();
-                dists_.push_back(results.top().first);
-                ids_.push_back(results.top().second);
+                dists_.resize(10000);
+                ids_.resize(10000);
+                dists_[j] = results.top().first;
+                ids_[j] = results.top().second;
             }
         }
         
