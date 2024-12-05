@@ -1647,6 +1647,70 @@ public:
         return cur_c;
     }
 
+    std::vector<std::pair<float, labeltype>>
+    searchKnn2(const void* query_data,
+              size_t k,
+              uint64_t ef,
+              BaseFilterFunctor* isIdAllowed = nullptr)  {
+
+        std::shared_ptr<float[]> normalize_query;
+        normalize_vector(query_data, normalize_query);
+        tableint currObj = enterpoint_node_;
+        float curdist =
+            fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        for (int level = maxlevel_; level > 0; level--) {
+            bool changed = true;
+            while (changed) {
+                changed = false;
+                unsigned int* data;
+
+                data = (unsigned int*)get_linklist(currObj, level);
+                int size = getListCount(data);
+                metric_hops_++;
+                metric_distance_computations_ += size;
+
+                tableint* datal = (tableint*)(data + 1);
+                for (int i = 0; i < size; i++) {
+                    tableint cand = datal[i];
+                    if (cand < 0 || cand > max_elements_)
+                        throw std::runtime_error("cand error");
+                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+
+                    if (d < curdist) {
+                        curdist = d;
+                        currObj = cand;
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        std::priority_queue<std::pair<float, tableint>,
+                            vsag::Vector<std::pair<float, tableint>>,
+                            CompareByFirst>
+            top_candidates(allocator_);
+        if (num_deleted_) {
+            top_candidates =
+                searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+        } else {
+            top_candidates =
+                searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+        }
+
+        while (top_candidates.size() > k) {
+            top_candidates.pop();
+        }
+
+        std::vector<std::pair<float, labeltype>> candidates(k);
+        int i = 0;
+        while (top_candidates.size() > 0) {
+            std::pair<float, tableint> rez = top_candidates.top();
+            candidates[i++] = std::pair<float, labeltype>(rez.first, rez.second);
+            top_candidates.pop();
+        }
+        return candidates;
+    }
+
     std::priority_queue<std::pair<float, labeltype>>
     searchKnn(const void* query_data,
               size_t k,
@@ -1703,9 +1767,10 @@ public:
         while (top_candidates.size() > k) {
             top_candidates.pop();
         }
+
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            result.push(std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second)));
+            candidates[i++] = std::pair<float, labeltype>(rez.first, rez.second);
             top_candidates.pop();
         }
         return result;
