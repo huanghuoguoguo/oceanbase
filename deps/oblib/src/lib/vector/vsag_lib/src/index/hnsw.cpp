@@ -26,7 +26,6 @@
 
 #include "../algorithm/hnswlib/hnswlib.h"
 #include "../common.h"
-// #include "../logger.h"
 #include "../safe_allocator.h"
 #include "../utils.h"
 #include "./hnsw_zparameters.h"
