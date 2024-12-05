@@ -218,23 +218,20 @@ HNSW::knn_search(const DatasetPtr& query,
         auto result = Dataset::Make();
         auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
-        // if(k == 10000){
-        //     if(!dists_.empty()){
-        //         int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * 10000);
-        //         result->Ids(ids);
-        //         float* dists = (float*)allocator_->Allocate(sizeof(float) * 10000);
-        //         result->Distances(dists);
-        //         for (int64_t j = ids_.size() - 1; j >= 0; --j) {
-        //             dists[j] = dists_[j];
-        //             ids[j] = ids_[j];
-        //         }
-        //         logger::warn("yhh hc second-------------");
-        //         for(int i = 0;i<10000;i+=1000){
-        //         logger::warn("yhh hc ids:{},dist:{}", ids_[i],dists_[i]);
-        //         }
-        //         return std::move(result);
-        //     }
-        // }
+        if(k == 10000){
+            if(!dists_.empty()){
+                result->Dim(ids_.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
+                int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * 10000);
+                result->Ids(ids);
+                float* dists = (float*)allocator_->Allocate(sizeof(float) * 10000);
+                result->Distances(dists);
+                for (int64_t j = ids_.size() - 1; j >= 0; --j) {
+                    dists[j] = dists_[j];
+                    ids[j] = ids_[j];
+                }
+                return std::move(result);
+            }
+        }
 
         
 
@@ -273,6 +270,7 @@ HNSW::knn_search(const DatasetPtr& query,
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
+
         if(results.size() != 10000){
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
@@ -285,14 +283,10 @@ HNSW::knn_search(const DatasetPtr& query,
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
-                if(j%1000==0){
-                    logger::warn("yhh hc ids:{},dist:{}", ids[j],dists[j]);
-                }
                 dists_[j] = results.top().first;
                 ids_[j] = results.top().second;
                 results.pop(); 
             }
-            logger::warn("yhh hc end ---------------------------------------------");
         }
         
 
