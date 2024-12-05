@@ -173,10 +173,8 @@ HNSW::add(const DatasetPtr& base) {
             std::vector<uint8_t> temp(128);
             for (size_t j = 0; j < 128; ++j) {
                 float value = vectors[j];
-                // logger::warn("yhh HNSW::float: {}", vectors[j]);
                 // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
                 temp[j] = static_cast<uint8_t>(value);
-                // logger::warn("yhh HNSW::temp: {}", temp[j]);
             }
             // noexcept runtime
             if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
@@ -247,20 +245,9 @@ HNSW::knn_search(const DatasetPtr& query,
         {
             std::lock_guard<std::mutex> lock(stats_mutex_);
         }
-        // return result
+
         auto result = Dataset::Make();
 
-        // perform conjugate graph enhancement
-        // if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
-        //     std::shared_lock lock(rw_mutex_);
-
-        //     auto func = [this, vector](int64_t label) {
-        //         return this->alg_hnsw->getDistanceByLabel(label, vector);
-        //     };
-        //     conjugate_graph_->EnhanceResult(results, func);
-        // }
-
-        // return result
 
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
 
@@ -268,7 +255,12 @@ HNSW::knn_search(const DatasetPtr& query,
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
-
+        logger::warn("yhh longer dist:{}",results.top().first);
+        di += results.top().first;
+        count++;
+        if(count == 10000){
+            logger::warn("yhh averge dist:{}",di/count);
+        }
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results.top().first;
             ids[j] = results.top().second;

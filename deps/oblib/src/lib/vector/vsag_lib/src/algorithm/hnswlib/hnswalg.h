@@ -528,7 +528,7 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
-        float some_threshold = 40000.f;
+        float some_threshold = 50000.f;
         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
             lowerBound = dist;
@@ -546,15 +546,11 @@ public:
             min_ef = 10000;
         }
         while (!candidate_set.empty()) {
-            // 动态调整 ef 的大小
-            if (lowerBound < some_threshold) {  // 比如某个阈值
-                dynamic_ef = std::max(dynamic_ef / 2, min_ef);  // 将 ef 降到原来的50%，最低为10
-                some_threshold /= 2;
-            }
+            
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= dynamic_ef || !isIdAllowed )) {
+                (top_candidates.size() >= dynamic_ef*2 || !isIdAllowed )) {
                 break;
             }
             candidate_set.pop();
@@ -605,9 +601,13 @@ public:
                     }
                 }
             }
-            
+            // 动态调整 ef 的大小
+            if (lowerBound < some_threshold) {  // 比如某个阈值
+                dynamic_ef = std::max(dynamic_ef / 2, min_ef);  // 将 ef 降到原来的50%，最低为10
+                some_threshold /= 2;
+            }
         }
-        vsag::logger::warn("yhh lowerBound:{},ef:{},some_threshold:{}",lowerBound , dynamic_ef, some_threshold);
+        vsag::logger::warn("yhh lowerBound:{},dist:{},some_threshold:{}",lowerBound , top_candidates.top().first, some_threshold);
 
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
@@ -1709,9 +1709,7 @@ public:
         }
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            auto t = getExternalLabel(rez.second);
-            result.push(std::pair<float, labeltype>(rez.first, t));
-            vsag::logger::warn("yhh inter:{},ef:{}",rez.second, t);
+            result.push(std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second)));
             top_candidates.pop();
         }
         return result;
