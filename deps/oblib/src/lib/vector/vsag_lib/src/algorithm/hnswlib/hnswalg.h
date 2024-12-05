@@ -1713,7 +1713,7 @@ public:
             }
         }
         
-        return candidates;
+        return std::move(candidates);
     }
 
     std::priority_queue<std::pair<float, labeltype>>
