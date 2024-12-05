@@ -1698,9 +1698,12 @@ public:
         while (top_candidates.size() > k) {
             top_candidates.pop();
         }
+        
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            result.push(std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second)));
+            auto t = getExternalLabel(rez.second);
+            result.push(std::pair<float, labeltype>(rez.first, t));
+            vsag::logger::warn("yhh internal,{},external{}", rez.second,t);
             top_candidates.pop();
         }
         return result;
