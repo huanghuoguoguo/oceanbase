@@ -269,12 +269,8 @@ HNSW::knn_search(const DatasetPtr& query,
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
-<<<<<<< HEAD
-
-        if(results.size() != 10000){
-=======
         if(k != 10000){
->>>>>>> c4a7c2bc73 (f)
+
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
@@ -283,10 +279,7 @@ HNSW::knn_search(const DatasetPtr& query,
         }else{
             dists_.resize(10000);
             ids_.resize(10000);
-<<<<<<< HEAD
-=======
-           
->>>>>>> c4a7c2bc73 (f)
+            
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
