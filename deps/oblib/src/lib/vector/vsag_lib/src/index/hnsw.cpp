@@ -228,6 +228,10 @@ HNSW::knn_search(const DatasetPtr& query,
                     dists[j] = dists_[j];
                     ids[j] = ids_[j];
                 }
+                logger::warn("yhh hc second-------------");
+                for(int i = 0;i<10000;i+=1000){
+                logger::warn("yhh hc ids:{},dist:{}", ids_[i],dists_[i]);
+                }
                 return std::move(result);
             }
         }
@@ -278,13 +282,20 @@ HNSW::knn_search(const DatasetPtr& query,
         }else{
             dists_.resize(10000);
             ids_.resize(10000);
+            logger::warn("yhh hc results.size{}",results.size());
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
-                dists_[j] = dists[j];
-                ids_[j] = ids[j];
+                dists_[j] = results.top().first;
+                ids_[j] = results.top().second;
                 results.pop(); 
             }
+
+            logger::warn("yhh hc fisrt start");
+            for(int i = 0;i<10000;i+=1000){
+                logger::warn("yhh hc ids:{},dist:{}", ids_[i],dists_[i]);
+            }
+            logger::warn("yhh hc fisrt start");
         }
         
 
