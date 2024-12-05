@@ -152,7 +152,11 @@ int knn_search(obvectorlib::VectorIndexPtr index_handler, float* query_vector,in
 #else
   return obvectorlib::knn_search(index_handler, query_vector, dim, topk,
                                  result_dist, result_ids, result_size,
+<<<<<<< HEAD
                                  110, invalid);
+=======
+                                 120, invalid);
+>>>>>>> vec
 #endif
 }
 

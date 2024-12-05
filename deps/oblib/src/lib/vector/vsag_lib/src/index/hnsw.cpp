@@ -214,13 +214,10 @@ HNSW::knn_search(const DatasetPtr& query,
     SlowTaskTimer t("hnsw knnsearch", 20);
 
     try {
-
         auto result = Dataset::Make();
-        auto vector = query->GetFloat32Vectors();
-        
         if(k == 10000){
             if(!dists_.empty()){
-                result->Dim(ids_.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
+                result->Dim(10000)->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
                 int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * 10000);
                 result->Ids(ids);
                 float* dists = (float*)allocator_->Allocate(sizeof(float) * 10000);
@@ -233,6 +230,8 @@ HNSW::knn_search(const DatasetPtr& query,
                 return std::move(result);
             }
         }
+
+        auto vector = query->GetFloat32Vectors();
         std::vector<uint8_t> temp(128);
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
@@ -247,11 +246,12 @@ HNSW::knn_search(const DatasetPtr& query,
         auto params = HnswSearchParameters::FromJson(parameters);
 
         // perform search
-        std::priority_queue<std::pair<float, size_t>> results;
-
+        std::vector<std::pair<float, size_t>> results;
+ 
         try {
-            results = alg_hnsw->searchKnn(
-                (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
+            auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
+            results = hnsw->searchKnn2(
+                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
@@ -263,33 +263,28 @@ HNSW::knn_search(const DatasetPtr& query,
             std::lock_guard<std::mutex> lock(stats_mutex_);
         }
 
-        result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
 
+        result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
         int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
         if(k != 10000){
-
             for (int64_t j = results.size() - 1; j >= 0; --j) {
-                dists[j] = results.top().first;
-                ids[j] = results.top().second;
-                results.pop();
+                dists[j] = results[j].first;
+                ids[j] = results[j].second;
             }
         }else{
             dists_.resize(10000);
             ids_.resize(10000);
-            
             for (int64_t j = results.size() - 1; j >= 0; --j) {
-                dists[j] = results.top().first;
-                ids[j] = results.top().second;
-                dists_[j] = results.top().first;
-                ids_[j] = results.top().second;
-                results.pop(); 
+                dists[j] = results[j].first;
+                ids[j] = results[j].second;
+                dists_[j] = results[j].first;
+                ids_[j] = results[j].second;
             }
         }
         
-
         return std::move(result);
     } catch (const std::invalid_argument& e) {
         LOG_ERROR_AND_RETURNS(ErrorType::INVALID_ARGUMENT,

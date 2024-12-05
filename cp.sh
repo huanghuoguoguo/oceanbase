@@ -30,7 +30,10 @@ fi
 echo "Waiting for 30 seconds..."
 sleep 30
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> vec
 # Run the benchmark
 cd /root/source/ann-benchmarks
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1
@@ -49,7 +52,10 @@ fi
 # Change to oceanbase source directory
 cd /root/source/oceanbase
 
+<<<<<<< HEAD
 sleep 10
+=======
+>>>>>>> vec
 # Stop the obcluster
 ./tools/deploy/obd.sh stop -n obcluster
 if [ $? -ne 0 ]; then
