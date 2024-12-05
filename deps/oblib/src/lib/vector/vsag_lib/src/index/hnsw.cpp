@@ -231,17 +231,12 @@ HNSW::knn_search(const DatasetPtr& query,
         auto params = HnswSearchParameters::FromJson(parameters);
 
         // perform search
-        std::priority_queue<std::pair<float, size_t>> results;
+        std::vector<std::pair<float, size_t>> results;
         double time_cost;
         try {
             Timer t(time_cost);
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
-            auto v = hnsw->searchKnn2(
-                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
-            for(int i = 0;i<10;i++){
-                logger::warn("yhh HNSW::temp: {}", v[i].first);
-            }
-            results = alg_hnsw->searchKnn(
+            results = hnsw->searchKnn2(
                 (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
@@ -257,22 +252,7 @@ HNSW::knn_search(const DatasetPtr& query,
 
         // return result
         auto result = Dataset::Make();
-        if (results.size() == 0) {
-            result->Dim(0)->NumElements(1);
-            return result;
-        }
 
-        // perform conjugate graph enhancement
-        if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
-            std::shared_lock lock(rw_mutex_);
-            time_cost = 0;
-            Timer t(time_cost);
-
-            auto func = [this, vector](int64_t label) {
-                return this->alg_hnsw->getDistanceByLabel(label, vector);
-            };
-            conjugate_graph_->EnhanceResult(results, func);
-        }
 
         // return result
 
@@ -284,9 +264,8 @@ HNSW::knn_search(const DatasetPtr& query,
         result->Distances(dists);
 
         for (int64_t j = results.size() - 1; j >= 0; --j) {
-            dists[j] = results.top().first;
-            ids[j] = results.top().second;
-            results.pop();
+            dists[j] = results[j].first;
+            ids[j] = results[j].second;
         }
 
         return std::move(result);

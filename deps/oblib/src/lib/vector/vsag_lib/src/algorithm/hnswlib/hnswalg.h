@@ -1702,10 +1702,10 @@ public:
         }
 
         std::vector<std::pair<float, labeltype>> candidates(k);
-        int i = 0;
+        int i = k-1;
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            candidates[i++] = std::pair<float, labeltype>(rez.first, rez.second);
+            candidates[i--] = std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second));
             top_candidates.pop();
         }
         return candidates;
