@@ -30,6 +30,7 @@
 #include "../common.h"
 #include "../default_allocator.h"
 #include "../impl/conjugate_graph.h"
+#include "../logger.h"
 #include "../safe_allocator.h"
 #include "../utils.h"
 #include "vsag/binaryset.h"
