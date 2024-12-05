@@ -273,6 +273,7 @@ HNSW::knn_search(const DatasetPtr& query,
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results[j].first;
                 ids[j] = results[j].second;
+                logger::warn("yhh dist:{},id:{}", dists[j],ids[j]);
             }
         }else{
             dists_.resize(10000);
