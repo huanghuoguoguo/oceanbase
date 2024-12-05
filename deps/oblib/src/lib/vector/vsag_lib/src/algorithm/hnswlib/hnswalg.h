@@ -528,7 +528,7 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
-        float some_threshold = 100000.f;
+        float some_threshold = 50000.f;
         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
             lowerBound = dist;
