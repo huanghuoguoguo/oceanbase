@@ -528,6 +528,7 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
+        float some_threshold = 40000.f;
         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
             lowerBound = dist;
@@ -538,12 +539,22 @@ public:
             candidate_set.emplace(-lowerBound, ep_id);
         }
 
-        visited_array[ep_id] = visited_array_tag; 
+        visited_array[ep_id] = visited_array_tag;
+        int dynamic_ef = ef; 
+        int min_ef = 10;
+        if(ef == 10000){
+            min_ef = 10000;
+        }
         while (!candidate_set.empty()) {
+            // 动态调整 ef 的大小
+            if (lowerBound < some_threshold) {  // 比如某个阈值
+                dynamic_ef = std::max(dynamic_ef / 2, min_ef);  // 将 ef 降到原来的50%，最低为10
+                some_threshold /= 2;
+            }
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+                (top_candidates.size() >= dynamic_ef || !isIdAllowed )) {
                 break;
             }
             candidate_set.pop();
@@ -575,7 +586,7 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (top_candidates.size() < ef || lowerBound > dist) {
+                    if (top_candidates.size() < dynamic_ef || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -586,7 +597,7 @@ public:
                         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
                             top_candidates.emplace(dist, candidate_id);
 
-                        if (top_candidates.size() > ef)
+                        while (top_candidates.size() > dynamic_ef)
                             top_candidates.pop();
 
                         if (!top_candidates.empty())
@@ -594,7 +605,9 @@ public:
                     }
                 }
             }
+            
         }
+        vsag::logger::warn("yhh lowerBound:{},ef:{},some_threshold:{}",lowerBound , dynamic_ef, some_threshold);
 
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
@@ -1654,8 +1667,6 @@ public:
         if (cur_element_count_ == 0)
             return result;
 
-        // std::shared_ptr<float[]> normalize_query;
-        // normalize_vector(query_data, normalize_query);
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
@@ -1668,8 +1679,6 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                // metric_hops_++;
-                // metric_distance_computations_ += size;
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
@@ -1700,7 +1709,9 @@ public:
         }
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            result.push(std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second)));
+            auto t = getExternalLabel(rez.second);
+            result.push(std::pair<float, labeltype>(rez.first, t));
+            vsag::logger::warn("yhh inter:{},ef:{}",rez.second, t);
             top_candidates.pop();
         }
         return result;
