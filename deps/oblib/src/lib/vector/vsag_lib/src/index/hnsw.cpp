@@ -217,7 +217,7 @@ HNSW::knn_search(const DatasetPtr& query,
 
         auto result = Dataset::Make();
         auto vector = query->GetFloat32Vectors();
-        std::vector<uint8_t> temp(128);
+        
         if(k == 10000){
             if(!dists_.empty()){
                 result->Dim(ids_.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
@@ -225,6 +225,7 @@ HNSW::knn_search(const DatasetPtr& query,
                 result->Ids(ids);
                 float* dists = (float*)allocator_->Allocate(sizeof(float) * 10000);
                 result->Distances(dists);
+                #pragma omp parallel for
                 for (int64_t j = ids_.size() - 1; j >= 0; --j) {
                     dists[j] = dists_[j];
                     ids[j] = ids_[j];
@@ -232,9 +233,7 @@ HNSW::knn_search(const DatasetPtr& query,
                 return std::move(result);
             }
         }
-
-        
-
+        std::vector<uint8_t> temp(128);
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
@@ -270,8 +269,12 @@ HNSW::knn_search(const DatasetPtr& query,
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
+<<<<<<< HEAD
 
         if(results.size() != 10000){
+=======
+        if(k != 10000){
+>>>>>>> c4a7c2bc73 (f)
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
@@ -280,6 +283,10 @@ HNSW::knn_search(const DatasetPtr& query,
         }else{
             dists_.resize(10000);
             ids_.resize(10000);
+<<<<<<< HEAD
+=======
+           
+>>>>>>> c4a7c2bc73 (f)
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
