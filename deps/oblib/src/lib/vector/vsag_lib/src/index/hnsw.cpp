@@ -257,10 +257,8 @@ HNSW::knn_search(const DatasetPtr& query,
         result->Distances(dists);
         logger::warn("yhh longer dist:{}",results.top().first);
         di += results.top().first;
-        count++;
-        if(count == 10000){
-            logger::warn("yhh averge dist:{}",di/count);
-        }
+        count+=1;
+        logger::warn("yhh averge dist:{}",di/count);
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results.top().first;
             ids[j] = results.top().second;

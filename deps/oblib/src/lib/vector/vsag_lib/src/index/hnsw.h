@@ -304,7 +304,7 @@ private:
     mutable std::shared_mutex rw_mutex_;
 
     mutable float di = 0.f; 
-    mutable int count = 0;
+    mutable int count = 1;
 };
 
 }  // namespace vsag
