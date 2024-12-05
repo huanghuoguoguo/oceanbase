@@ -235,7 +235,7 @@ HNSW::knn_search(const DatasetPtr& query,
         double time_cost;
         try {
             Timer t(time_cost);
-            auto hnsw = reinterpret_cast<HierarchicalNSW*>(alg_hnsw.get());
+            auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
             auto v = hnsw->searchKnn2(
                 (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
             for(int i = 0;i<10;i++){

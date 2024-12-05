@@ -1770,7 +1770,7 @@ public:
 
         while (top_candidates.size() > 0) {
             std::pair<float, tableint> rez = top_candidates.top();
-            candidates[i++] = std::pair<float, labeltype>(rez.first, rez.second);
+            result.push(std::pair<float, labeltype>(rez.first, getExternalLabel(rez.second)));
             top_candidates.pop();
         }
         return result;
