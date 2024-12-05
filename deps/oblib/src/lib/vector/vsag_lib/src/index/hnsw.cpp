@@ -276,14 +276,14 @@ HNSW::knn_search(const DatasetPtr& query,
                 results.pop();
             }
         }else{
+            dists_.resize(10000);
+            ids_.resize(10000);
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results.top().first;
                 ids[j] = results.top().second;
-                results.pop();
-                dists_.resize(10000);
-                ids_.resize(10000);
-                dists_[j] = results.top().first;
-                ids_[j] = results.top().second;
+                dists_[j] = dists[j];
+                ids_[j] = ids[j];
+                results.pop(); 
             }
         }
         
