@@ -1694,25 +1694,23 @@ public:
             top_candidates.pop();
         }
 
-        std::vector<std::pair<float, labeltype>> candidates(top_candidates.size());
-        int i = top_candidates.size();
-        while (top_candidates.size() > 0) {
+        std::vector<std::pair<float, labeltype>> candidates;
+        candidates.reserve(top_candidates.size());
+
+        while (!top_candidates.empty()) {
             std::pair<float, tableint> rez = top_candidates.top();
-            candidates[--i] = std::pair<float, labeltype>(rez.first, rez.second);
+            candidates.emplace_back(rez.first, rez.second);
             top_candidates.pop();
         }
 
-        if(k > 10){
-            #pragma omp parallel for
-            for(int i = 0; i < candidates.size(); i++){
-                candidates[i].second = getExternalLabel(candidates[i].second);
-            }
-        }else{
-            for(int i = 0; i < candidates.size(); i++){
-                candidates[i].second = getExternalLabel(candidates[i].second);
-            }
+        std::reverse(candidates.begin(), candidates.end());
+
+        #pragma omp parallel for if (k > 1000)
+        for (int i = 0; i < candidates.size(); i++) {
+            candidates[i].second = getExternalLabel(candidates[i].second);
+            vsag::logger::warn("yhh dist:{},id:{}", candidates[i].first,candidates[i].second);
         }
-        
+        vsag::logger::warn("yhh end----");
         return std::move(candidates);
     }
 
