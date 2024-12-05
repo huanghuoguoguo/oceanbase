@@ -251,14 +251,14 @@ HNSW::knn_search(const DatasetPtr& query,
         auto result = Dataset::Make();
 
         // perform conjugate graph enhancement
-        if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
-            std::shared_lock lock(rw_mutex_);
+        // if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
+        //     std::shared_lock lock(rw_mutex_);
 
-            auto func = [this, vector](int64_t label) {
-                return this->alg_hnsw->getDistanceByLabel(label, vector);
-            };
-            conjugate_graph_->EnhanceResult(results, func);
-        }
+        //     auto func = [this, vector](int64_t label) {
+        //         return this->alg_hnsw->getDistanceByLabel(label, vector);
+        //     };
+        //     conjugate_graph_->EnhanceResult(results, func);
+        // }
 
         // return result
 

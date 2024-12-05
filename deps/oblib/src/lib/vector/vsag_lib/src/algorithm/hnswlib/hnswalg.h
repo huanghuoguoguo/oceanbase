@@ -563,20 +563,13 @@ public:
 
             for (size_t j = 1; j <= size; j++) {
                 int candidate_id = *(data + j);
-            // **预取逻辑：预取当前节点和后续两个节点的相关数据**
-                size_t pre_l1 = std::min(j + 1, size - 1); 
-                size_t pre_l2 = std::min(j + 2, size); 
-                auto vector_data_ptr1 = data_level0_memory_->GetElementPtr((*(data + pre_l1)), offsetData_); 
-                auto vector_data_ptr2 = data_level0_memory_->GetElementPtr((*(data + pre_l2)), offsetData_); 
-            #ifdef USE_SSE 
-                // 对后续第一个节点的预取
-                _mm_prefetch((char*)(visited_array + *(data + pre_l1)), _MM_HINT_T0); 
-                _mm_prefetch(vector_data_ptr1, _MM_HINT_T0);
-
-                // 对后续第二个节点的预取
-                _mm_prefetch((char*)(visited_array + *(data + pre_l2)), _MM_HINT_T0); 
-                _mm_prefetch(vector_data_ptr2, _MM_HINT_T0);
-            #endif 
+                size_t pre_l = std::min(j, size - 2);
+                auto vector_data_ptr =
+                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
+#ifdef USE_SSE
+                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
+                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
+#endif
                 if (!(visited_array[candidate_id] == visited_array_tag)) {
                     visited_array[candidate_id] = visited_array_tag;
 
@@ -1661,7 +1654,7 @@ public:
         if (cur_element_count_ == 0)
             return result;
 
-        std::shared_ptr<float[]> normalize_query;
+        // std::shared_ptr<float[]> normalize_query;
         // normalize_vector(query_data, normalize_query);
         tableint currObj = enterpoint_node_;
         float curdist =
@@ -1675,8 +1668,8 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                metric_hops_++;
-                metric_distance_computations_ += size;
+                // metric_hops_++;
+                // metric_distance_computations_ += size;
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
