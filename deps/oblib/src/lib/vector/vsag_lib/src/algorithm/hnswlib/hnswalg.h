@@ -95,7 +95,7 @@ private:
     ///  缓存实现
     std::bitset<HC_BIT_SIZE> hc_cache_bs_;
     std::unordered_map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>, std::hash<std::array<int8_t, DIM>>> hc_cache_res_;
-
+    bool use_cache = false;
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
 
@@ -1719,7 +1719,7 @@ public:
               uint64_t ef,
               BaseFilterFunctor* isIdAllowed = nullptr)  {
         auto vector = (float*)query_data;
-        vsag::logger::warn("yhh start");
+ 
         std::array<int8_t, DIM> sq8 = {0};
         int hc_hash = 0;
         for (size_t i = 0; i < DIM; ++i) {
@@ -1735,15 +1735,14 @@ public:
             hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x9f3b;
             hc_hash = (hc_hash ^ (hc_hash >> 16));
         }
-        vsag::logger::warn("yhh hc_hash", hc_hash);
+
 
         // 使用最终的哈希值，确保它不超过 HC_BIT_SIZE
         hc_hash = hc_hash % HC_BIT_SIZE;
         // 如果该hc_hash存在，尝试走缓存。
 
         // if (k != 10000 && hc_cache_bs_.test(hc_hash)) {
-        if (k != 10000) {
-            vsag::logger::warn("yhh use cache");
+        if (use_cache&&k != 10000) {
             auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
             if (it != hc_cache_res_.end()) {
                 // 从缓存中获取结果
@@ -1755,13 +1754,11 @@ public:
                     const auto& [cached_dist, cached_label] = cached_result[i];
                     result.emplace_back(cached_dist, cached_label);
                 }
-                vsag::logger::warn("yhh use cache after");
                 // 返回缓存的结果
                 return result;
             }
-            vsag::logger::warn("yhh use cache no");
         }
-        vsag::logger::warn("yhh no cache");
+
 
         const void* sq8_ptr = static_cast<const void*>(sq8.data());
 
