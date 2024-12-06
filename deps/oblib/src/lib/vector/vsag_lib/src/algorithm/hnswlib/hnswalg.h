@@ -93,9 +93,8 @@ private:
     size_t dim_{0};
 
     ///  缓存实现
-    std::bitset<HC_BIT_SIZE> hc_cache_bs_;
     std::unordered_map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>, std::hash<std::array<int8_t, DIM>>> hc_cache_res_;
-    bool use_cache = true;
+    bool use_cache = false;
 
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
@@ -1725,25 +1724,11 @@ public:
         // int hc_hash = 0;
         for (size_t i = 0; i < DIM; ++i) {
             float value = vector[i];
-            
             // 将每个 float 值转换为 uint8_t
             sq8[i] = static_cast<int8_t>(value);
-            
-            // // 第一轮哈希，使用加权值
-            // hc_hash = hc_hash * 31 + sq8[i];
-
-            // // 使用位操作提高散列的分布性
-            // hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x9f3b;
-            // hc_hash = (hc_hash ^ (hc_hash >> 16));
         }
 
-
-        // 使用最终的哈希值，确保它不超过 HC_BIT_SIZE
-        // hc_hash = hc_hash % HC_BIT_SIZE;
-        // 如果该hc_hash存在，尝试走缓存。
-
-        // if (k != 10000 && hc_cache_bs_.test(hc_hash)) {
-        if (use_cache&&k != 10000) {
+        if (use_cache && k != 10000) {
             auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
             if (it != hc_cache_res_.end()) {
                 // 从缓存中获取结果
@@ -1833,7 +1818,6 @@ public:
                     vsag::logger::warn("yhh log add size: {}", result.size());
             }
             hc_cache_res_.emplace(sq8, result);
-            // hc_cache_bs_.set(hc_hash);
         }
         
         return std::move(candidates);
