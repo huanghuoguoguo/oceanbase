@@ -1611,14 +1611,9 @@ public:
             cur_element_count_++;
             label_lookup_[label] = cur_c;
         }
-        auto vector = (float*)data_point;
-        std::array<int8_t, DIM> sq8 = {0};
-        for (size_t i = 0; i < DIM; ++i) {
-            float value = vector[i];
-            // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            sq8[i] = static_cast<int8_t>(value);
-        }
-        const void* sq8_ptr = static_cast<const void*>(sq8.data());
+
+
+
 
 
         std::unique_lock<std::recursive_mutex> lock_el(link_list_locks_[cur_c]);
@@ -1639,7 +1634,7 @@ public:
 
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
-        memcpy(getDataByInternalId(cur_c), sq8_ptr, data_size_);
+        memcpy(getDataByInternalId(cur_c), data_point, data_size_);
 
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
@@ -1653,7 +1648,7 @@ public:
         if ((signed)currObj != -1) {
             if (curlevel < maxlevelcopy) {
                 float curdist =
-                    fstdistfunc_(sq8_ptr, getDataByInternalId(currObj), dist_func_param_);
+                    fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
                 for (int level = maxlevelcopy; level > curlevel; level--) {
                     bool changed = true;
                     while (changed) {
@@ -1669,7 +1664,7 @@ public:
                             if (cand < 0 || cand > max_elements_)
                                 throw std::runtime_error("cand error");
                             float d = fstdistfunc_(
-                                sq8_ptr, getDataByInternalId(cand), dist_func_param_);
+                                data_point, getDataByInternalId(cand), dist_func_param_);
                             if (d < curdist) {
                                 curdist = d;
                                 currObj = cand;
@@ -1687,17 +1682,17 @@ public:
                 std::priority_queue<std::pair<float, tableint>,
                                     vsag::Vector<std::pair<float, tableint>>,
                                     CompareByFirst>
-                    top_candidates = searchBaseLayer(currObj, sq8_ptr, level);
+                    top_candidates = searchBaseLayer(currObj, data_point, level);
                 if (epDeleted) {
                     top_candidates.emplace(
                         fstdistfunc_(
-                            sq8_ptr, getDataByInternalId(enterpoint_copy), dist_func_param_),
+                            data_point, getDataByInternalId(enterpoint_copy), dist_func_param_),
                         enterpoint_copy);
                     if (top_candidates.size() > ef_construction_)
                         top_candidates.pop();
                 }
                 currObj =
-                    mutuallyConnectNewElement(sq8_ptr, cur_c, top_candidates, level, false);
+                    mutuallyConnectNewElement(data_point, cur_c, top_candidates, level, false);
             }
         } else {
             // Do nothing for the first element
@@ -1719,15 +1714,15 @@ public:
               size_t k,
               uint64_t ef,
               BaseFilterFunctor* isIdAllowed = nullptr)  {
-        auto vector = (float*)query_data;
+        // auto vector = (float*)query_data;
  
-        std::array<int8_t, DIM> sq8 = {0};
-        // int hc_hash = 0;
-        for (size_t i = 0; i < DIM; ++i) {
-            float value = vector[i];
-            // 将每个 float 值转换为 uint8_t
-            sq8[i] = static_cast<int8_t>(value);
-        }
+        // std::array<int8_t, DIM> sq8 = {0};
+        // // int hc_hash = 0;
+        // for (size_t i = 0; i < DIM; ++i) {
+        //     float value = vector[i];
+        //     // 将每个 float 值转换为 uint8_t
+        //     sq8[i] = static_cast<int8_t>(value);
+        // }
 
         // if (use_cache && k != 10000) {
         //     auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
@@ -1752,11 +1747,9 @@ public:
 
 
 
-        const void* sq8_ptr = static_cast<const void*>(sq8.data());
-
         tableint currObj = enterpoint_node_;
         float curdist =
-            fstdistfunc_(sq8_ptr, getDataByInternalId(enterpoint_node_), dist_func_param_);
+            fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
@@ -1773,7 +1766,7 @@ public:
                     tableint cand = datal[i];
                     if (cand < 0 || cand > max_elements_)
                         throw std::runtime_error("cand error");
-                    float d = fstdistfunc_(sq8_ptr, getDataByInternalId(cand), dist_func_param_);
+                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
                     if (d < curdist) {
                         curdist = d;
@@ -1789,7 +1782,7 @@ public:
                             CompareByFirst>
             top_candidates(allocator_);
         top_candidates =
-                searchBaseLayerST<false, true>(currObj, sq8_ptr, std::max(ef, k), isIdAllowed);
+                searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
 
         while (top_candidates.size() > k) {
             top_candidates.pop();
