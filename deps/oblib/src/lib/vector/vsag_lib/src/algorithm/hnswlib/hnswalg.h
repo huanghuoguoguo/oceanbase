@@ -1596,7 +1596,7 @@ public:
         for (size_t i = 0; i < DIM; ++i) {
             float value = vector[i];
             // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            sq8[i] = static_cast<uint8_t>(value);
+            sq8[i] = static_cast<int8_t>(value);
         }
         const void* sq8_ptr = static_cast<const void*>(sq8.data());
 
@@ -1706,13 +1706,13 @@ public:
             float value = vector[i];
             
             // 将每个 float 值转换为 uint8_t
-            sq8[i] = static_cast<uint8_t>(value);
+            sq8[i] = static_cast<int8_t>(value);
             
             // 第一轮哈希，使用加权值
             hc_hash = hc_hash * 31 + sq8[i];
 
             // 使用位操作提高散列的分布性
-            hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x45d9f3b;
+            hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x00d9f3b;
             hc_hash = (hc_hash ^ (hc_hash >> 16));
         }
 
@@ -1723,6 +1723,8 @@ public:
         if (hc_cache_bs_.test(hc_hash)) {
             auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
             if (it != hc_cache_res_.end()) {
+
+                    vsag::logger::warn("yhh heat hc");
                     // 从缓存中获取结果
                     const auto& cached_result = it->second; // 缓存值为 std::array<std::pair<float, int64_t>, 10>
 
