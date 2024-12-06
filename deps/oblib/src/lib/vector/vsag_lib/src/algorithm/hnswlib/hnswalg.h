@@ -42,14 +42,19 @@
 #include "visited_list_pool.h"
 
 namespace std {
-    template <size_t N>
+    template <int N>
     struct hash<std::array<int8_t, N>> {
-        size_t operator()(const std::array<int8_t, N>& arr) const {
-            size_t hash_value = 0;
-            for (size_t i = 0; i < N; ++i) {
-                hash_value = hash_value * 31 + static_cast<size_t>(arr[i]);
+        int operator()(const std::array<int8_t, N>& arr) const {
+            int hc_hash = 0;
+            for (size_t i = 0; i < 128; ++i) {            
+                // 第一轮哈希，使用加权值
+                hc_hash = hc_hash * 31 + arr[i];
+
+                // 使用位操作提高散列的分布性
+                hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x9f3b;
+                hc_hash = (hc_hash ^ (hc_hash >> 16));
             }
-            return hash_value;
+            return hc_hash;
         }
     };
 }
@@ -1726,9 +1731,10 @@ public:
             hc_hash = hc_hash * 31 + sq8[i];
 
             // 使用位操作提高散列的分布性
-            hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x00d9f3b;
+            hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x9f3b;
             hc_hash = (hc_hash ^ (hc_hash >> 16));
         }
+        vsag::logger::warn("yhh hc_hash", hc_hash);
 
         // 使用最终的哈希值，确保它不超过 HC_BIT_SIZE
         hc_hash = hc_hash % HC_BIT_SIZE;
@@ -1736,23 +1742,25 @@ public:
 
         // if (k != 10000 && hc_cache_bs_.test(hc_hash)) {
         if (k != 10000) {
+            vsag::logger::warn("yhh use cache");
             auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
             if (it != hc_cache_res_.end()) {
-                    // 从缓存中获取结果
-                    const auto& cached_result = it->second; // 缓存值为 std::array<std::pair<float, int64_t>, 10>
+                // 从缓存中获取结果
+                const auto& cached_result = it->second; // 缓存值为 std::array<std::pair<float, int64_t>, 10>
 
-                    // 将缓存结果转为返回格式
-                    std::vector<std::pair<float, labeltype>> result;
-                    for (size_t i = 0; i < k && i < cached_result.size(); ++i) {
-                        const auto& [cached_dist, cached_label] = cached_result[i];
-                        result.emplace_back(cached_dist, cached_label);
-                    }
-
-                    // 返回缓存的结果
-                    return result;
+                // 将缓存结果转为返回格式
+                std::vector<std::pair<float, labeltype>> result;
+                for (size_t i = 0; i < cached_result.size(); ++i) {
+                    const auto& [cached_dist, cached_label] = cached_result[i];
+                    result.emplace_back(cached_dist, cached_label);
                 }
+                vsag::logger::warn("yhh use cache after");
+                // 返回缓存的结果
+                return result;
+            }
+            vsag::logger::warn("yhh use cache no");
         }
-
+        vsag::logger::warn("yhh no cache");
 
         const void* sq8_ptr = static_cast<const void*>(sq8.data());
 
