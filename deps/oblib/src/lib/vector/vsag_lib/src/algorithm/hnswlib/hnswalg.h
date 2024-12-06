@@ -1729,26 +1729,26 @@ public:
             sq8[i] = static_cast<int8_t>(value);
         }
 
-        if (use_cache && k != 10000) {
-            auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
-            if (it != hc_cache_res_.end()) {
-                // 从缓存中获取结果
-                const auto& cached_result = it->second; // 缓存值为 std::array<std::pair<float, int64_t>, 10>
+        // if (use_cache && k != 10000) {
+        //     auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
+        //     if (it != hc_cache_res_.end()) {
+        //         // 从缓存中获取结果
+        //         const auto& cached_result = it->second; // 缓存值为 std::array<std::pair<float, int64_t>, 10>
 
-                // 将缓存结果转为返回格式
-                std::vector<std::pair<float, labeltype>> result;
-                if(result.size() != 10){
-                    vsag::logger::warn("yhh log find size: {}", result.size());
-                }else{
-                    for (size_t i = 0; i < cached_result.size(); ++i) {
-                        const auto& [cached_dist, cached_label] = cached_result[i];
-                        result.emplace_back(cached_dist, cached_label);
-                    }
-                    // 返回缓存的结果
-                    return result;
-                }
-            }
-        }
+        //         // 将缓存结果转为返回格式
+        //         std::vector<std::pair<float, labeltype>> result;
+        //         if(result.size() != 10){
+        //             vsag::logger::warn("yhh log find size: {}", result.size());
+        //         }else{
+        //             for (size_t i = 0; i < cached_result.size(); ++i) {
+        //                 const auto& [cached_dist, cached_label] = cached_result[i];
+        //                 result.emplace_back(cached_dist, cached_label);
+        //             }
+        //             // 返回缓存的结果
+        //             return result;
+        //         }
+        //     }
+        // }
 
 
 
@@ -1812,16 +1812,12 @@ public:
                 candidates[i].second = getExternalLabel(candidates[i].second);
             }
         }else{
-            std::array<std::pair<float, labeltype>, 10> result;
+            // std::array<std::pair<float, labeltype>, 10> result;
             for (int i = 0; i < candidates.size(); i++) {
                 candidates[i].second = getExternalLabel(candidates[i].second);
-                result[i] = {candidates[i].first, candidates[i].second};
+                // result[i] = {candidates[i].first, candidates[i].second};
             }
-            if(candidates.size() != 10){
-                    vsag::logger::warn("yhh log add size: {}", candidates.size());
-            }else{
-                hc_cache_res_.emplace(sq8, result);
-            }
+            // hc_cache_res_.emplace(sq8, result);
         }
         
         return std::move(candidates);
