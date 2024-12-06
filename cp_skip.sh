@@ -31,6 +31,8 @@ echo "Waiting for 30 seconds..."
 sleep 30
 
 
+cd /root/source/ann-benchmarks
+
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
 python plot.py --dataset sift-128-euclidean --recompute
 
