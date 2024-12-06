@@ -1738,15 +1738,18 @@ public:
                 std::vector<std::pair<float, labeltype>> result;
                 if(result.size() != 10){
                     vsag::logger::warn("yhh log find size: {}", result.size());
+                    
+                }else{
+                    for (size_t i = 0; i < cached_result.size(); ++i) {
+                        const auto& [cached_dist, cached_label] = cached_result[i];
+                        result.emplace_back(cached_dist, cached_label);
+                    }
+                    // 返回缓存的结果
+                    return result;
                 }
-                for (size_t i = 0; i < cached_result.size(); ++i) {
-                    const auto& [cached_dist, cached_label] = cached_result[i];
-                    result.emplace_back(cached_dist, cached_label);
-                }
-                // 返回缓存的结果
-                return result;
             }
         }
+
 
 
         const void* sq8_ptr = static_cast<const void*>(sq8.data());
@@ -1816,8 +1819,9 @@ public:
             }
             if(result.size() != 10){
                     vsag::logger::warn("yhh log add size: {}", result.size());
+            }else{
+                hc_cache_res_.emplace(sq8, result);
             }
-            hc_cache_res_.emplace(sq8, result);
         }
         
         return std::move(candidates);
