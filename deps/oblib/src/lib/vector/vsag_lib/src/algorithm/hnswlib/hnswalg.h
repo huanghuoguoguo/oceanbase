@@ -93,7 +93,8 @@ private:
     size_t dim_{0};
 
     ///  缓存实现
-    std::unordered_map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>, std::hash<std::array<int8_t, DIM>>> hc_cache_res_;
+    // std::unordered_map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>, std::hash<std::array<int8_t, DIM>>> hc_cache_res_;
+    std::map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>> hc_cache_res_;
     bool use_cache = true;
 
     double mult_{0.0}, revSize_{0.0};

@@ -171,7 +171,7 @@ HNSW::add(const DatasetPtr& base) {
         }
         for (int64_t i = 0; i < num_elements; ++i) {
             // noexcept runtime
-            if (!alg_hnsw->addPoint((const void*)(vectors+i*dim_), ids[i])) {
+            if (!alg_hnsw->addPoint((const void*)(vectors+ i * dim_), ids[i])) {
                 logger::warn("duplicate point: {}", i);
                 failed_ids.push_back(ids[i]);
             }
