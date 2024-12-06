@@ -14,5 +14,6 @@ python plot.py --dataset sift-128-euclidean --recompute
 cd /root/source/ann-benchmarks/ann_benchmarks/algorithms/oceanbase
 python hybrid_ann.py
 
+cd /root/source/oceanbase
 
 
