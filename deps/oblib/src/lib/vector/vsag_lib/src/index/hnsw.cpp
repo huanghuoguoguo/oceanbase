@@ -251,7 +251,7 @@ HNSW::knn_search(const DatasetPtr& query,
         try {
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
             results = hnsw->searchKnn2(
-                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
+                (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
