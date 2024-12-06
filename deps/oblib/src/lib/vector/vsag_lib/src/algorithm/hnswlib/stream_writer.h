@@ -23,7 +23,7 @@ public:
     StreamWriter() = default;
 
     virtual void
-    Write(char* data, uint64_t size) = 0;
+    Write(const char* data, uint64_t size) = 0;
 };
 
 class BufferStreamWriter : public StreamWriter {
@@ -31,7 +31,7 @@ public:
     explicit BufferStreamWriter(char*& buffer);
 
     void
-    Write(char* data, uint64_t size) override;
+    Write(const char* data, uint64_t size) override;
 
     char*& buffer_;
 };
@@ -41,7 +41,7 @@ public:
     explicit IOStreamWriter(std::ostream& ostream);
 
     void
-    Write(char* data, uint64_t size) override;
+    Write(const char* data, uint64_t size) override;
 
     std::ostream& ostream_;
 };
