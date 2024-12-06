@@ -1807,7 +1807,7 @@ public:
             std::array<std::pair<float, labeltype>, 10> result;
             for (int i = 0; i < candidates.size(); i++) {
                 candidates[i].second = getExternalLabel(candidates[i].second);
-                // result[i] = {candidates[i].first, candidates[i].second};
+                result[i] = {candidates[i].first, candidates[i].second};
             }
             hc_cache_res_.emplace(sq8, result);
         }
