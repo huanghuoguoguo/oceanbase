@@ -1714,11 +1714,7 @@ public:
         auto vector = (int8_t*)query_data;
  
         std::array<int8_t, DIM> sq8 = {0};
-        // int hc_hash = 0;
-        for (size_t i = 0; i < DIM; ++i) {
-            // 将每个 float 值转换为 uint8_t
-            sq8[i] = vector[i];
-        }
+        std::memcpy(sq8.data(), query_data, DIM);
 
         if (use_cache && k != 10000) {
             auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
