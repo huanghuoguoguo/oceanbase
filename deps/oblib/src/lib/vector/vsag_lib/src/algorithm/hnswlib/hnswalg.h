@@ -1071,7 +1071,7 @@ public:
         WriteOne(writer, mult_);
         WriteOne(writer, ef_construction_);
 
-        WriteOne(writer, hc_cache_bs_);
+        // WriteOne(writer, hc_cache_bs_);
     
         // // 序列化 std::map
         // unsigned int map_size = hc_cache_res_.size();  // 获取 map 中元素的数量
