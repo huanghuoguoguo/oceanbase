@@ -1719,6 +1719,7 @@ public:
               uint64_t ef,
               BaseFilterFunctor* isIdAllowed = nullptr)  {
         auto vector = (float*)query_data;
+        vsag::logger::warn("yhh start");
         std::array<int8_t, DIM> sq8 = {0};
         int hc_hash = 0;
         for (size_t i = 0; i < DIM; ++i) {
