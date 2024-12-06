@@ -170,16 +170,8 @@ HNSW::add(const DatasetPtr& base) {
             return tl::unexpected(result.error());
         }
         for (int64_t i = 0; i < num_elements; ++i) {
-            std::vector<uint8_t> temp(128);
-            for (size_t j = 0; j < 128; ++j) {
-                float value = vectors[j];
-                // logger::warn("yhh HNSW::float: {}", vectors[j]);
-                // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-                temp[j] = static_cast<uint8_t>(value);
-                // logger::warn("yhh HNSW::temp: {}", temp[j]);
-            }
             // noexcept runtime
-            if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
+            if (!alg_hnsw->addPoint((const void*)(vectors+i*dim_), ids[i])) {
                 logger::warn("duplicate point: {}", i);
                 failed_ids.push_back(ids[i]);
             }
@@ -232,13 +224,6 @@ HNSW::knn_search(const DatasetPtr& query,
         }
 
         auto vector = query->GetFloat32Vectors();
-        std::vector<uint8_t> temp(128);
-        for (size_t i = 0; i < 128; ++i) {
-            float value = vector[i];
-            // 将每个 float 值转换为 int8_t，存储在 int8_t 类型数组中
-            temp[i] = static_cast<uint8_t>(value);
-        }
-
 
         std::shared_lock lock(rw_mutex_);
 
@@ -251,7 +236,7 @@ HNSW::knn_search(const DatasetPtr& query,
         try {
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
             results = hnsw->searchKnn2(
-                (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
+                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
