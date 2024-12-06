@@ -1051,8 +1051,8 @@ public:
 
     template <typename T>
     static void
-    WriteOne(StreamWriter& writer, T& value) {
-        writer.Write(reinterpret_cast<char*>(&value), sizeof(value));
+    WriteOne(StreamWriter& writer,const T& value) {
+        writer.Write(reinterpret_cast<const char*>(&value), sizeof(value));
     }
 
     void
@@ -1072,21 +1072,20 @@ public:
         WriteOne(writer, mult_);
         WriteOne(writer, ef_construction_);
 
-        // WriteOne(writer, hc_cache_bs_);
     
-        // // 序列化 std::map
-        // unsigned int map_size = hc_cache_res_.size();  // 获取 map 中元素的数量
-        // WriteOne(writer, map_size);  // 写入 map 大小
+        // 序列化 std::map
+        unsigned int map_size = hc_cache_res_.size();  // 获取 map 中元素的数量
+        WriteOne(writer, map_size);  // 写入 map 大小
 
-        // // 遍历并序列化每个元素
-        // for (const auto& entry : hc_cache_res_) {
-        //     // 序列化 map 的键 (std::array<int8_t, DIM>)
-        //     // std::array<int8_t, DIM> key = entry.first;
-        //     WriteOne(writer, entry.first);  // 这里的 entry.first 是 std::array<int8_t, DIM>
+        // 遍历并序列化每个元素
+        for (auto& entry : hc_cache_res_) {
+            // 序列化 map 的键 (std::array<int8_t, DIM>)
+            // std::array<int8_t, DIM> key = entry.first;
+            WriteOne(writer, entry.first);  // 这里的 entry.first 是 std::array<int8_t, DIM>
 
-        //     // 序列化 map 的值 (std::array<std::pair<float, labeltype>, 10>)
-        //     WriteOne(writer, entry.second);  // 这里的 entry.second 是 std::array<std::pair<float, labeltype>, 10>
-        // }
+            // 序列化 map 的值 (std::array<std::pair<float, labeltype>, 10>)
+            WriteOne(writer, entry.second);  // 这里的 entry.second 是 std::array<std::pair<float, labeltype>, 10>
+        }
 
 
 
@@ -1159,27 +1158,25 @@ public:
         ReadOne(reader, mult_);
         ReadOne(reader, ef_construction_);
 
-        // // 反序列化 std::bitset
-        // ReadOne(reader, hc_cache_bs_);
         
-        // // 反序列化 std::map
-        // unsigned int map_size;
-        // ReadOne(reader, map_size);  // 读取 map 的大小
+        // 反序列化 std::map
+        unsigned int map_size;
+        ReadOne(reader, map_size);  // 读取 map 的大小
 
-        // // 反序列化 map 的元素
-        // for (unsigned int i = 0; i < map_size; ++i) {
-        //     std::array<int8_t, DIM> key;
-        //     std::array<std::pair<float, labeltype>, 10> value;
+        // 反序列化 map 的元素
+        for (unsigned int i = 0; i < map_size; ++i) {
+            std::array<int8_t, DIM> key;
+            std::array<std::pair<float, labeltype>, 10> value;
 
-        //     // 反序列化 map 的键
-        //     ReadOne(reader, key);
+            // 反序列化 map 的键
+            ReadOne(reader, key);
 
-        //     // 反序列化 map 的值
-        //     ReadOne(reader, value);
+            // 反序列化 map 的值
+            ReadOne(reader, value);
 
-        //     // 将反序列化后的键值对插入到 map 中
-        //     hc_cache_res_[key] = value;
-        // }
+            // 将反序列化后的键值对插入到 map 中
+            hc_cache_res_[key] = value;
+        }
 
         data_size_ = s->get_data_size();
         fstdistfunc_ = s->get_dist_func();
