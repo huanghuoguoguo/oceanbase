@@ -45,16 +45,12 @@ namespace std {
     template <int N>
     struct hash<std::array<int8_t, N>> {
         int operator()(const std::array<int8_t, N>& arr) const {
-            int hc_hash = 0;
-            for (size_t i = 0; i < 128; ++i) {            
-                // 第一轮哈希，使用加权值
-                hc_hash = hc_hash * 31 + arr[i];
-
-                // 使用位操作提高散列的分布性
-                hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0x9f3b;
-                hc_hash = (hc_hash ^ (hc_hash >> 16)) * 0xfd34;
+            uint64_t hash = 1469598103934665603ULL; // FNV offset basis
+            for (size_t i = 0; i < 128; ++i) {
+                hash ^= static_cast<unsigned char>(arr[i]);
+                hash *= 1099511628211ULL; // FNV prime
             }
-            return hc_hash;
+            return hash;
         }
     };
 }
@@ -1724,16 +1720,12 @@ public:
 
                 // 将缓存结果转为返回格式
                 std::vector<std::pair<float, labeltype>> result;
-                if(result.size() != 10){
-                    vsag::logger::warn("yhh log find size: {}", result.size());
-                }else{
-                    for (size_t i = 0; i < cached_result.size(); ++i) {
-                        const auto& [cached_dist, cached_label] = cached_result[i];
-                        result.emplace_back(cached_dist, cached_label);
-                    }
-                    // 返回缓存的结果
-                    return result;
+                for (size_t i = 0; i < cached_result.size(); ++i) {
+                    const auto& [cached_dist, cached_label] = cached_result[i];
+                    result.emplace_back(cached_dist, cached_label);
                 }
+                // 返回缓存的结果
+                return result;
             }
         }
 
