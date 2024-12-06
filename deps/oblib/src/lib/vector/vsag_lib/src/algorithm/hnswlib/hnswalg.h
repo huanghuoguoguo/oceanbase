@@ -41,6 +41,18 @@
 #include "hnswlib.h"
 #include "visited_list_pool.h"
 
+namespace std {
+    template <size_t N>
+    struct hash<std::array<int8_t, N>> {
+        size_t operator()(const std::array<int8_t, N>& arr) const {
+            size_t hash_value = 0;
+            for (size_t i = 0; i < N; ++i) {
+                hash_value = hash_value * 31 + static_cast<size_t>(arr[i]);
+            }
+            return hash_value;
+        }
+    };
+}
 namespace hnswlib {
 using tableint = unsigned int;
 using linklistsizeint = unsigned int;
@@ -52,6 +64,7 @@ struct CompareByFirst {
         return a.first < b.first;
     }
 };
+
 using MaxHeap = std::priority_queue<std::pair<float, tableint>,
                                     vsag::Vector<std::pair<float, tableint>>,
                                     CompareByFirst>;
@@ -74,8 +87,9 @@ private:
     size_t ef_construction_{0};
     size_t dim_{0};
 
+    ///  缓存实现
     std::bitset<HC_BIT_SIZE> hc_cache_bs_;
-    std::map<std::array<int8_t, DIM>, std::array<std::pair<float,labeltype>,10>> hc_cache_res_;
+    std::unordered_map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>, std::hash<std::array<int8_t, DIM>>> hc_cache_res_;
 
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
