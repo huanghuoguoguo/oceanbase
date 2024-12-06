@@ -94,7 +94,7 @@ private:
 
     ///  缓存实现
     std::unordered_map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>, std::hash<std::array<int8_t, DIM>>> hc_cache_res_;
-    bool use_cache = false;
+    bool use_cache = true;
 
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
