@@ -38,7 +38,7 @@
 namespace vsag {
 
 const static int64_t EXPANSION_NUM = 1000000;
-const static int64_t DEFAULT_MAX_ELEMENT = 1000000;
+const static int64_t DEFAULT_MAX_ELEMENT = 1;
 const static int MINIMAL_M = 8;
 const static int MAXIMAL_M = 64;
 const static uint32_t GENERATE_SEARCH_K = 50;
@@ -257,8 +257,7 @@ HNSW::knn_search(const DatasetPtr& query,
         if(k != 10000){
             for (int64_t j = results.size() - 1; j >= 0; --j) {
                 dists[j] = results[j].first;
-                ids[j] = results[j].second;
-                
+                ids[j] = results[j].second; 
             }
         }else{
             dists_.resize(10000);

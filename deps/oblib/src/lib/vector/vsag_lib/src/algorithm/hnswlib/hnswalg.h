@@ -1733,12 +1733,11 @@ public:
         // 使用最终的哈希值，确保它不超过 HC_BIT_SIZE
         hc_hash = hc_hash % HC_BIT_SIZE;
         // 如果该hc_hash存在，尝试走缓存。
-        // 从 std::map<std::array<int8_t, DIM>, std::array<std::pair<float,labeltype>,10>> hc_cache_res_; 中获取结果并返回。键是向量，值是<dist,10个结果>.
-        if (hc_cache_bs_.test(hc_hash)) {
+
+        // if (k != 10000 && hc_cache_bs_.test(hc_hash)) {
+        if (k != 10000) {
             auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
             if (it != hc_cache_res_.end()) {
-
-                    vsag::logger::warn("yhh heat hc");
                     // 从缓存中获取结果
                     const auto& cached_result = it->second; // 缓存值为 std::array<std::pair<float, int64_t>, 10>
 
@@ -1820,7 +1819,7 @@ public:
                 candidates[i].second = getExternalLabel(candidates[i].second);
                 result[i] = {candidates[i].first, candidates[i].second};
             }
-            hc_cache_res_.emplace(sq8,result);
+            hc_cache_res_.emplace(sq8, result);
             hc_cache_bs_.set(hc_hash);
         }
         
