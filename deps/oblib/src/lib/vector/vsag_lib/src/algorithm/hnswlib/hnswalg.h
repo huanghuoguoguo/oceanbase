@@ -1051,8 +1051,8 @@ public:
 
     template <typename T>
     static void
-    WriteOne(StreamWriter& writer, const T& value) {
-        writer.Write(reinterpret_cast<const char*>(&value), sizeof(value));
+    WriteOne(StreamWriter& writer, T& value) {
+        writer.Write(reinterpret_cast<char*>(&value), sizeof(value));
     }
 
     void

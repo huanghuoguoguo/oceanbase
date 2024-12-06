@@ -21,7 +21,7 @@ BufferStreamWriter::BufferStreamWriter(char*& buffer) : buffer_(buffer), StreamW
 }
 
 void
-BufferStreamWriter::Write(const char* data, uint64_t size) {
+BufferStreamWriter::Write(char* data, uint64_t size) {
     memcpy(buffer_, data, size);
     buffer_ += size;
 }
@@ -30,6 +30,6 @@ IOStreamWriter::IOStreamWriter(std::ostream& ostream) : ostream_(ostream), Strea
 }
 
 void
-IOStreamWriter::Write(const char* data, uint64_t size) {
+IOStreamWriter::Write(char* data, uint64_t size) {
     ostream_.write(data, static_cast<int64_t>(size));
 }
