@@ -228,7 +228,7 @@ HNSW::knn_search(const DatasetPtr& query,
         }
 
         auto vector = query->GetFloat32Vectors();
-        std::vector<uint8_t> temp(128);
+        std::array<uint8_t, 128> temp;
 //         #ifdef ENABLE_AVX512
 //         for (int i = 0; i < 128; i += 16) {
 //             // 加载 16 个 float 到 SIMD 寄存器
@@ -262,7 +262,7 @@ HNSW::knn_search(const DatasetPtr& query,
         try {
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
             results = hnsw->searchKnn2(
-                (const void*)(temp.data()), k, std::max(params.ef_search, k), filter_ptr);
+                temp, k, std::max(params.ef_search, k), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",

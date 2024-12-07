@@ -43,8 +43,8 @@
 
 namespace std {
     template <int N>
-    struct hash<std::array<int8_t, N>> {
-        int operator()(const std::array<int8_t, N>& arr) const {
+    struct hash<std::array<uint8_t, N>> {
+        int operator()(const std::array<uint8_t, N>& arr) const {
             uint64_t hash = 1469598103934665603ULL; // FNV offset basis
             for (size_t i = 0; i < 128; ++i) {
                 hash ^= static_cast<unsigned char>(arr[i]);
@@ -89,8 +89,7 @@ private:
     size_t dim_{0};
 
     ///  缓存实现
-    // std::unordered_map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>, std::hash<std::array<int8_t, DIM>>> hc_cache_res_;
-    std::map<std::array<int8_t, DIM>, std::array<std::pair<float, labeltype>, 10>> hc_cache_res_;
+    std::map<std::array<uint8_t, DIM>, std::array<std::pair<float, labeltype>, 10>> hc_cache_res_;
     bool use_cache = true;
 
     double mult_{0.0}, revSize_{0.0};
@@ -1075,9 +1074,8 @@ public:
 
         // 遍历并序列化每个元素
         for (auto& entry : hc_cache_res_) {
-            // 序列化 map 的键 (std::array<int8_t, DIM>)
-            // std::array<int8_t, DIM> key = entry.first;
-            WriteOne(writer, entry.first);  // 这里的 entry.first 是 std::array<int8_t, DIM>
+
+            WriteOne(writer, entry.first);  // 这里的 entry.first 是 std::array<uint8_t, DIM>
 
             // 序列化 map 的值 (std::array<std::pair<float, labeltype>, 10>)
             WriteOne(writer, entry.second);  // 这里的 entry.second 是 std::array<std::pair<float, labeltype>, 10>
@@ -1161,7 +1159,7 @@ public:
 
         // 反序列化 map 的元素
         for (unsigned int i = 0; i < map_size; ++i) {
-            std::array<int8_t, DIM> key;
+            std::array<uint8_t, DIM> key;
             std::array<std::pair<float, labeltype>, 10> value;
 
             // 反序列化 map 的键
@@ -1703,14 +1701,11 @@ public:
 
 
     std::vector<std::pair<float, labeltype>>
-    searchKnn2(const void* query_data,
+    searchKnn2(std::array<uint8_t, 128>& sq8,
               size_t k,
               uint64_t ef,
               BaseFilterFunctor* isIdAllowed = nullptr)  {
-        auto vector = (int8_t*)query_data;
- 
-        std::array<int8_t, DIM> sq8 = {0};
-        std::memcpy(sq8.data(), query_data, DIM);
+        const void* query_data = (const void*)(sq8.data());
 
         if (use_cache && k != 10000) {
             auto it = hc_cache_res_.find(sq8); // 查找量化后的向量 sq8 是否存在缓存
