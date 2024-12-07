@@ -90,7 +90,7 @@ private:
 
     ///  缓存实现
     std::map<std::array<uint8_t, DIM>, std::array<std::pair<float, labeltype>, 10>> hc_cache_res_;
-    bool use_cache = true;
+    bool use_cache = false;
 
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
@@ -1789,7 +1789,9 @@ public:
                 candidates[i].second = getExternalLabel(candidates[i].second);
                 result[i] = {candidates[i].first, candidates[i].second};
             }
-            hc_cache_res_.emplace(sq8, result);
+            if(use_cache){
+                hc_cache_res_.emplace(sq8, result);
+            }
         }
         
         return std::move(candidates);
