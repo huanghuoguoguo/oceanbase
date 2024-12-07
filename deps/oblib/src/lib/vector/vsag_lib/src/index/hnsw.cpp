@@ -213,7 +213,7 @@ HNSW::knn_search(const DatasetPtr& query,
     try {
         auto result = Dataset::Make();
         if(k == 10000){
-            if(!dists_.empty()){
+            if(is_1w_done){
                 result->Dim(10000)->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
                 int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * 10000);
                 result->Ids(ids);
@@ -226,10 +226,6 @@ HNSW::knn_search(const DatasetPtr& query,
                 // }
                 std::memcpy(dists,dists_.data(),10000*sizeof(float));
                 std::memcpy(ids,ids_.data(),10000*sizeof(int64_t));
-                // for (int64_t j = ids_.size() - 1; j >= 0; --j) {
-                //     dists[j] = dists_[j];
-                //     ids[j] = ids_[j];
-                // }
                 return std::move(result);
             }
         }
@@ -302,6 +298,7 @@ HNSW::knn_search(const DatasetPtr& query,
                 dists_[j] = results[j].first;
                 ids_[j] = results[j].second;
             }
+            is_1w_done = true;
         }
         
         return std::move(result);

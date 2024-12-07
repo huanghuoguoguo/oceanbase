@@ -305,6 +305,7 @@ private:
 
     mutable std::vector<int64_t> ids_;
     mutable std::vector<float> dists_;
+    mutable bool is_1w_done = false;
 };
 
 }  // namespace vsag
