@@ -72,7 +72,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
         allocator = DefaultAllocator::Instance();
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
-
+    dists_.resize(10000);
+    ids_.resize(10000);
 
     if (!use_static_) {
         alg_hnsw =
@@ -218,11 +219,17 @@ HNSW::knn_search(const DatasetPtr& query,
                 result->Ids(ids);
                 float* dists = (float*)allocator_->Allocate(sizeof(float) * 10000);
                 result->Distances(dists);
-                #pragma omp parallel for
-                for (int64_t j = ids_.size() - 1; j >= 0; --j) {
-                    dists[j] = dists_[j];
-                    ids[j] = ids_[j];
-                }
+                // #pragma omp parallel for
+                // for (int64_t j = ids_.size() - 1; j >= 0; --j) {
+                //     dists[j] = dists_[j];
+                //     ids[j] = ids_[j];
+                // }
+                std::memcpy(dists,dists_.data(),10000*sizeof(float));
+                std::memcpy(ids,ids_.data(),10000*sizeof(int64_t));
+                // for (int64_t j = ids_.size() - 1; j >= 0; --j) {
+                //     dists[j] = dists_[j];
+                //     ids[j] = ids_[j];
+                // }
                 return std::move(result);
             }
         }
