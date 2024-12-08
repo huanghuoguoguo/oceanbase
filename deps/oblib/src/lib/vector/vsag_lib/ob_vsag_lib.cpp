@@ -130,22 +130,11 @@ int HnswIndexHandler::knn_search(const vsag::DatasetPtr& query, int64_t topk,
                const std::string& parameters,
                const float*& dist, const int64_t*& ids, int64_t &result_size,
                const std::function<bool(int64_t)>& filter) {
-    vsag::logger::debug("  search_parameters:{}", parameters);
-    vsag::logger::debug("  topk:{}", topk);
     vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
-
     auto result = index_->KnnSearch(query, topk, parameters, filter);
-    vsag::logger::warn("yhh hnswlib HnswIndexHandler::knn_search");
     if (result.has_value()) {
         //result的生命周期
         result.value()->Owner(false);
-        ids = result.value()->GetIds();
-        dist = result.value()->GetDistances();
-        result_size = result.value()->GetDim();
-        // print the results
-        for (int64_t i = 0; i < result_size; ++i) {
-            vsag::logger::debug("  knn search id : {}, distance : {}",ids[i],dist[i]);
-        }
         return 0; 
     } else {
         error = result.error().type;
@@ -478,7 +467,7 @@ int deserialize_bin(VectorIndexPtr& index_handler,const std::string dir) {
                                 {"use_static", use_static}};
     nlohmann::json index_parameters{
         {"dtype", "float32"}, {"metric_type", "l2"}, {"dim", dim}, {"hnsw", hnsw_parameters}};
-    vsag::logger::debug("   Deserilize hnsw index , index parameter:{}, allocator addr:{}",index_parameters.dump(),(void*)hnsw->get_allocator());
+    vsag::logger::warn("yhh   Deserilize hnsw index , index parameter:{}, allocator addr:{}",index_parameters.dump(),(void*)hnsw->get_allocator());
     std::shared_ptr<vsag::Index> hnsw_index;
     if (auto index = vsag::Factory::CreateIndex("hnsw", index_parameters.dump(),hnsw->get_allocator());
         index.has_value()) {
