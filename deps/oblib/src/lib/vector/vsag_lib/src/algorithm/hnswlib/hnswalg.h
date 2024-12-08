@@ -1743,8 +1743,6 @@ public:
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
                     tableint cand = datal[i];
-                    if (cand < 0 || cand > max_elements_)
-                        throw std::runtime_error("cand error");
                     float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
                     if (d < curdist) {
@@ -1784,12 +1782,18 @@ public:
                 candidates[i].second = getExternalLabel(candidates[i].second);
             }
         }else{
-            std::array<std::pair<float, labeltype>, 10> result;
-            for (int i = 0; i < candidates.size(); i++) {
-                candidates[i].second = getExternalLabel(candidates[i].second);
-                result[i] = {candidates[i].first, candidates[i].second};
+            if(use_cache){
+                std::array<std::pair<float, labeltype>, 10> result;
+                for (int i = 0; i < candidates.size(); i++) {
+                    candidates[i].second = getExternalLabel(candidates[i].second);
+                    result[i] = {candidates[i].first, candidates[i].second};
+                }
+                hc_cache_res_.emplace(sq8, result);
+            }else{
+                for (int i = 0; i < candidates.size(); i++) {
+                    candidates[i].second = getExternalLabel(candidates[i].second);
+                }
             }
-            hc_cache_res_.emplace(sq8, result);
         }
         
         return std::move(candidates);
