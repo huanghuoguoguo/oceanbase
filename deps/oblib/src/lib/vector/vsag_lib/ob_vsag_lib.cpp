@@ -135,6 +135,7 @@ int HnswIndexHandler::knn_search(const vsag::DatasetPtr& query, int64_t topk,
     ids = result.value()->GetIds();
     dist = result.value()->GetDistances();
     result_size = result.value()->GetDim();
+    return 0;
 }
 
 bool is_init_ = vsag::init();
