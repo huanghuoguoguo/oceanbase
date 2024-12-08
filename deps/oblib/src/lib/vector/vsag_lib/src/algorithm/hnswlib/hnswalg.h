@@ -90,7 +90,7 @@ private:
 
     ///  缓存实现
     std::map<std::array<uint8_t, DIM>, std::array<std::pair<float, labeltype>, 10>> hc_cache_res_;
-    bool use_cache = false;
+    bool use_cache = true;
 
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
