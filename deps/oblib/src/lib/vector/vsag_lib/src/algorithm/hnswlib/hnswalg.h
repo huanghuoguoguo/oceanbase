@@ -1001,6 +1001,16 @@ public:
         // writeBinaryPOD(output, ef_construction_);
         size += sizeof(ef_construction_);
 
+        // 序列化 std::map
+        unsigned int map_size = hc_cache_res_.size();  // 获取 map 中元素的数量
+        size += map_size;
+        vsag::logger::warn("yhh ser calcSerializeSize map_size:{}",map_size);
+        // 遍历并序列化每个元素
+        for (auto& entry : hc_cache_res_) {
+            size += sizeof(entry.first);
+            size += sizeof(entry.second);
+        }
+
         // output.write(data_level0_memory_, cur_element_count_ * size_data_per_element_);
         size += data_level0_memory_->GetSize();
         size += maxM0_ * sizeof(uint32_t) * max_elements_;
@@ -1025,6 +1035,7 @@ public:
 
     void
     saveIndex(void* d) override {
+        vsag::logger::warn("yhh ser d");
         char* dest = (char*)d;
         BufferStreamWriter writer(dest);
         SerializeImpl(writer);
@@ -1032,12 +1043,14 @@ public:
     // save index to a file stream
     void
     saveIndex(std::ostream& out_stream) override {
+        vsag::logger::warn("yhh ser out_stream");
         IOStreamWriter writer(out_stream);
         SerializeImpl(writer);
     }
 
     void
     saveIndex(const std::string& location) override {
+        vsag::logger::warn("yhh ser location");
         std::ofstream output(location, std::ios::binary);
         IOStreamWriter writer(output);
         SerializeImpl(writer);
@@ -1070,8 +1083,8 @@ public:
     
         // 序列化 std::map
         unsigned int map_size = hc_cache_res_.size();  // 获取 map 中元素的数量
-        WriteOne(writer, map_size);  // 写入 map 大小
         vsag::logger::warn("yhh ser map_size:{}",map_size);
+        WriteOne(writer, map_size);  // 写入 map 大小
         // 遍历并序列化每个元素
         for (auto& entry : hc_cache_res_) {
 
@@ -1156,7 +1169,6 @@ public:
         // 反序列化 std::map
         unsigned int map_size;
         ReadOne(reader, map_size);  // 读取 map 的大小
-        vsag::logger::warn("yhh deser map_size:{}",map_size);
         // 反序列化 map 的元素
         for (unsigned int i = 0; i < map_size; ++i) {
             std::array<uint8_t, DIM> key;
