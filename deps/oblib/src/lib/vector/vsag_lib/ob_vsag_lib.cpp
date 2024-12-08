@@ -135,6 +135,7 @@ int HnswIndexHandler::knn_search(const vsag::DatasetPtr& query, int64_t topk,
     vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
 
     auto result = index_->KnnSearch(query, topk, parameters, filter);
+    vsag::logger::warn("yhh hnswlib HnswIndexHandler::knn_search");
     if (result.has_value()) {
         //result的生命周期
         result.value()->Owner(false);
@@ -286,7 +287,6 @@ int add_index(VectorIndexPtr& index_handler,float* vector, int64_t* ids, int dim
     HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
     SlowTaskTimer t("add_index");
 
-    vsag::logger::warn("yhh add_index {},{}", vector[0],vector[127]);
     // add index
     auto incremental = vsag::Dataset::Make();
         incremental->Dim(dim)
@@ -315,7 +315,6 @@ int get_index_number(VectorIndexPtr& index_handler, int64_t &size) {
 int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_t topk,
                const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
                void* invalid) {
-    vsag::logger::debug("TRACE LOG[knn_search]:");
     vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
     int ret = 0;
     if (index_handler == nullptr || query_vector == nullptr) {
@@ -341,6 +340,7 @@ int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_
 
 int serialize(VectorIndexPtr& index_handler, const std::string dir) {
     vsag::logger::debug("TRACE LOG[serialize]:");
+    vsag::logger::warn("yhh hnswlib serialize()");
     vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
     int ret =  0;
     if (index_handler == nullptr) {
@@ -376,6 +376,7 @@ int serialize(VectorIndexPtr& index_handler, const std::string dir) {
 int fserialize(VectorIndexPtr& index_handler, std::ostream& out_stream) {
     vsag::logger::debug("TRACE LOG[fserialize]:");
     vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
+    vsag::logger::warn("yhh hnswlib fserialize()");
     int ret = 0;
     if (index_handler == nullptr) {
         vsag::logger::debug("   null pointer addr, index_handler:{}", (void*)index_handler);

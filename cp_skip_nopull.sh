@@ -1,7 +1,5 @@
 #!/bin/bash
-git pull
-# Stop the obcluster
-./tools/deploy/obd.sh stop -n obcluster
+
 
 rm -rf /data/obcluster/log/*
 
@@ -31,31 +29,13 @@ echo "Waiting for 30 seconds..."
 sleep 30
 
 
-# Run the benchmark
 cd /root/source/ann-benchmarks
-python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1
-if [ $? -ne 0 ]; then
-  echo "Benchmark run failed. Exiting."
-  exit 1
-fi
-
-# Plot the results
-python plot.py --dataset sift-128-euclidean --recompute
-if [ $? -ne 0 ]; then
-  echo "Plotting failed. Exiting."
-  exit 1
-fi
 
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
 python plot.py --dataset sift-128-euclidean --recompute
 
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
 python plot.py --dataset sift-128-euclidean --recompute
-
-cd /root/source/oceanbase
-./tools/deploy/obd.sh restart -n obcluster
-
-cd /root/source/ann-benchmarks
 
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
 python plot.py --dataset sift-128-euclidean --recompute

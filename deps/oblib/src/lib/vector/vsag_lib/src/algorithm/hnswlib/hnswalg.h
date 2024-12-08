@@ -1732,7 +1732,7 @@ public:
                     result.emplace_back(cached_dist, cached_label);
                 }
                 // 返回缓存的结果
-                vsag::logger::warn("yhh use cache");
+                // vsag::logger::warn("yhh use cache");
                 return result;
             }
         }

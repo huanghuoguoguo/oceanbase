@@ -442,11 +442,11 @@ HNSW::empty_binaryset() const {
 
 tl::expected<BinarySet, Error>
 HNSW::serialize() const {
+    logger::warn("yhh hnsw serialize()");
     if (GetNumElements() == 0) {
         // return a special binaryset means empty
         return empty_binaryset();
     }
-
     SlowTaskTimer t("hnsw serialize");
     size_t num_bytes = alg_hnsw->calcSerializeSize();
     try {
@@ -474,6 +474,8 @@ HNSW::serialize() const {
 
 tl::expected<void, Error>
 HNSW::serialize(std::ostream& out_stream) {
+
+    logger::warn("yhh hnsw out_stream");
     if (GetNumElements() == 0) {
         LOG_ERROR_AND_RETURNS(ErrorType::INDEX_EMPTY, "failed to serialize: hnsw index is empty");
 
