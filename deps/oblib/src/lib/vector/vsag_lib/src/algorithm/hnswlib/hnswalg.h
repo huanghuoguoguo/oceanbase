@@ -1071,7 +1071,7 @@ public:
         // 序列化 std::map
         unsigned int map_size = hc_cache_res_.size();  // 获取 map 中元素的数量
         WriteOne(writer, map_size);  // 写入 map 大小
-
+        vsag::logger::warn("yhh ser map_size:{}",map_size);
         // 遍历并序列化每个元素
         for (auto& entry : hc_cache_res_) {
 
@@ -1156,7 +1156,7 @@ public:
         // 反序列化 std::map
         unsigned int map_size;
         ReadOne(reader, map_size);  // 读取 map 的大小
-
+        vsag::logger::warn("yhh deser map_size:{}",map_size);
         // 反序列化 map 的元素
         for (unsigned int i = 0; i < map_size; ++i) {
             std::array<uint8_t, DIM> key;
@@ -1169,7 +1169,7 @@ public:
             ReadOne(reader, value);
 
             // 将反序列化后的键值对插入到 map 中
-            hc_cache_res_[key] = value;
+            hc_cache_res_.emplace(key,value);
         }
 
         data_size_ = s->get_data_size();
@@ -1720,6 +1720,7 @@ public:
                     result.emplace_back(cached_dist, cached_label);
                 }
                 // 返回缓存的结果
+                vsag::logger::warn("yhh use cache");
                 return result;
             }
         }
