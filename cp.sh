@@ -6,7 +6,7 @@ git pull
 rm -rf /data/obcluster/log/*
 
 # Build the release
-bash build.sh release --init --make --silent
+bash build.sh release --init --make --silent -j2
 if [ $? -ne 0 ]; then
   echo "Build failed. Exiting."
   exit 1

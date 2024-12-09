@@ -299,7 +299,7 @@ private:
 
     std::shared_ptr<SafeAllocator> allocator_;
 
-    hnswlib::DISTFUNC l2func;
+    
 
     std::vector<uint64_t> ids_;
     std::vector<std::vector<float>> vectors_;

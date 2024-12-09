@@ -214,13 +214,7 @@ HNSW::add(const DatasetPtr& base) {
 void HNSW::encode(){
     std::vector<int> labels;
     std::vector<std::vector<float>> centers;
-    l2func = vsag::GetL2DistanceFunc(128);
-
-    if(l2func){
-        logger::warn("yhh l2func not null");
-    }else{
-        logger::warn("yhh l2func null");
-    }
+    
     auto start = std::chrono::high_resolution_clock::now();
     kmeansClustering(vectors_, 10, labels, centers);
     auto end = std::chrono::high_resolution_clock::now();
@@ -330,7 +324,11 @@ void HNSW::kmeansClustering(const std::vector<std::vector<float>>& data, int k, 
     int numPoints = data.size();
     int dim = data[0].size();
     srand(time(0)); // 随机种子
-
+    logger::warn("yhh start");
+    auto l2func = static_cast<hnswlib::L2Space*>(space.get())->get_n_dist_func();
+    float dist2 = l2func((const void*)(data[0].data()), (const void*)(data[1].data()), &dim);
+    logger::warn("yhh dist2:{}",dist2);
+    
     // 初始化聚类中心，随机选择k个点作为初始中心
     centers.resize(k, std::vector<float>(dim));
     for (int i = 0; i < k; ++i) {
@@ -348,7 +346,6 @@ void HNSW::kmeansClustering(const std::vector<std::vector<float>>& data, int k, 
         for (int i = 0; i < numPoints; ++i) {
             float minDist = std::numeric_limits<float>::max();
             int bestCluster = -1;
-
             // 计算点 i 到所有聚类中心的距离
             for (int j = 0; j < k; ++j) {
                 // 调用 l2func，假设 centers 是线性存储的数组
