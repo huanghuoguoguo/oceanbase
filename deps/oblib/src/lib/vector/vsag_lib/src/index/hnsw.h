@@ -276,10 +276,11 @@ private:
 
     tl::expected<void, Error>
     deserialize(std::istream& in_stream);
-
+    void kmeansClustering(const std::vector<std::vector<float>>& data, int k, std::vector<int>& labels, std::vector<std::vector<float>>& centers);
+    
     tl::expected<bool, Error>
     init_memory_space();
-
+    void encode();
     BinarySet
     empty_binaryset() const;
 
@@ -297,6 +298,11 @@ private:
     bool is_init_memory_ = false;
 
     std::shared_ptr<SafeAllocator> allocator_;
+
+    hnswlib::DISTFUNC l2func;
+
+    std::vector<uint64_t> ids_;
+    std::vector<std::vector<float>> vectors_;
 
     mutable std::mutex stats_mutex_;
     mutable std::map<std::string, WindowResultQueue> result_queues_;
