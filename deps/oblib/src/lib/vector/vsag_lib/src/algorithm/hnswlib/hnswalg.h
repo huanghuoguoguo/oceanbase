@@ -506,52 +506,55 @@ public:
         return top_candidates;
     }
 
-    template <bool has_deletions, bool collect_metrics = false>
-    std::priority_queue<std::pair<float, tableint>,
-                        vsag::Vector<std::pair<float, tableint>>,
-                        CompareByFirst>
-    searchBaseLayerST(tableint ep_id,
-                      const void* data_point,
-                      size_t ef,
-                      BaseFilterFunctor* isIdAllowed = nullptr) const {
-        auto vl = visited_list_pool_->getFreeVisitedList();
-        vl_type* visited_array = vl->mass;
-        vl_type visited_array_tag = vl->curV;
+template <bool has_deletions, bool collect_metrics = false>
+std::priority_queue<std::pair<float, tableint>,
+                    vsag::Vector<std::pair<float, tableint>>,
+                    CompareByFirst>
+searchBaseLayerST(tableint ep_id,
+                  const void* data_point,
+                  size_t ef,
+                  BaseFilterFunctor* isIdAllowed = nullptr) const {
+    auto vl = visited_list_pool_->getFreeVisitedList();
+    vl_type* visited_array = vl->mass;
+    vl_type visited_array_tag = vl->curV;
 
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            top_candidates(allocator_);
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            candidate_set(allocator_);
+    // 使用 concurrent_priority_queue 替代 priority_queue 以支持多线程
+    concurrent_priority_queue<std::pair<float, tableint>,
+                              vsag::Vector<std::pair<float, tableint>>,
+                              CompareByFirst> top_candidates(allocator_);
 
-        float lowerBound;
-        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
-            float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-            lowerBound = dist;
-            top_candidates.emplace(dist, ep_id);
-            candidate_set.emplace(-dist, ep_id);
-        } else {
-            lowerBound = std::numeric_limits<float>::max();
-            candidate_set.emplace(-lowerBound, ep_id);
-        }
+    // 使用 concurrent_priority_queue 替代 priority_queue 以支持多线程
+    concurrent_priority_queue<std::pair<float, tableint>,
+                              vsag::Vector<std::pair<float, tableint>>,
+                              CompareByFirst> candidate_set(allocator_);
 
-        visited_array[ep_id] = visited_array_tag; 
+    float lowerBound;
+    if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+        lowerBound = dist;
+        top_candidates.emplace(dist, ep_id);
+        candidate_set.emplace(-dist, ep_id);
+    } else {
+        lowerBound = std::numeric_limits<float>::max();
+        candidate_set.emplace(-lowerBound, ep_id);
+    }
+
+    visited_array[ep_id] = visited_array_tag;
+
+    // 使用线程池处理并发的候选节点
+    auto process_candidates = [this, &candidate_set, &top_candidates, &visited_array, &visited_array_tag,
+                               &lowerBound, ef, data_point, isIdAllowed]() {
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
+            candidate_set.pop();
 
-            if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+            if ((-current_node_pair.first) > lowerBound && (top_candidates.size() >= ef || !isIdAllowed)) {
                 break;
             }
-            candidate_set.pop();
 
             tableint current_node_id = current_node_pair.second;
             int* data = (int*)get_linklist0(current_node_id);
             size_t size = getListCount((linklistsizeint*)data);
-
 
             auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
 #ifdef USE_SSE
@@ -563,6 +566,8 @@ public:
 
             for (size_t j = 1; j <= size; j++) {
                 int candidate_id = *(data + j);
+
+                // 预加载当前节点的相关数据
                 size_t pre_l = std::min(j, size - 2);
                 auto vector_data_ptr =
                     data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
@@ -570,9 +575,12 @@ public:
                 _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
                 _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
 #endif
+
+                // 检查节点是否已经访问
                 if (!(visited_array[candidate_id] == visited_array_tag)) {
                     visited_array[candidate_id] = visited_array_tag;
 
+                    // 计算当前节点与目标点之间的距离
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (top_candidates.size() < ef || lowerBound > dist) {
@@ -583,22 +591,45 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
 
-                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
+                        // 需要过滤不允许的候选节点
+                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) {
                             top_candidates.emplace(dist, candidate_id);
+                        }
 
-                        if (top_candidates.size() > ef)
+                        // 确保 top_candidates 中的候选节点数目不会超过 ef
+                        if (top_candidates.size() > ef) {
                             top_candidates.pop();
+                        }
 
-                        if (!top_candidates.empty())
+                        // 更新 lowerBound
+                        if (!top_candidates.empty()) {
                             lowerBound = top_candidates.top().first;
+                        }
                     }
                 }
             }
         }
+    };
 
-        visited_list_pool_->releaseVisitedList(vl);
-        return top_candidates;
+    // 创建多个线程来并行处理候选节点
+    size_t num_threads = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+
+    // 启动线程
+    for (size_t i = 0; i < num_threads; ++i) {
+        threads.emplace_back(process_candidates);
     }
+
+    // 等待所有线程完成
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    // 释放访问列表
+    visited_list_pool_->releaseVisitedList(vl);
+
+    return top_candidates;
+}
 
     template <bool has_deletions, bool collect_metrics = false>
     std::priority_queue<std::pair<float, tableint>,
