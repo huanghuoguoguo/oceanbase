@@ -276,7 +276,7 @@ private:
 
     tl::expected<void, Error>
     deserialize(std::istream& in_stream);
-    void kmeansClustering(const std::vector<std::vector<float>>& data, int k, std::vector<int>& labels, std::vector<std::vector<float>>& centers);
+    void kmeansClustering(std::vector<std::vector<float>>& data, int k, std::vector<int>& labels, std::vector<std::vector<float>>& centers);
     
     tl::expected<bool, Error>
     init_memory_space();
@@ -287,7 +287,8 @@ private:
 private:
     std::shared_ptr<hnswlib::AlgorithmInterface<float>> alg_hnsw;
     std::shared_ptr<hnswlib::SpaceInterface> space;
-
+    std::vecotr<std::shared_ptr<hnswlib::AlgorithmInterface<float>>> alg_hnsws_;
+    std::vector<std::vector<float>> centers_;
     bool use_conjugate_graph_;
     std::shared_ptr<ConjugateGraph> conjugate_graph_;
 

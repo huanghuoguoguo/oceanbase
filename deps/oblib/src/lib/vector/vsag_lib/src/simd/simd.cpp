@@ -14,7 +14,7 @@
 // limitations under the License.
 
 #include "simd.h"
-
+#include "../logger.h"
 #include <cpuinfo.h>
 #include <iostream>
 namespace vsag {

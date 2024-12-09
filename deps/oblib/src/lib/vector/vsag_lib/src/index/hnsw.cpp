@@ -45,7 +45,7 @@
 namespace vsag {
 
 const static int64_t EXPANSION_NUM = 1000000;
-const static int64_t DEFAULT_MAX_ELEMENT = 1000000;
+const static int64_t DEFAULT_MAX_ELEMENT = 1;
 const static int MINIMAL_M = 8;
 const static int MAXIMAL_M = 64;
 const static uint32_t GENERATE_SEARCH_K = 50;
@@ -183,28 +183,28 @@ HNSW::add(const DatasetPtr& base) {
             encode();
         }
 
+        return {};
 
 
 
 
+        // std::vector<int64_t> failed_ids;
 
-        std::vector<int64_t> failed_ids;
+        // std::unique_lock lock(rw_mutex_);
+        // if (auto result = init_memory_space(); not result.has_value()) {
+        //     return tl::unexpected(result.error());
+        // }
+        // std::vector<uint8_t> temp(128);
+        // for (size_t j = 0; j < 128; ++j) {
+        //     float value = vectors[j];
+        //     temp[j] = static_cast<uint8_t>(value);
+        // }
+        // // noexcept runtime
+        // if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[0])) {
 
-        std::unique_lock lock(rw_mutex_);
-        if (auto result = init_memory_space(); not result.has_value()) {
-            return tl::unexpected(result.error());
-        }
-        std::vector<uint8_t> temp(128);
-        for (size_t j = 0; j < 128; ++j) {
-            float value = vectors[j];
-            temp[j] = static_cast<uint8_t>(value);
-        }
-        // noexcept runtime
-        if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[0])) {
+        // }
 
-        }
-
-        return failed_ids;
+        // return failed_ids;
     } catch (const std::invalid_argument& e) {
         LOG_ERROR_AND_RETURNS(
             ErrorType::INVALID_ARGUMENT, "failed to add(invalid argument): ", e.what());
@@ -216,10 +216,35 @@ void HNSW::encode(){
     std::vector<std::vector<float>> centers;
     
     auto start = std::chrono::high_resolution_clock::now();
-    kmeansClustering(vectors_, 10, labels, centers);
+    kmeansClustering(vectors_, 4096, labels, centers);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration = end - start;
     logger::warn("yhh time cose:{}ms",duration.count());
+
+    // 聚类完毕之后，将其分为多个hnsw。一个键。
+    // 2. 初始化每个聚类的 HNSW 索引
+    int k = centers.size(); // 聚类中心的数量
+    alg_hnsws_.resize(k);
+    for (int i = 0; i < k; ++i) {
+        alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
+            space.get(),              // 距离空间
+            DEFAULT_MAX_ELEMENT,      // 索引中元素的最大数量
+            allocator_.get(),         // 内存分配器
+            20,                        // HNSW 的参数 M
+            200,          // 构建过程中搜索的候选点数量
+            use_reversed_edges_,      // 是否使用反向边
+            false,                // 是否归一化
+            Options::Instance().block_size_limit() // 内存块限制
+        );
+    }
+    // 尝试多线程会不会影响结果
+    for (size_t i = 0; i < vectors_.size(); ++i) {
+        int cluster_id = labels[i]; // 获取当前数据点的聚类标签 将其转换成uint8
+        alg_hnsws_[cluster_id]->addPoint((const void*)(vectors_[i].data()), ids_[i]); 
+    }
+    // 还需要将中心给记录，搜索的时候需要比对。
+    centers_.swap(centers);
+    
 }
 
 template <typename FilterType>
@@ -320,14 +345,13 @@ HNSW::knn_search(const DatasetPtr& query,
 }
 
 // KMeans聚类算法
-void HNSW::kmeansClustering(const std::vector<std::vector<float>>& data, int k, std::vector<int>& labels, std::vector<std::vector<float>>& centers) {
-    int numPoints = data.size();
-    int dim = data[0].size();
+void HNSW::kmeansClustering(std::vector<std::vector<float>>& data, int k, std::vector<int>& labels, std::vector<std::vector<float>>& centers) {
+    size_t numPoints = data.size();
+    size_t dim = data[0].size();
     srand(time(0)); // 随机种子
-    logger::warn("yhh start");
-    auto l2func = static_cast<hnswlib::L2Space*>(space.get())->get_n_dist_func();
-    float dist2 = l2func((const void*)(data[0].data()), (const void*)(data[1].data()), &dim);
-    logger::warn("yhh dist2:{}",dist2);
+    int count = 0;
+    hnswlib::DISTFUNC l2func = vsag::GetL2DistanceFunc(128);
+
     
     // 初始化聚类中心，随机选择k个点作为初始中心
     centers.resize(k, std::vector<float>(dim));
@@ -338,11 +362,10 @@ void HNSW::kmeansClustering(const std::vector<std::vector<float>>& data, int k, 
     labels.resize(numPoints, -1);
     std::vector<int> counts(k, 0); // 每个聚类的点数
     bool changed = true;
-
     // 迭代直到聚类中心不再改变
-    while (changed) {
+    while (count < 3 && changed) {
         changed = false;
-        
+        count++;
         for (int i = 0; i < numPoints; ++i) {
             float minDist = std::numeric_limits<float>::max();
             int bestCluster = -1;
@@ -350,20 +373,17 @@ void HNSW::kmeansClustering(const std::vector<std::vector<float>>& data, int k, 
             for (int j = 0; j < k; ++j) {
                 // 调用 l2func，假设 centers 是线性存储的数组
                 float dist = l2func(data[i].data(), centers[j].data(), &dim);
-                logger::warn("yhh dist:{}",dist);
                 if (dist < minDist) {
                     minDist = dist;
                     bestCluster = j;
                 }
             }
-            logger::warn("yhh update cluster:{}",bestCluster);
             // 更新点的聚类标签
             if (labels[i] != bestCluster) {
                 labels[i] = bestCluster;
                 changed = true;
             }
         }
-        logger::warn("yhh done");
         // 重置聚类中心和计数器
         centers.assign(k, std::vector<float>(dim, 0.0));
         counts.assign(k, 0);

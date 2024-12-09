@@ -25,7 +25,6 @@ GetL2DistanceFunc(size_t dim);
 namespace hnswlib {
 class L2Space : public SpaceInterface {
     DISTFUNC fstdistfunc_;
-    DISTFUNC l2func;
     size_t data_size_;
     size_t dim_;
 
@@ -35,7 +34,6 @@ public:
             dim = 32;
         }
         fstdistfunc_ = vsag::GetL2DistanceFunc(dim);
-        l2func = vsag::GetL2DistanceFunc(128);
         dim_ = dim;
         data_size_ = dim * sizeof(float);
     }
@@ -52,10 +50,6 @@ public:
         return fstdistfunc_;
     }
 
-    DISTFUNC
-    get_n_dist_func() {
-        return l2func;
-    }
 
     void*
     get_dist_func_param() override {
