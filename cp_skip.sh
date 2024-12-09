@@ -33,18 +33,6 @@ sleep 30
 
 # Run the benchmark
 cd /root/source/ann-benchmarks
-python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1
-if [ $? -ne 0 ]; then
-  echo "Benchmark run failed. Exiting."
-  exit 1
-fi
-
-# Plot the results
-python plot.py --dataset sift-128-euclidean --recompute
-if [ $? -ne 0 ]; then
-  echo "Plotting failed. Exiting."
-  exit 1
-fi
 
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
 python plot.py --dataset sift-128-euclidean --recompute
