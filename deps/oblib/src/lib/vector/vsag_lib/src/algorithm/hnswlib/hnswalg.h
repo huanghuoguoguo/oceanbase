@@ -1645,6 +1645,73 @@ public:
         return cur_c;
     }
 
+    std::vector<std::pair<float, labeltype>>
+    searchKnn2(std::array<uint8_t, 128>& sq8,
+              size_t k,
+              uint64_t ef,
+              BaseFilterFunctor* isIdAllowed = nullptr)  {
+        const void* query_data = (const void*)(sq8.data());
+
+        tableint currObj = enterpoint_node_;
+        float curdist =
+            fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        for (int level = maxlevel_; level > 0; level--) {
+            bool changed = true;
+            while (changed) {
+                changed = false;
+                unsigned int* data;
+
+                data = (unsigned int*)get_linklist(currObj, level);
+                int size = getListCount(data);
+                metric_hops_++;
+                metric_distance_computations_ += size;
+
+                tableint* datal = (tableint*)(data + 1);
+                for (int i = 0; i < size; i++) {
+                    tableint cand = datal[i];
+                    if (cand < 0 || cand > max_elements_)
+                        throw std::runtime_error("cand error");
+                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+
+                    if (d < curdist) {
+                        curdist = d;
+                        currObj = cand;
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        std::priority_queue<std::pair<float, tableint>,
+                            vsag::Vector<std::pair<float, tableint>>,
+                            CompareByFirst>
+            top_candidates(allocator_);
+        top_candidates =
+                searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+
+        while (top_candidates.size() > k) {
+            top_candidates.pop();
+        }
+
+        std::vector<std::pair<float, labeltype>> candidates;
+        candidates.reserve(top_candidates.size());
+
+        while (!top_candidates.empty()) {
+            std::pair<float, tableint> rez = top_candidates.top();
+            candidates.emplace_back(rez.first, rez.second);
+            top_candidates.pop();
+        }
+
+        std::reverse(candidates.begin(), candidates.end());
+
+        #pragma omp parallel for (k > 1000)
+        for (int i = 0; i < candidates.size(); i++) {
+            candidates[i].second = getExternalLabel(candidates[i].second);
+        }
+        
+        return std::move(candidates);
+    }
+
     std::priority_queue<std::pair<float, labeltype>>
     searchKnn(const void* query_data,
               size_t k,
