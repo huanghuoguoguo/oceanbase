@@ -503,106 +503,113 @@ public:
         return top_candidates;
     }
 
-    template <bool has_deletions, bool collect_metrics = false>
+template <bool has_deletions, bool collect_metrics = false>
+std::priority_queue<std::pair<float, tableint>,
+                    vsag::Vector<std::pair<float, tableint>>,
+                    CompareByFirst>
+searchBaseLayerST(tableint ep_id,
+                  const void* data_point,
+                  size_t ef,
+                  BaseFilterFunctor* isIdAllowed = nullptr) const {
+    auto vl = visited_list_pool_->getFreeVisitedList();
+    vl_type* visited_array = vl->mass;
+    vl_type visited_array_tag = vl->curV;
+
     std::priority_queue<std::pair<float, tableint>,
                         vsag::Vector<std::pair<float, tableint>>,
                         CompareByFirst>
-    searchBaseLayerST(tableint ep_id,
-                      const void* data_point,
-                      size_t ef,
-                      BaseFilterFunctor* isIdAllowed = nullptr) const {
-        auto vl = visited_list_pool_->getFreeVisitedList();
-        vl_type* visited_array = vl->mass;
-        vl_type visited_array_tag = vl->curV;
+        top_candidates(allocator_);
+    std::priority_queue<std::pair<float, tableint>,
+                        vsag::Vector<std::pair<float, tableint>>,
+                        CompareByFirst>
+        candidate_set(allocator_);
 
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            top_candidates(allocator_);
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            candidate_set(allocator_);
+    size_t dynamic_ef = ef;  // 初始化 dynamic_ef 为 ef
+    size_t step_size = 1;    // 初始步长
 
-        float lowerBound;
-        if ((!has_deletions || !isMarkedDeleted(ep_id)) &&
-            ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id)))) {
-            float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-            lowerBound = dist;
-            top_candidates.emplace(dist, ep_id);
-            candidate_set.emplace(-dist, ep_id);
-        } else {
-            lowerBound = std::numeric_limits<float>::max();
-            candidate_set.emplace(-lowerBound, ep_id);
+    float lowerBound;
+    if ((!has_deletions || !isMarkedDeleted(ep_id)) &&
+        ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id)))) {
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+        lowerBound = dist;
+        top_candidates.emplace(dist, ep_id);
+        candidate_set.emplace(-dist, ep_id);
+    } else {
+        lowerBound = std::numeric_limits<float>::max();
+        candidate_set.emplace(-lowerBound, ep_id);
+    }
+
+    visited_array[ep_id] = visited_array_tag;
+
+    while (!candidate_set.empty()) {
+        std::pair<float, tableint> current_node_pair = candidate_set.top();
+
+        if ((-current_node_pair.first) > lowerBound &&
+            (top_candidates.size() == dynamic_ef || (!isIdAllowed && !has_deletions))) {
+            break;
+        }
+        candidate_set.pop();
+
+        tableint current_node_id = current_node_pair.second;
+        int* data = (int*)get_linklist0(current_node_id);
+        size_t size = getListCount((linklistsizeint*)data);
+
+        if (collect_metrics) {
+            metric_hops_++;
+            metric_distance_computations_ += size;
         }
 
-        visited_array[ep_id] = visited_array_tag;
+        for (size_t j = 1; j <= size; j++) {
+            int candidate_id = *(data + j);
+            if (!(visited_array[candidate_id] == visited_array_tag)) {
+                visited_array[candidate_id] = visited_array_tag;
 
-        while (!candidate_set.empty()) {
-            std::pair<float, tableint> current_node_pair = candidate_set.top();
+                char* currObj1 = (getDataByInternalId(candidate_id));
+                float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                if (top_candidates.size() < dynamic_ef || lowerBound > dist) {
+                    candidate_set.emplace(-dist, candidate_id);
 
-            if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() == ef || (!isIdAllowed && !has_deletions))) {
-                break;
-            }
-            candidate_set.pop();
+                    if ((!has_deletions || !isMarkedDeleted(candidate_id)) &&
+                        ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))))
+                        top_candidates.emplace(dist, candidate_id);
 
-            tableint current_node_id = current_node_pair.second;
-            int* data = (int*)get_linklist0(current_node_id);
-            size_t size = getListCount((linklistsizeint*)data);
-            //                bool cur_node_deleted = isMarkedDeleted(current_node_id);
-            if (collect_metrics) {
-                metric_hops_++;
-                metric_distance_computations_ += size;
-            }
+                    if (top_candidates.size() > dynamic_ef)
+                        top_candidates.pop();
 
-            auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
-#ifdef USE_SSE
-            _mm_prefetch((char*)(visited_array + *(data + 1)), _MM_HINT_T0);
-            _mm_prefetch((char*)(visited_array + *(data + 1) + 64), _MM_HINT_T0);
-            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-            _mm_prefetch((char*)(data + 2), _MM_HINT_T0);
-#endif
-
-            for (size_t j = 1; j <= size; j++) {
-                int candidate_id = *(data + j);
-                size_t pre_l = std::min(j, size - 2);
-                auto vector_data_ptr =
-                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
-#ifdef USE_SSE
-                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
-                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
-#endif
-                if (!(visited_array[candidate_id] == visited_array_tag)) {
-                    visited_array[candidate_id] = visited_array_tag;
-
-                    char* currObj1 = (getDataByInternalId(candidate_id));
-                    float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (top_candidates.size() < ef || lowerBound > dist) {
-                        candidate_set.emplace(-dist, candidate_id);
-                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
-                            candidate_set.top().second, offsetLevel0_);
-#ifdef USE_SSE
-                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-#endif
-
-                        if ((!has_deletions || !isMarkedDeleted(candidate_id)) &&
-                            ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))))
-                            top_candidates.emplace(dist, candidate_id);
-
-                        if (top_candidates.size() > ef)
-                            top_candidates.pop();
-
-                        if (!top_candidates.empty())
-                            lowerBound = top_candidates.top().first;
-                    }
+                    if (!top_candidates.empty())
+                        lowerBound = top_candidates.top().first;
                 }
             }
         }
 
-        visited_list_pool_->releaseVisitedList(vl);
-        return top_candidates;
+        // 动态 ef 调整逻辑
+        if (top_candidates.size() >= 2) {
+            float top_dist = top_candidates.top().first;  // 最近距离
+            top_candidates.pop();
+            float second_top_dist = top_candidates.top().first;  // 次最近距离
+            top_candidates.emplace(top_dist, ep_id);  // 恢复原始队列
+
+            float distance_diff = top_dist - second_top_dist;  // 距离差
+
+            // 动态步进策略
+            if (distance_diff < 500.0f) {
+                step_size = std::max((size_t)1, step_size / 2);  // 步长递减
+                dynamic_ef = std::max((size_t)10, dynamic_ef - step_size);
+            } else {
+                step_size = std::min((size_t)5, step_size * 2);  // 步长递增
+                dynamic_ef += step_size;
+            }
+
+            // 候选集合质量感知
+            if (top_candidates.size() > 15 && distance_diff > 5000.0f) {
+                dynamic_ef = std::min(dynamic_ef + 5, ef + 50);  // 高质量候选时快速扩展
+            }
+        }
     }
+
+    visited_list_pool_->releaseVisitedList(vl);
+    return top_candidates;
+}
 
     template <bool has_deletions, bool collect_metrics = false>
     std::priority_queue<std::pair<float, tableint>,
