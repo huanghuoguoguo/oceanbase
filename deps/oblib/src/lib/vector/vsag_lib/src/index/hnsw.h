@@ -286,9 +286,10 @@ private:
 private:
     std::shared_ptr<hnswlib::AlgorithmInterface<float>> alg_hnsw;
     std::shared_ptr<hnswlib::SpaceInterface> space;
-
+    void kmeansClustering(const std::vector<std::vector<float>>& data, int k, std::vector<int>& labels, std::vector<std::vector<float>>& centers);
     bool use_conjugate_graph_;
     std::shared_ptr<ConjugateGraph> conjugate_graph_;
+    void encode();
 
     int64_t dim_;
     bool use_static_ = false;
@@ -300,6 +301,10 @@ private:
 
     mutable std::mutex stats_mutex_;
     mutable std::map<std::string, WindowResultQueue> result_queues_;
+    hnswlib::DISTFUNC l2func;
+
+    std::vector<uint64_t> ids_;
+    std::vector<std::vector<float>> vectors_;
 
     mutable std::shared_mutex rw_mutex_;
 };
