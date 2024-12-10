@@ -216,7 +216,7 @@ void HNSW::encode(){
     std::vector<std::vector<float>> centers;
     
     auto start = std::chrono::high_resolution_clock::now();
-    kmeansClustering(vectors_, 4096, labels, centers);
+    kmeansClustering(vectors_, 200, labels, centers);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration = end - start;
     logger::warn("yhh time cose:{}ms",duration.count());
@@ -240,7 +240,11 @@ void HNSW::encode(){
     // 尝试多线程会不会影响结果
     for (size_t i = 0; i < vectors_.size(); ++i) {
         int cluster_id = labels[i]; // 获取当前数据点的聚类标签 将其转换成uint8
-        alg_hnsws_[cluster_id]->addPoint((const void*)(vectors_[i].data()), ids_[i]); 
+        std::vector<uint8_t> temp;
+        for(auto& t:vectors_[i]){
+            temp.push_back(static_cast<uint8_t>(t));
+        }
+        alg_hnsws_[cluster_id]->addPoint((const void*)(temp.data()), ids_[i]); 
     }
     // 还需要将中心给记录，搜索的时候需要比对。
     centers_.swap(centers);
