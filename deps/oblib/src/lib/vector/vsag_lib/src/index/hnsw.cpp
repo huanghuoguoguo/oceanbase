@@ -711,7 +711,7 @@ HNSW::deserialize(std::istream& in_stream) {
         alg_hnsw->loadIndex(in_stream, this->space.get());
         int k = k_;
         alg_hnsws_.resize(k);
-        int cursor = alg_hnsw->calcSerializeSize();
+        int64_t cursor = alg_hnsw->calcSerializeSize();
         for (int i = 0; i < k; ++i) {
             logger::warn("yhh calcSerializeSize:{}",cursor);
             alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
