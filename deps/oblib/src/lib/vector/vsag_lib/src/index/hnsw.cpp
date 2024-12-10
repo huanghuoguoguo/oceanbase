@@ -238,6 +238,17 @@ void HNSW::encode(){
         );
     }
 
+
+    for(int i = 0 ;i < k ;i++){
+        std::vector<uint8_t> temp(128);
+        auto& v = centers[i];
+        for (size_t j = 0; j < 128; ++j) {
+            float value = v[j];
+            temp[j] = static_cast<uint8_t>(value);
+        }
+        alg_hnsw->addPoint((const void*)(temp.data()), i); 
+    }
+    logger::warn("yhh do add centor after");
     // 尝试多线程会不会影响结果
     for (size_t i = 0; i < vectors_.size(); ++i) {
         int cluster_id = labels[i]; // 获取当前数据点的聚类标签 将其转换成uint8
@@ -252,7 +263,7 @@ void HNSW::encode(){
     }
     logger::warn("yhh addPoint done");
     // 还需要将中心给记录，搜索的时候需要比对。
-    centers_.swap(centers);
+
     
 }
 

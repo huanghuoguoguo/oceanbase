@@ -1557,7 +1557,7 @@ public:
         int curlevel = getRandomLevel(mult_);
         if (level > 0)
             curlevel = level;
-
+        vsag::logger::warn("yhh do add inter -4");
         element_levels_[cur_c] = curlevel;
         std::unique_lock<std::mutex> lock(global_);
         int maxlevelcopy = maxlevel_;
