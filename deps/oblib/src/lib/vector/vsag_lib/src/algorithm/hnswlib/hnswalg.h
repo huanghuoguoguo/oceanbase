@@ -1000,7 +1000,7 @@ public:
         if (normalize_) {
             size += max_elements_ * sizeof(float);
         }
-
+        vsag::logger::warn("yhh size_t:{}",size);
         // output.close();
         return size;
     }
