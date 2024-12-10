@@ -341,6 +341,7 @@ HNSW::knn_search(const DatasetPtr& query,
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
+            logger::warn("yhh keyresou23");
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[key_result.second]);
             logger::warn("yhh keyresou24");
             auto t_results = hnsw->searchKnn2(
