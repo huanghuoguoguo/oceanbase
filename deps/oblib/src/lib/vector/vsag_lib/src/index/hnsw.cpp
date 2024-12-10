@@ -216,10 +216,10 @@ void HNSW::encode(){
     std::vector<std::vector<float>> centers;
     
     auto start = std::chrono::high_resolution_clock::now();
-    kmeansClustering(vectors_, 200, labels, centers);
+    kmeansClustering(vectors_, 256, labels, centers);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration = end - start;
-    logger::warn("yhh time cose:{}ms",duration.count());
+    logger::warn("yhh time cose:{}s",duration.count()/1000);
 
     // 聚类完毕之后，将其分为多个hnsw。一个键。
     // 2. 初始化每个聚类的 HNSW 索引
@@ -230,22 +230,25 @@ void HNSW::encode(){
             space.get(),              // 距离空间
             DEFAULT_MAX_ELEMENT,      // 索引中元素的最大数量
             allocator_.get(),         // 内存分配器
-            20,                        // HNSW 的参数 M
+            16,                        // HNSW 的参数 M
             200,          // 构建过程中搜索的候选点数量
             use_reversed_edges_,      // 是否使用反向边
             false,                // 是否归一化
             Options::Instance().block_size_limit() // 内存块限制
         );
     }
+    logger::warn("yhh make_shared done");
     // 尝试多线程会不会影响结果
     for (size_t i = 0; i < vectors_.size(); ++i) {
         int cluster_id = labels[i]; // 获取当前数据点的聚类标签 将其转换成uint8
+        logger::warn("yhh addPoint {}",cluster_id);
         std::vector<uint8_t> temp;
         for(auto& t:vectors_[i]){
             temp.push_back(static_cast<uint8_t>(t));
         }
         alg_hnsws_[cluster_id]->addPoint((const void*)(temp.data()), ids_[i]); 
     }
+    logger::warn("yhh addPoint done");
     // 还需要将中心给记录，搜索的时候需要比对。
     centers_.swap(centers);
     
@@ -367,7 +370,7 @@ void HNSW::kmeansClustering(std::vector<std::vector<float>>& data, int k, std::v
     std::vector<int> counts(k, 0); // 每个聚类的点数
     bool changed = true;
     // 迭代直到聚类中心不再改变
-    while (count < 3 && changed) {
+    while (count < 12 && changed) {
         changed = false;
         count++;
         for (int i = 0; i < numPoints; ++i) {

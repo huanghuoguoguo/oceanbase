@@ -1549,8 +1549,6 @@ public:
             label_lookup_[label] = cur_c;
         }
 
-        // std::shared_ptr<float[]> normalize_data;
-        // normalize_vector(data_point, normalize_data);
 
 
 
