@@ -69,7 +69,8 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
       use_reversed_edges_(use_reversed_edges) {
     dim_ = *((size_t*)space->get_dist_func_param()) * 4;
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
-
+    logger::warn("yhh construct");
+    
     if (ef_construction <= 0) {
         throw std::runtime_error(MESSAGE_PARAMETER);
     }
@@ -248,7 +249,7 @@ void HNSW::encode(){
         alg_hnsws_[i]->init_memory_space();
     }
 
-
+    logger::warn("yhh encode size:{}",alg_hnsws_.size());
     
     
     // 尝试多线程会不会影响结果
@@ -341,7 +342,7 @@ HNSW::knn_search(const DatasetPtr& query,
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
-            logger::warn("yhh keyresou23");
+
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[key_result.second]);
             logger::warn("yhh keyresou24");
             auto t_results = hnsw->searchKnn2(
