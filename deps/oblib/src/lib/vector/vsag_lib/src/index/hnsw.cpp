@@ -713,7 +713,8 @@ HNSW::deserialize(std::istream& in_stream) {
             return tl::unexpected(result.error());
         }
         alg_hnsw->loadIndex(in_stream, this->space.get());
-        alg_hnsws_.resize(256);
+        int k = 256;
+        alg_hnsws_.resize(k);
         for (int i = 0; i < k; ++i) {
             alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
                 space.get(),              // 距离空间
