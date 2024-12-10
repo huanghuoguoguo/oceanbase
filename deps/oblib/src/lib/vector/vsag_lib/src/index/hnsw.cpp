@@ -338,8 +338,7 @@ HNSW::knn_search(const DatasetPtr& query,
                                   e.what());
         }
 
-        // 现在获得了key_scan_k个和key最近的簇，查询所有的簇。
-        for(!key_results.empty()){
+        while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsws_[key_result.second].get());
