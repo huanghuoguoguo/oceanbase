@@ -263,7 +263,8 @@ void HNSW::encode(){
         alg_hnsws_[cluster_id]->addPoint((const void*)(temp.data()), ids_[i]); 
     }
 
-    
+    vectors_.clear();
+    ids_.clear();
 }
 
 template <typename FilterType>
@@ -321,31 +322,46 @@ HNSW::knn_search(const DatasetPtr& query,
         // return result
         auto result = Dataset::Make();
 
-
+        int cluster = 256;
+        int key_scan_k = 5;
+        int key_scan_ef = 10;
         // perform search
+        std::vector<std::pair<float, size_t>> key_results;
         std::vector<std::pair<float, size_t>> results;
         try {
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
-            results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search, k), filter_ptr);
+            // results = hnsw->searchKnn2(
+            //     temp, k, std::max(params.ef_search, k), filter_ptr);
+            key_results = hnsw->searchKnn2(
+                temp, key_scan_k, key_scan_ef, filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
 
-        // update stats
-        {
-            std::lock_guard<std::mutex> lock(stats_mutex_);
+        // 现在获得了key_scan_k个和key最近的簇，查询所有的簇。
+        for(auto& key_result:key_results){
+            auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsws[key_result.second].get());
+            auto t_results = hnsw->searchKnn2(
+                temp, k, k*2, filter_ptr);
+            results.insert(results.end(), t_results.begin(), t_results.end());
         }
+        // Sort results by distance from large to small
+        std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
+            return a.first > b.first; // Sort descending by distance
+        });
 
+        if (results.size() > k) {
+            results.erase(results.begin(), results.end() - k); // 保留后 k 个
+        }
 
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
         int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
-        #pragma omp parallel for (k > 1000)
+#pragma omp parallel for (k > 1000)
         for (int64_t j = results.size() - 1; j >= 0; --j) {
             dists[j] = results[j].first;
             ids[j] = results[j].second;
