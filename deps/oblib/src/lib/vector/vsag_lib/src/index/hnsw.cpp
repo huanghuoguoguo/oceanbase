@@ -70,7 +70,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     dim_ = *((size_t*)space->get_dist_func_param()) * 4;
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
     logger::warn("yhh construct");
-    
+
     if (ef_construction <= 0) {
         throw std::runtime_error(MESSAGE_PARAMETER);
     }
@@ -621,8 +621,8 @@ HNSW::serialize(std::ostream& out_stream) {
     std::shared_lock lock(rw_mutex_);
     alg_hnsw->saveIndex(out_stream);
 
-    if (use_conjugate_graph_) {
-        conjugate_graph_->Serialize(out_stream);
+    for(auto& hnsw : alg_hnsw_){
+        hnsw->saveIndex(out_stream);
     }
 
     return {};
@@ -713,8 +713,20 @@ HNSW::deserialize(std::istream& in_stream) {
             return tl::unexpected(result.error());
         }
         alg_hnsw->loadIndex(in_stream, this->space.get());
-        if (use_conjugate_graph_ and not conjugate_graph_->Deserialize(in_stream).has_value()) {
-            throw std::runtime_error("error in deserialize conjugate graph");
+        alg_hnsws_.resize(256);
+        for (int i = 0; i < k; ++i) {
+            alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
+                space.get(),              // 距离空间
+                DEFAULT_MAX_ELEMENT,      // 索引中元素的最大数量
+                allocator_.get(),         // 内存分配器
+                16,                        // HNSW 的参数 M
+                200,          // 构建过程中搜索的候选点数量
+                use_reversed_edges_,      // 是否使用反向边
+                false,                // 是否归一化
+                Options::Instance().block_size_limit() // 内存块限制
+            );
+            alg_hnsws_[i]->init_memory_space();
+            alg_hnsws_[i]->loadIndex(in_stream, this->space.get());
         }
     } catch (const std::runtime_error& e) {
         LOG_ERROR_AND_RETURNS(ErrorType::READ_ERROR, "failed to deserialize: ", e.what());
