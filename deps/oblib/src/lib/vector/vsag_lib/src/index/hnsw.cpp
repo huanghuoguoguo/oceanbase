@@ -232,7 +232,6 @@ void HNSW::encode(){
         }
         alg_hnsw->addPoint((const void*)(temp.data()), i); 
     }
-    logger::warn("yhh do add centor after");
     
     alg_hnsws_.resize(k);
     for (int i = 0; i < k; ++i) {
@@ -246,6 +245,7 @@ void HNSW::encode(){
             false,                // 是否归一化
             Options::Instance().block_size_limit() // 内存块限制
         );
+        alg_hnsws_[i]->init_memory_space();
     }
 
 
