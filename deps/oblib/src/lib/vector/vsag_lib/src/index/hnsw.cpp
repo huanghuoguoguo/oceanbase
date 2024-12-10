@@ -337,12 +337,11 @@ HNSW::knn_search(const DatasetPtr& query,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
-
+        logger::warn("yhh size:{}",alg_hnsws_.size());
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
-            logger::warn("yhh res:{}-{}",key_result.first,key_result.second);
-            auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsws_[key_result.second]->get());
+            auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[key_result.second]);
             logger::warn("yhh keyresou24");
             auto t_results = hnsw->searchKnn2(
                 temp, k, k*2, filter_ptr);
