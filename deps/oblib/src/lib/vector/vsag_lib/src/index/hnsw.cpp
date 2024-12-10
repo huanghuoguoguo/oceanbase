@@ -69,7 +69,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
       use_reversed_edges_(use_reversed_edges) {
     dim_ = *((size_t*)space->get_dist_func_param()) * 4;
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
-    logger::warn("yhh construct");
+    
 
     if (ef_construction <= 0) {
         throw std::runtime_error(MESSAGE_PARAMETER);
@@ -620,7 +620,7 @@ HNSW::serialize(std::ostream& out_stream) {
     for(auto& hnsw : alg_hnsws_){
         hnsw->saveIndex(out_stream);
     }
-
+    logger::warn("yhh ser done");
     return {};
 }
 
@@ -713,6 +713,7 @@ HNSW::deserialize(std::istream& in_stream) {
         alg_hnsws_.resize(k);
         int cursor = alg_hnsw->calcSerializeSize();
         for (int i = 0; i < k; ++i) {
+            logger::warn("yhh calcSerializeSize:{}",cursor);
             alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
                 space.get(),              // 距离空间
                 DEFAULT_MAX_ELEMENT,      // 索引中元素的最大数量
@@ -726,7 +727,9 @@ HNSW::deserialize(std::istream& in_stream) {
             alg_hnsws_[i]->init_memory_space();
             alg_hnsws_[i]->loadIndex(in_stream, this->space.get(), cursor);
             cursor += alg_hnsws_[i]->calcSerializeSize();
+            
         }
+        logger::warn("yhh calcSerializeSize done");
     } catch (const std::runtime_error& e) {
         LOG_ERROR_AND_RETURNS(ErrorType::READ_ERROR, "failed to deserialize: ", e.what());
     }
