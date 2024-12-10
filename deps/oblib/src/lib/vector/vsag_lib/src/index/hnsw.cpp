@@ -326,14 +326,12 @@ HNSW::knn_search(const DatasetPtr& query,
         int key_scan_k = 5;
         int key_scan_ef = 10;
         // perform search
-        std::vector<std::pair<float, size_t>> key_results;
+        std::priority_queue<std::pair<float, size_t>> key_results;
         std::vector<std::pair<float, size_t>> results;
         try {
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
-            // results = hnsw->searchKnn2(
-            //     temp, k, std::max(params.ef_search, k), filter_ptr);
-            key_results = hnsw->searchKnn2(
-                temp, key_scan_k, key_scan_ef, filter_ptr);
+            key_results = hnsw->searchKnn(
+                (const void*)vector.data(), key_scan_k, key_scan_ef, filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
@@ -341,7 +339,9 @@ HNSW::knn_search(const DatasetPtr& query,
         }
 
         // 现在获得了key_scan_k个和key最近的簇，查询所有的簇。
-        for(auto& key_result:key_results){
+        for(!key_results.empty()){
+            auto& key_result = key_results.top();
+            key_results.pop();
             auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsws_[key_result.second].get());
             auto t_results = hnsw->searchKnn2(
                 temp, k, k*2, filter_ptr);
