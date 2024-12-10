@@ -221,9 +221,7 @@ void HNSW::encode(){
     // std::chrono::duration<double, std::milli> duration = end - start;
     // logger::warn("yhh time cose:{}s",duration.count()/1000);
     std::unique_lock lock(rw_mutex_);
-    if (auto result = init_memory_space(); not result.has_value()) {
-            return tl::unexpected(result.error());
-        }
+    init_memory_space();
      // 聚类中心的数量
     for(int i = 0 ;i < k ;i++){
         std::vector<uint8_t> temp(128);
