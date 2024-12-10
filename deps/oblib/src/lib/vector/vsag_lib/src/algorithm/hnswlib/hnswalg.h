@@ -1074,6 +1074,15 @@ public:
         DeserializeImpl(reader, s, max_elements_i);
     }
 
+    void
+    loadIndex(std::function<void(uint64_t, uint64_t, void*)> read_func,
+              SpaceInterface* s,
+              size_t max_elements_i,
+              int64_t cursor) {
+        ReadFuncStreamReader reader(read_func, cursor);
+        DeserializeImpl(reader, s, max_elements_i);
+    }
+
     // load index from a file stream
     void
     loadIndex(std::istream& in_stream, SpaceInterface* s, size_t max_elements_i) override {

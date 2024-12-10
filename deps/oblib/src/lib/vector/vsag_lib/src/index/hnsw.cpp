@@ -711,6 +711,7 @@ HNSW::deserialize(std::istream& in_stream) {
         alg_hnsw->loadIndex(in_stream, this->space.get());
         int k = k_;
         alg_hnsws_.resize(k);
+        int cursor = alg_hnsw->calcSerializeSize();
         for (int i = 0; i < k; ++i) {
             alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
                 space.get(),              // 距离空间
@@ -723,7 +724,8 @@ HNSW::deserialize(std::istream& in_stream) {
                 Options::Instance().block_size_limit() // 内存块限制
             );
             alg_hnsws_[i]->init_memory_space();
-            alg_hnsws_[i]->loadIndex(in_stream, this->space.get());
+            alg_hnsws_[i]->loadIndex(in_stream, this->space.get(), cursor);
+            cursor += alg_hnsws_[i]->calcSerializeSize();
         }
     } catch (const std::runtime_error& e) {
         LOG_ERROR_AND_RETURNS(ErrorType::READ_ERROR, "failed to deserialize: ", e.what());
