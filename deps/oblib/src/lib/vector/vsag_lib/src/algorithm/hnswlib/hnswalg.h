@@ -1549,7 +1549,7 @@ public:
             cur_element_count_++;
             label_lookup_[label] = cur_c;
         }
-
+        vsag::logger::warn("yhh do add inter -0");
 
 
 
