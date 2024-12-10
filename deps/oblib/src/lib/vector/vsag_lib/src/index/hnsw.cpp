@@ -621,7 +621,7 @@ HNSW::serialize(std::ostream& out_stream) {
     std::shared_lock lock(rw_mutex_);
     alg_hnsw->saveIndex(out_stream);
 
-    for(auto& hnsw : alg_hnsw_){
+    for(auto& hnsw : alg_hnsws_){
         hnsw->saveIndex(out_stream);
     }
 
