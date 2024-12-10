@@ -337,7 +337,7 @@ HNSW::knn_search(const DatasetPtr& query,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
-
+        logger::warn("yhh keyresout:{}",key_results.size());
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
@@ -350,7 +350,7 @@ HNSW::knn_search(const DatasetPtr& query,
         std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
             return a.first > b.first; // Sort descending by distance
         });
-
+        logger::warn("yhh keyresou2t:{}",results.size());
         if (results.size() > k) {
             results.erase(results.begin(), results.end() - k); // 保留后 k 个
         }
