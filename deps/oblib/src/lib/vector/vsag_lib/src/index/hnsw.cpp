@@ -215,7 +215,7 @@ HNSW::add(const DatasetPtr& base) {
 void HNSW::encode(){
     std::vector<int> labels;
     std::vector<std::vector<float>> centers;
-    int k = 256;
+    int k = k_;
     // auto start = std::chrono::high_resolution_clock::now();
     kmeansClustering(vectors_, k, labels, centers);
     // auto end = std::chrono::high_resolution_clock::now();
@@ -249,7 +249,6 @@ void HNSW::encode(){
         alg_hnsws_[i]->init_memory_space();
     }
 
-    logger::warn("yhh encode size:{}",alg_hnsws_.size());
     
     
     // 尝试多线程会不会影响结果
@@ -323,8 +322,7 @@ HNSW::knn_search(const DatasetPtr& query,
         // return result
         auto result = Dataset::Make();
 
-        int cluster = 256;
-        int key_scan_k = 5;
+        int key_scan_k = 3;
         int key_scan_ef = 10;
         // perform search
         std::priority_queue<std::pair<float, size_t>> key_results;
@@ -338,22 +336,20 @@ HNSW::knn_search(const DatasetPtr& query,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
-        logger::warn("yhh size:{}",alg_hnsws_.size());
+
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
-
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[key_result.second]);
-            logger::warn("yhh keyresou24");
             auto t_results = hnsw->searchKnn2(
-                temp, k, k*2, filter_ptr);
+                temp, k, std::max(params.ef_search,k*2), filter_ptr);
             results.insert(results.end(), t_results.begin(), t_results.end());
         }
         // Sort results by distance from large to small
         std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
             return a.first > b.first; // Sort descending by distance
         });
-        logger::warn("yhh keyresou2t:{}",results.size());
+        logger::warn("yhh keyresou2t:{}-k{}",results.size(),k);
         if (results.size() > k) {
             results.erase(results.begin(), results.end() - k); // 保留后 k 个
         }
@@ -713,7 +709,7 @@ HNSW::deserialize(std::istream& in_stream) {
             return tl::unexpected(result.error());
         }
         alg_hnsw->loadIndex(in_stream, this->space.get());
-        int k = 256;
+        int k = k_;
         alg_hnsws_.resize(k);
         for (int i = 0; i < k; ++i) {
             alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
