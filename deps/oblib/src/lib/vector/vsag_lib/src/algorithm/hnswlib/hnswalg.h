@@ -1529,6 +1529,7 @@ public:
 
     tableint
     addPoint(const void* data_point, labeltype label, int level) {
+        vsag::logger::warn("yhh do add inter -1");
         tableint cur_c = 0;
         {
             // Checking if the element with the same label already exists

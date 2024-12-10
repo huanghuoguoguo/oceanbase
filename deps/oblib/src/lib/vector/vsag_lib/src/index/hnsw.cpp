@@ -241,7 +241,6 @@ void HNSW::encode(){
     // 尝试多线程会不会影响结果
     for (size_t i = 0; i < vectors_.size(); ++i) {
         int cluster_id = labels[i]; // 获取当前数据点的聚类标签 将其转换成uint8
-        logger::warn("yhh addPoint {}",cluster_id);
         std::vector<uint8_t> temp(128);
         auto& v = vectors_[i];
         for (size_t j = 0; j < 128; ++j) {
