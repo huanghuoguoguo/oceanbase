@@ -1563,6 +1563,7 @@ public:
         int maxlevelcopy = maxlevel_;
         if (curlevel <= maxlevelcopy)
             lock.unlock();
+        vsag::logger::warn("yhh do add inter 0");
         tableint currObj = enterpoint_node_;
         tableint enterpoint_copy = enterpoint_node_;
 

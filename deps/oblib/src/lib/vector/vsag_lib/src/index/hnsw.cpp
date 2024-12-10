@@ -247,7 +247,6 @@ void HNSW::encode(){
             float value = v[j];
             temp[j] = static_cast<uint8_t>(value);
         }
-        logger::warn("yhh do add");
         alg_hnsws_[cluster_id]->addPoint((const void*)(temp.data()), ids_[i]); 
         logger::warn("yhh do add after");
     }
