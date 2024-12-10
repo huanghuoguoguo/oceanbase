@@ -237,16 +237,20 @@ void HNSW::encode(){
             Options::Instance().block_size_limit() // 内存块限制
         );
     }
-    logger::warn("yhh make_shared done");
+
     // 尝试多线程会不会影响结果
     for (size_t i = 0; i < vectors_.size(); ++i) {
         int cluster_id = labels[i]; // 获取当前数据点的聚类标签 将其转换成uint8
         logger::warn("yhh addPoint {}",cluster_id);
-        std::vector<uint8_t> temp;
-        for(auto& t:vectors_[i]){
-            temp.push_back(static_cast<uint8_t>(t));
+        std::vector<uint8_t> temp(128);
+        auto& v = vectors_[i];
+        for (size_t j = 0; j < 128; ++j) {
+            float value = v[j];
+            temp[j] = static_cast<uint8_t>(value);
         }
+        logger::warn("yhh do add");
         alg_hnsws_[cluster_id]->addPoint((const void*)(temp.data()), ids_[i]); 
+        logger::warn("yhh do add after");
     }
     logger::warn("yhh addPoint done");
     // 还需要将中心给记录，搜索的时候需要比对。
