@@ -319,19 +319,20 @@ HNSW::knn_search(const DatasetPtr& query,
         int key_scan_k = 3;
         int key_scan_ef = 10;
         // perform search
-        std::vector<std::pair<float, size_t>> key_results;
+        std::priority_queue<std::pair<float, size_t>> key_results;
         std::vector<std::pair<float, size_t>> results;
         try {
-            auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsw);
-            auto key_results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search,k * 2), filter_ptr);
+            key_results = alg_hnsw->searchKnn(
+                (const void*)vectors, k, std::max(params.ef_search,k * 2), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
         // 现在找出了三个hnsw实例，离目标向量最近，然后从中分别找到10条结果。然后再排序。
-        for(auto& kv:key_results){
+        while(!key_results.empty()){
+            auto kv = key_results.top();
+            key_results.pop();
             logger::warn("yhh key index:{},key dist:{}",kv.second,kv.first);
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kv.second]);
             auto t_results = hnsw->searchKnn2(
