@@ -323,7 +323,7 @@ HNSW::knn_search(const DatasetPtr& query,
         std::vector<std::pair<float, size_t>> results;
         try {
             key_results = alg_hnsw->searchKnn(
-                (const void*)vector, k, std::max(params.ef_search,k * 2), filter_ptr);
+                (const void*)vector, key_scan_k, std::max(params.ef_search,key_scan_ef * 2), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
@@ -342,12 +342,12 @@ HNSW::knn_search(const DatasetPtr& query,
         std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
             return a.first < b.first; // Sort descending by distance
         });
-
+        logger::warn("yhh results.size:{},0-{},10-{}",results.size(),results[0].first,results[10].first);
         if (results.size() > k) {
             results.resize(k);
         }
 
-
+        
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
         int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
         result->Ids(ids);
