@@ -708,7 +708,7 @@ HNSW::deserialize(std::istream& in_stream) {
 
         for (int i = 0; i < k; ++i) {
             alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
-                space.get(),              // 距离空间
+                int8space.get(),              // 距离空间
                 DEFAULT_MAX_ELEMENT,      // 索引中元素的最大数量
                 allocator_.get(),         // 内存分配器
                 16,                        // HNSW 的参数 M
