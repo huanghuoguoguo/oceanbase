@@ -604,6 +604,113 @@ public:
     std::priority_queue<std::pair<float, tableint>,
                         vsag::Vector<std::pair<float, tableint>>,
                         CompareByFirst>
+    searchBaseLayerBSA(tableint ep_id,
+                      const void* data_point,
+                      size_t k,
+                      size_t ef,
+                      BaseFilterFunctor* isIdAllowed = nullptr) const {
+        auto vl = visited_list_pool_->getFreeVisitedList();
+        vl_type* visited_array = vl->mass;
+        vl_type visited_array_tag = vl->curV;
+
+        std::priority_queue<std::pair<float, tableint>,
+                            vsag::Vector<std::pair<float, tableint>>,
+                            CompareByFirst>
+            top_candidates(allocator_);
+        std::priority_queue<std::pair<float, tableint>,
+                        vsag::Vector<std::pair<float, tableint>>,
+                        CompareByFirst>
+        ans(allocator_);
+        std::priority_queue<std::pair<float, tableint>,
+                            vsag::Vector<std::pair<float, tableint>>,
+                            CompareByFirst>
+            candidate_set(allocator_);
+
+
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+
+        float lowerBound = dist;
+        float lowerBoundAns = dist;
+        top_candidates.emplace(dist, ep_id);
+        ans.emplace(dist, ep_id);
+        candidate_set.emplace(-dist, ep_id);
+
+        visited_array[ep_id] = visited_array_tag; 
+        while (!candidate_set.empty()) {
+            std::pair<float, tableint> current_node_pair = candidate_set.top();
+
+            if ((-current_node_pair.first) > lowerBound &&
+                (top_candidates.size() >= ef || !isIdAllowed)) {
+                break;
+            }
+            candidate_set.pop();
+
+            tableint current_node_id = current_node_pair.second;
+            int* data = (int*)get_linklist0(current_node_id);
+            size_t size = getListCount((linklistsizeint*)data);
+
+
+            auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
+#ifdef USE_SSE
+            _mm_prefetch((char*)(visited_array + *(data + 1)), _MM_HINT_T0);
+            _mm_prefetch((char*)(visited_array + *(data + 1) + 64), _MM_HINT_T0);
+            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+            _mm_prefetch((char*)(data + 2), _MM_HINT_T0);
+#endif
+
+            for (size_t j = 1; j <= size; j++) {
+                int candidate_id = *(data + j);
+                size_t pre_l = std::min(j, size - 2);
+                auto vector_data_ptr =
+                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
+#ifdef USE_SSE
+                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
+                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
+#endif
+                if (!(visited_array[candidate_id] == visited_array_tag)) {
+                    visited_array[candidate_id] = visited_array_tag;
+
+                    char* currObj1 = (getDataByInternalId(candidate_id));
+                    float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                    if (top_candidates.size() < ef || lowerBound > dist) {
+                        candidate_set.emplace(-dist, candidate_id);
+                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+
+                        top_candidates.emplace(dist, candidate_id);
+                        // 如果当前节点距离比ans小，将其加入ans
+                        if(ans.size() < k || dist < lowerBoundAns){
+                            ans.emplace(dist, candidate_id);
+                        }
+
+                        if (top_candidates.size() > ef)
+                            top_candidates.pop();
+                        if (ans.size() > k)
+                            ans.pop();
+                        if (!top_candidates.empty())
+                            lowerBound = top_candidates.top().first;
+                        if (!ans.empty())
+                            lowerBoundAns = ans.top().first;
+                        // 如果ans和top的最远距离过远，是否应该提前停止？比如lans是5w，l是10w，是不是应该直接停止？
+                        // if(lowerBound - lowerBoundAns > ){
+
+                        // }
+                    }
+                }
+            }
+        }
+
+        visited_list_pool_->releaseVisitedList(vl);
+        return ans;
+    }
+
+    template <bool has_deletions, bool collect_metrics = false>
+    std::priority_queue<std::pair<float, tableint>,
+                        vsag::Vector<std::pair<float, tableint>>,
+                        CompareByFirst>
     searchBaseLayerST(tableint ep_id,
                       const void* data_point,
                       float radius,
@@ -1686,8 +1793,13 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-        top_candidates =
+        if(k == 10000){
+            top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+        }else{
+            top_candidates =
+                searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
+        }
 
         while (top_candidates.size() > k) {
             top_candidates.pop();
