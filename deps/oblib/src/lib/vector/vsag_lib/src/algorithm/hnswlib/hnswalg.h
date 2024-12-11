@@ -677,7 +677,10 @@ public:
                     if (top_candidates.size() < ef || lowerBound > dist) {
                         if (candidate_set.size() < ef * 2) {
                             // 如果候选列表很大了，我直接不要了。剩下的足够了。
-                            candidate_set.emplace(-dist, candidate_id);
+                            if (dist < lowerBound + threshold) {
+                                // 如果距离太大，就不要了。
+                                candidate_set.emplace(-dist, candidate_id);
+                            }
                         }
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
