@@ -333,7 +333,6 @@ HNSW::knn_search(const DatasetPtr& query,
         while(!key_results.empty()){
             auto kv = key_results.top();
             key_results.pop();
-            logger::warn("yhh key index:{},key dist:{}",kv.second,kv.first);
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kv.second]);
             auto t_results = hnsw->searchKnn2(
                 temp, k, std::max(params.ef_search,k * 3), filter_ptr);
@@ -341,11 +340,11 @@ HNSW::knn_search(const DatasetPtr& query,
         }
         // Sort results by distance from large to small
         std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
-            return a.first > b.first; // Sort descending by distance
+            return a.first < b.first; // Sort descending by distance
         });
 
         if (results.size() > k) {
-            results.erase(results.begin(), results.end() - k); // 保留后 k 个
+            results.resize(k);
         }
 
 
