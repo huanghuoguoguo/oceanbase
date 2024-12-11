@@ -316,8 +316,8 @@ HNSW::knn_search(const DatasetPtr& query,
         // return result
         auto result = Dataset::Make();
 
-        int key_scan_k = 3;
-        int key_scan_ef = 10;
+        int64_t key_scan_k = 3;
+        int64_t key_scan_ef = 10;
         // perform search
         std::priority_queue<std::pair<float, size_t>> key_results;
         std::vector<std::pair<float, size_t>> results;
