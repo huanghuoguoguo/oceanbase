@@ -635,7 +635,7 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        float threshold = 70000.f;
+        float threshold = 100000.f;
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
@@ -682,6 +682,7 @@ public:
                                 candidate_set.emplace(-dist, candidate_id);
                             }
                         }
+                        // candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
 #ifdef USE_SSE
@@ -706,9 +707,9 @@ public:
                 }
             }
             // 如果ans和top的最远距离过远，是否应该提前停止？比如lans是5w，l是10w，是不是应该直接停止？
-            if(ans.size() == k && lowerBound - lowerBoundAns > threshold){
-                break;
-            }
+            // if(ans.size() == k && lowerBound - lowerBoundAns > threshold){
+            //     break;
+            // }
         }
 
         visited_list_pool_->releaseVisitedList(vl);
