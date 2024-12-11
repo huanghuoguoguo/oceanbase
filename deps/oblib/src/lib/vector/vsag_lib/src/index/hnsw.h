@@ -287,6 +287,7 @@ private:
 private:
     std::shared_ptr<hnswlib::AlgorithmInterface<float>> alg_hnsw;
     std::shared_ptr<hnswlib::SpaceInterface> space;
+    std::shared_ptr<hnswlib::SpaceInterface> int8space;
     std::vector<std::shared_ptr<hnswlib::AlgorithmInterface<float>>> alg_hnsws_;
     bool use_conjugate_graph_;
     std::shared_ptr<ConjugateGraph> conjugate_graph_;

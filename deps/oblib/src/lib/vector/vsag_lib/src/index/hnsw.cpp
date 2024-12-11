@@ -67,10 +67,10 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
       use_static_(use_static),
       use_conjugate_graph_(use_conjugate_graph),
       use_reversed_edges_(use_reversed_edges) {
-    dim_ = *((size_t*)space->get_dist_func_param()) * 4;
+    dim_ = *((size_t*)space->get_dist_func_param());
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
     
-
+    int8space = std::make_shared<vsag::L2Space>(32);
     if (ef_construction <= 0) {
         throw std::runtime_error(MESSAGE_PARAMETER);
     }
@@ -225,19 +225,13 @@ void HNSW::encode(){
     init_memory_space();
      // 聚类中心的数量
     for(int i = 0 ;i < k ;i++){
-        std::vector<uint8_t> temp(128);
-        auto& v = centers[i];
-        for (size_t j = 0; j < 128; ++j) {
-            float value = v[j];
-            temp[j] = static_cast<uint8_t>(value);
-        }
-        alg_hnsw->addPoint((const void*)(temp.data()), i); 
+        alg_hnsw->addPoint((const void*)(centers[i].data()), i); 
     }
     
     alg_hnsws_.resize(k);
     for (int i = 0; i < k; ++i) {
         alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
-            space.get(),              // 距离空间
+            int8space.get(),              // 距离空间
             DEFAULT_MAX_ELEMENT,      // 索引中元素的最大数量
             allocator_.get(),         // 内存分配器
             16,                        // HNSW 的参数 M
