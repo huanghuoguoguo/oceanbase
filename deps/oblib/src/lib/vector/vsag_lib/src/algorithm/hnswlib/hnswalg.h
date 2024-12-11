@@ -675,7 +675,10 @@ public:
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (top_candidates.size() < ef || lowerBound > dist) {
-                        candidate_set.emplace(-dist, candidate_id);
+                        if (candidate_set.size() < ef * 2) {
+                            // 如果候选列表很大了，我直接不要了。剩下的足够了。
+                            candidate_set.emplace(-dist, candidate_id);
+                        }
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
 #ifdef USE_SSE
@@ -1778,8 +1781,6 @@ public:
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
                     tableint cand = datal[i];
-                    if (cand < 0 || cand > max_elements_)
-                        throw std::runtime_error("cand error");
                     float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
                     if (d < curdist) {
@@ -1795,7 +1796,7 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-        if(k == 10000){
+        if(k > 1000){
             top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }else{
