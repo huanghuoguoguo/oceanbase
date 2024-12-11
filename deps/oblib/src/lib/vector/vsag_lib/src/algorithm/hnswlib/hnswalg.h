@@ -1650,7 +1650,7 @@ public:
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
-        vsag::logger::warn("yhh first dist:{}",curdist);
+
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
