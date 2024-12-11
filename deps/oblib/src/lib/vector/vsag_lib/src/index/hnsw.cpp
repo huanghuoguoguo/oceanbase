@@ -328,31 +328,35 @@ HNSW::knn_search(const DatasetPtr& query,
         std::priority_queue<std::pair<float, size_t>> key_results;
         std::vector<std::pair<float, size_t>> results;
         try {
-            auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
-            key_results = hnsw->searchKnn(
+            key_results = alg_hnsw->searchKnn(
                 (const void*)vector, key_scan_k, key_scan_ef, filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
-
+        // 现在找出了三个hnsw实例，离目标向量最近，然后从中分别找到10条结果。然后再排序。
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[key_result.second]);
             auto t_results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search,k*2), filter_ptr);
+                temp, k, std::max(params.ef_search,k * 2), filter_ptr);
             results.insert(results.end(), t_results.begin(), t_results.end());
         }
         // Sort results by distance from large to small
         std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
             return a.first > b.first; // Sort descending by distance
         });
-        logger::warn("yhh keyresou2t:{}-k{}",results.size(),k);
+
         if (results.size() > k) {
             results.erase(results.begin(), results.end() - k); // 保留后 k 个
         }
+
+        for(int i = 0;i<results.size();i++){
+            logger::warn("yhh {}-{}",results[i].first,results[i].second);
+        }
+        logger::warn("yhh ----------------------------------------------");
 
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
         int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
@@ -725,9 +729,7 @@ HNSW::deserialize(std::istream& in_stream) {
             );
             alg_hnsws_[i]->init_memory_space();
             alg_hnsws_[i]->loadIndex(in_stream, this->space.get());
-            logger::warn("yhh cur size:{}",alg_hnsws_[i]->getCurrentElementCount());
         }
-        logger::warn("yhh calcSerializeSize done");
     } catch (const std::runtime_error& e) {
         LOG_ERROR_AND_RETURNS(ErrorType::READ_ERROR, "failed to deserialize: ", e.what());
     }
