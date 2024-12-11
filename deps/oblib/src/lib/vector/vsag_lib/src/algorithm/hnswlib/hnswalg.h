@@ -1650,7 +1650,7 @@ public:
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
-        vsag::warn("yhh first dist:{}",curdist);
+        vsag::logger::warn("yhh first dist:{}",curdist);
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
@@ -1703,7 +1703,7 @@ public:
         #pragma omp parallel for (k > 1000)
         for (int i = 0; i < candidates.size(); i++) {
             candidates[i].second = getExternalLabel(candidates[i].second);
-            vsag::warn("yhh dist:{}",candidates[i].first);
+            vsag::logger::warn("yhh dist:{}",candidates[i].first);
         }
         
         return std::move(candidates);
