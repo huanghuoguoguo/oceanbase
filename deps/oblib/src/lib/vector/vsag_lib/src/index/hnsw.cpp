@@ -711,9 +711,8 @@ HNSW::deserialize(std::istream& in_stream) {
         alg_hnsw->loadIndex(in_stream, this->space.get());
         int k = k_;
         alg_hnsws_.resize(k);
-        int64_t cursor = alg_hnsw->calcSerializeSize();
+
         for (int i = 0; i < k; ++i) {
-            logger::warn("yhh calcSerializeSize:{}",cursor);
             alg_hnsws_[i] = std::make_shared<hnswlib::HierarchicalNSW>(
                 space.get(),              // 距离空间
                 DEFAULT_MAX_ELEMENT,      // 索引中元素的最大数量
@@ -725,9 +724,8 @@ HNSW::deserialize(std::istream& in_stream) {
                 Options::Instance().block_size_limit() // 内存块限制
             );
             alg_hnsws_[i]->init_memory_space();
-            alg_hnsws_[i]->loadIndex(in_stream, this->space.get(), cursor);
-            cursor += alg_hnsws_[i]->calcSerializeSize();
-            
+            alg_hnsws_[i]->loadIndex(in_stream, this->space.get());
+            logger::warn("yhh cur size:{}",alg_hnsws_[i]->getCurrentElementCount());
         }
         logger::warn("yhh calcSerializeSize done");
     } catch (const std::runtime_error& e) {
