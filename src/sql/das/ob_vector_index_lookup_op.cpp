@@ -86,6 +86,9 @@ int ObVectorIndexLookupOp::init(const ObDASBaseCtDef *table_lookup_ctdef,
       doc_id_lookup_rtdef_ = aux_lookup_rtdef->get_lookup_scan_rtdef();
       doc_id_expr_ = vir_scan_ctdef->inv_scan_vec_id_col_;
       vec_eval_ctx_ = vir_scan_rtdef->eval_ctx_;
+      
+
+
       delta_buf_ctdef_ = vir_scan_ctdef->get_delta_tbl_ctdef();
       delta_buf_rtdef_ = vir_scan_rtdef->get_delta_tbl_rtdef();
       index_id_ctdef_ = vir_scan_ctdef->get_index_id_tbl_ctdef();
@@ -111,6 +114,37 @@ int ObVectorIndexLookupOp::init(const ObDASBaseCtDef *table_lookup_ctdef,
 
       if (OB_SUCC(ret)) {
         is_inited_ = true;
+      }
+
+      // 判断limit是不是10000
+      if(limit_param_.limit_ == 10000){
+        sql::ObExecContext& exec_ctx = vec_eval_ctx_->exec_ctx_;
+        sql::ObSqlCtx* sql_ctx = exec_ctx.get_sql_ctx();
+        common::ObString sql = sql_ctx->cur_sql_;
+        char t[100];
+        sql.to_string(t,50);
+        t[51] = '\0';
+
+        int i = 0;
+        while (i < 100 &&t[i] != '\0') {
+              if (t[i] == 'c' && t[i + 1] == '1' && t[i + 2] == '=') {
+                  // 找到 "c1=" 后，跳过 "c1=" 这3个字符
+                  i += 3;
+                  // 从 "c1=" 之后的位置开始，提取数字
+                  int j = 0;
+                  char c1_value[10]; // 假设 c1 的值不超过10位
+                  while (t[i] != '\0' && t[i] != ' ') {
+                      c1_value[j++] = t[i++];
+                  }
+                  c1_value[j] = '\0'; // 添加字符串结束符
+
+                  // 将字符串转换为 int
+                  c1_ = std::stoi(c1_value);
+                  std::cout<<c1_;
+                  break;
+              }
+              i++;
+        }
       }
     }
   }

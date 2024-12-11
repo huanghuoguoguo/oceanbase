@@ -4577,6 +4577,7 @@ int ObLSTabletService::insert_vector_index_rows(
     int64_t vec_id_idx = OB_INVALID_INDEX;
     int64_t type_idx = OB_INVALID_INDEX;
     int64_t vector_idx = OB_INVALID_INDEX;
+    int64_t c1_idx = OB_INVALID_INDEX;
     for (int64_t i = 0; i < run_ctx.dml_param_.table_param_->get_col_descs().count(); i++) {
       uint64_t col_id = run_ctx.dml_param_.table_param_->get_col_descs().at(i).col_id_;
       if (col_id == vec_id_col_id) {

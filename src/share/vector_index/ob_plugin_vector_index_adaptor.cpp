@@ -833,6 +833,7 @@ int ObPluginVectorIndexAdaptor::insert_rows(blocksstable::ObDatumRow *rows,
     uint64_t *null_vids = nullptr;
     float *vectors = nullptr;
     int64_t max_vid = 0;
+    int c1 = -1;
 
     if (OB_ISNULL(incr_vids = static_cast<int64_t *>(tmp_allocator.alloc(sizeof(int64_t) * row_count)))) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
@@ -856,7 +857,13 @@ int ObPluginVectorIndexAdaptor::insert_rows(blocksstable::ObDatumRow *rows,
       ObDatum &vid_datum = rows[i].storage_datums_[vid_idx];
       ObDatum &op_datum = rows[i].storage_datums_[type_idx];
       ObDatum &vector_datum = rows[i].storage_datums_[vector_idx];
-
+      for(int i = vid_idx;i<100;i++){
+        ObDatum &c1_datum = rows[i].storage_datums_[i];
+        c1 = c1_datum.get_int();
+        if(c1 == 103){
+          std::cout<<i;
+        }
+      }
       if (FALSE_IT(vid = vid_datum.get_int())) {
       } else if (FALSE_IT(op_str = op_datum.get_string())) {
       } else if (op_str.ptr()[0] == sql::ObVecIndexDMLIterator::VEC_DELTA_DELETE[0]) {

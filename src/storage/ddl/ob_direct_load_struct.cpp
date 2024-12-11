@@ -2191,6 +2191,15 @@ int ObVectorIndexSliceStore::append_row(const blocksstable::ObDatumRow &datum_ro
       // get vid and vector
       ObString vec_str;
       int64_t vec_vid;
+      int64_t row_count = datum_row.get_column_count();
+      int cid = datum_row.storage_datums_[0].get_int();
+      int cid1 = datum_row.storage_datums_[1].get_int();
+      int cid2 = datum_row.storage_datums_[2].get_int();
+      int cid3 = datum_row.storage_datums_[3].get_int();
+      int cid4 = datum_row.storage_datums_[4].get_int();
+      int cid5 = datum_row.storage_datums_[5].get_int();
+      int c2 = cid+cid1+cid2+cid3+cid4+cid5;
+      std::cout<<c2;
       if (datum_row.get_column_count() <= vector_vid_col_idx_ || datum_row.get_column_count() <= vector_col_idx_) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("failed to get valid vector index col idx", K(ret), K(vector_col_idx_), K(vector_vid_col_idx_), K(datum_row));
