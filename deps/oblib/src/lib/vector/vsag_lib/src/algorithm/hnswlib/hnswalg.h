@@ -635,6 +635,8 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
+        float threshold = 50000.f;
+
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
@@ -694,12 +696,12 @@ public:
                             lowerBound = top_candidates.top().first;
                         if (!ans.empty())
                             lowerBoundAns = ans.top().first;
-                        // 如果ans和top的最远距离过远，是否应该提前停止？比如lans是5w，l是10w，是不是应该直接停止？
-                        // if(lowerBound - lowerBoundAns > ){
-
-                        // }
                     }
                 }
+            }
+            // 如果ans和top的最远距离过远，是否应该提前停止？比如lans是5w，l是10w，是不是应该直接停止？
+            if(ans.size() == k && lowerBound - lowerBoundAns > threshold){
+                break;
             }
         }
 
