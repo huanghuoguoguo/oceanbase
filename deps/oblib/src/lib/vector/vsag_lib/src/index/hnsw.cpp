@@ -339,9 +339,10 @@ HNSW::knn_search(const DatasetPtr& query,
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
+            logger::warn("yhh key index:{}",key_result.second);
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[key_result.second]);
             auto t_results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search,k * 2), filter_ptr);
+                temp, k, std::max(params.ef_search,k * 3), filter_ptr);
             results.insert(results.end(), t_results.begin(), t_results.end());
         }
         // Sort results by distance from large to small
@@ -354,7 +355,7 @@ HNSW::knn_search(const DatasetPtr& query,
         }
 
         for(int i = 0;i<results.size();i++){
-            logger::warn("yhh {}-{}",results[i].first,results[i].second);
+            logger::warn("yhh dist:{}-vid:{}",results[i].first,results[i].second);
         }
         logger::warn("yhh ----------------------------------------------");
 
@@ -624,7 +625,7 @@ HNSW::serialize(std::ostream& out_stream) {
     for(auto& hnsw : alg_hnsws_){
         hnsw->saveIndex(out_stream);
     }
-    logger::warn("yhh ser done");
+    // logger::warn("yhh ser done");
     return {};
 }
 
