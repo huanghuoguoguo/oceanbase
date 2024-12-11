@@ -216,11 +216,7 @@ void HNSW::encode(){
     std::vector<int> labels;
     std::vector<std::vector<float>> centers;
     int k = k_;
-    // auto start = std::chrono::high_resolution_clock::now();
     kmeansClustering(vectors_, k, labels, centers);
-    // auto end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double, std::milli> duration = end - start;
-    // logger::warn("yhh time cose:{}s",duration.count()/1000);
     std::unique_lock lock(rw_mutex_);
     init_memory_space();
      // 聚类中心的数量
@@ -316,26 +312,26 @@ HNSW::knn_search(const DatasetPtr& query,
         // return result
         auto result = Dataset::Make();
 
-        int64_t key_scan_k = 3;
-        int64_t key_scan_ef = 10;
+        int64_t key_scan_k = 5;
+        int64_t key_scan_ef = 20;
         // perform search
         std::priority_queue<std::pair<float, size_t>> key_results;
         std::vector<std::pair<float, size_t>> results;
         try {
             key_results = alg_hnsw->searchKnn(
-                (const void*)vector, key_scan_k, std::max(params.ef_search,key_scan_ef * 2), filter_ptr);
+                (const void*)vector, key_scan_k, std::max(params.ef_search,key_scan_ef), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
-        // 现在找出了三个hnsw实例，离目标向量最近，然后从中分别找到10条结果。然后再排序。
+        // 现在找出了三个hnsw实例，离目标向量最近，然后从中分别找到ef条结果。然后再排序。
         while(!key_results.empty()){
             auto kv = key_results.top();
             key_results.pop();
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kv.second]);
             auto t_results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search,k * 3), filter_ptr);
+                temp, k, std::max(params.ef_search,k * 5), filter_ptr);
             results.insert(results.end(), t_results.begin(), t_results.end());
         }
         // Sort results by distance from large to small
@@ -390,7 +386,7 @@ void HNSW::kmeansClustering(std::vector<std::vector<float>>& data, int k, std::v
     std::vector<int> counts(k, 0); // 每个聚类的点数
     bool changed = true;
     // 迭代直到聚类中心不再改变
-    while (count < 12 && changed) {
+    while (count < 16 && changed) {
         changed = false;
         count++;
         for (int i = 0; i < numPoints; ++i) {
