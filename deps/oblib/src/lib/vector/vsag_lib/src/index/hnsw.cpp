@@ -70,7 +70,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     dim_ = *((size_t*)space->get_dist_func_param());
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
     
-    int8space = std::make_shared<vsag::L2Space>(32);
+    int8space = std::make_shared<hnswlib::L2Space>(32);
     if (ef_construction <= 0) {
         throw std::runtime_error(MESSAGE_PARAMETER);
     }
