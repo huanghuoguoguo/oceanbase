@@ -1703,7 +1703,6 @@ public:
         #pragma omp parallel for (k > 1000)
         for (int i = 0; i < candidates.size(); i++) {
             candidates[i].second = getExternalLabel(candidates[i].second);
-            vsag::logger::warn("yhh dist:{}",candidates[i].first);
         }
         
         return std::move(candidates);

@@ -329,6 +329,7 @@ HNSW::knn_search(const DatasetPtr& query,
         while(!key_results.empty()){
             auto kv = key_results.top();
             key_results.pop();
+            logger::warn("yhh keydist:{}",kv.first);
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kv.second]);
             auto t_results = hnsw->searchKnn2(
                 temp, k, std::max(params.ef_search,k * 3), filter_ptr);
@@ -714,7 +715,7 @@ HNSW::deserialize(std::istream& in_stream) {
                 Options::Instance().block_size_limit() // 内存块限制
             );
             alg_hnsws_[i]->init_memory_space();
-            alg_hnsws_[i]->loadIndex(in_stream, this->space.get());
+            alg_hnsws_[i]->loadIndex(in_stream, int8space.get());
         }
     } catch (const std::runtime_error& e) {
         LOG_ERROR_AND_RETURNS(ErrorType::READ_ERROR, "failed to deserialize: ", e.what());
