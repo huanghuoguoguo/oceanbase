@@ -635,7 +635,7 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        float threshold = 50000.f;
+        float threshold = 70000.f;
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
