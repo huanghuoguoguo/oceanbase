@@ -1713,11 +1713,7 @@ public:
               uint64_t ef,
               BaseFilterFunctor* isIdAllowed = nullptr) const override {
         std::priority_queue<std::pair<float, labeltype>> result;
-        if (cur_element_count_ == 0)
-            return result;
 
-        // std::shared_ptr<float[]> normalize_query;
-        // normalize_vector(query_data, normalize_query);
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
@@ -1730,8 +1726,7 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                // metric_hops_++;
-                // metric_distance_computations_ += size;
+
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {

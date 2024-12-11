@@ -339,7 +339,7 @@ HNSW::knn_search(const DatasetPtr& query,
         while(!key_results.empty()){
             auto& key_result = key_results.top();
             key_results.pop();
-            logger::warn("yhh key index:{}",key_result.second);
+            logger::warn("yhh key index:{},key dist:{}",key_result.second,key_result.first);
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[key_result.second]);
             auto t_results = hnsw->searchKnn2(
                 temp, k, std::max(params.ef_search,k * 3), filter_ptr);
@@ -354,10 +354,6 @@ HNSW::knn_search(const DatasetPtr& query,
             results.erase(results.begin(), results.end() - k); // 保留后 k 个
         }
 
-        for(int i = 0;i<results.size();i++){
-            logger::warn("yhh dist:{}-vid:{}",results[i].first,results[i].second);
-        }
-        logger::warn("yhh ----------------------------------------------");
 
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
         int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
