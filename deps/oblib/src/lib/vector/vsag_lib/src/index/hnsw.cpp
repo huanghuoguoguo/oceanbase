@@ -323,7 +323,7 @@ HNSW::knn_search(const DatasetPtr& query,
         std::vector<std::pair<float, size_t>> results;
         try {
             key_results = alg_hnsw->searchKnn(
-                (const void*)vectors, k, std::max(params.ef_search,k * 2), filter_ptr);
+                (const void*)vector, k, std::max(params.ef_search,k * 2), filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
