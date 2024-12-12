@@ -526,7 +526,7 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             candidate_set(allocator_);
-
+        int count = 0;
         float lowerBound;
         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
             float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
@@ -541,7 +541,7 @@ public:
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-
+            count++;
             if ((-current_node_pair.first) > lowerBound &&
                 (top_candidates.size() >= ef || !isIdAllowed)) {
                 break;
@@ -595,7 +595,7 @@ public:
                 }
             }
         }
-
+        vsag::logger::warn("yhh count:{}",count);
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
     }
