@@ -534,7 +534,8 @@ public:
         top_candidates.emplace_back(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
         bool flag = false;
-
+        auto compare = CompareByFirst();
+        int count = 0;
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
@@ -543,6 +544,7 @@ public:
                 (top_candidates.size() >= ef || !isIdAllowed)) {
                 break;
             }
+            count++;
             candidate_set.pop();
 
             tableint current_node_id = current_node_pair.second;
@@ -583,15 +585,15 @@ public:
                         if(!flag){
                             top_candidates.emplace_back(dist, candidate_id);
                         }else{
-                            std::push_heap(top_candidates.begin(),top_candidates.end(),CompareByFirst());
+                            std::push_heap(top_candidates.begin(),top_candidates.end(), compare);
                         }
                         if(!flag && top_candidates.size() == ef){
-                            std::make_heap(top_candidates.begin(), top_candidates.end(), CompareByFirst());
+                            std::make_heap(top_candidates.begin(), top_candidates.end(), compare);
                             flag = true;
                         } 
 
                         if (top_candidates.size() > ef){
-                            std::pop_heap(top_candidates.begin(),top_candidates.end(), CompareByFirst());
+                            std::pop_heap(top_candidates.begin(),top_candidates.end(), compare);
                             top_candidates.pop_back();
                         }
                             
@@ -613,6 +615,7 @@ public:
         for(auto& kv:top_candidates){
             top_candidates2.emplace(kv.first,kv.second);
         }
+        vsag::logger::warn("yhh count:{}",count);
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates2;
     }
