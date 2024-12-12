@@ -253,13 +253,7 @@ public:
                 if (in_edges_level0) {
                     delete in_edges_level0;
                 }
-    struct CompareByFirst2 {
-        constexpr bool
-        operator()(std::pair<int, tableint> const& a,
-                   std::pair<int, tableint> const& b) const noexcept {
-            return a.first < b.first;
-        }
-    };
+    
 
                 auto& in_edges = *(reversed_link_lists_ + i);
                 if (in_edges) {
@@ -313,7 +307,13 @@ public:
             return a.first < b.first;
         }
     };
-
+    struct CompareByFirstInt {
+        constexpr bool
+        operator()(std::pair<int, tableint> const& a,
+                   std::pair<int, tableint> const& b) const noexcept {
+            return a.first < b.first;
+        }
+    };
     inline std::mutex&
     getLabelOpMutex(labeltype label) const {
         // calculate hash
@@ -773,7 +773,7 @@ public:
     template <bool has_deletions, bool collect_metrics = false>
     std::priority_queue<std::pair<int, tableint>,
                         vsag::Vector<std::pair<int, tableint>>,
-                        CompareByFirst>
+                        CompareByFirstInt>
     searchBaseLayerBSAint(tableint ep_id,
                       const void* data_point,
                       size_t k,
@@ -785,15 +785,15 @@ public:
 
         std::priority_queue<std::pair<int, tableint>,
                             vsag::Vector<std::pair<int, tableint>>,
-                            CompareByFirst>
+                            CompareByFirstInt>
             top_candidates(allocator_);
         std::priority_queue<std::pair<int, tableint>,
                         vsag::Vector<std::pair<int, tableint>>,
-                        CompareByFirst>
+                        CompareByFirstInt>
         ans(allocator_);
         std::priority_queue<std::pair<int, tableint>,
                             vsag::Vector<std::pair<int, tableint>>,
-                            CompareByFirst>
+                            CompareByFirstInt>
             candidate_set(allocator_);
 
 
@@ -2029,7 +2029,7 @@ public:
 
         std::priority_queue<std::pair<int, tableint>,
                             vsag::Vector<std::pair<int, tableint>>,
-                            CompareByFirst>
+                            CompareByFirstInt>
             top_candidates(allocator_);
         top_candidates =
                 searchBaseLayerBSAint<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
