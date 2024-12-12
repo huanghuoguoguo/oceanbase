@@ -247,7 +247,7 @@ HNSW::knn_search(const DatasetPtr& query,
     // perform search
     std::vector<std::pair<int, size_t>> results;
     try {
-        auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
+        auto hnsw = static_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
         results = hnsw->searchKnn3(
             temp, k, std::max(params.ef_search, k), filter_ptr);
     } catch (const std::runtime_error& e) {
@@ -264,7 +264,7 @@ HNSW::knn_search(const DatasetPtr& query,
     result->Distances(dists);
     #pragma omp parallel for (k > 1000)
     for (int64_t j = results.size() - 1; j >= 0; --j) {
-        dists[j] = static_cast<float>(results[j].first);
+        dists[j] = (float)results[j].first;
         ids[j] = results[j].second;
     }
 

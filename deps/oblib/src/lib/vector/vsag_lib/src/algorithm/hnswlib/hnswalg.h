@@ -2001,7 +2001,7 @@ public:
 
         tableint currObj = enterpoint_node_;
         int curdist =
-            fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+            getL2(query_data, getDataByInternalId(enterpoint_node_));
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
@@ -2016,7 +2016,7 @@ public:
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
                     tableint cand = datal[i];
-                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                    int d = getL2(query_data, getDataByInternalId(cand));
 
                     if (d < curdist) {
                         curdist = d;
