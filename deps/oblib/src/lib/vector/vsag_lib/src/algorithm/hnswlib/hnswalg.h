@@ -542,8 +542,7 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
             count++;
-            if (
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+            if (top_candidates.size() >= ef) {
                 break;
             }
             candidate_set.pop();
