@@ -24,6 +24,7 @@ float (*L2SqrSIMD16ExtResiduals)(const void*, const void*, const void*);
 float (*L2SqrSIMD4Ext)(const void*, const void*, const void*);
 float (*L2SqrSIMD4ExtResiduals)(const void*, const void*, const void*);
 float (*L2SqrSQ8)(const void*, const void*, const void*);
+int (*L2SqrSQ8Int)(const void*, const void*);
 
 
 float (*InnerProductSIMD4Ext)(const void*, const void*, const void*);
@@ -40,6 +41,7 @@ setup_simd() {
     L2SqrSIMD4Ext = L2Sqr;
     L2SqrSIMD4ExtResiduals = L2Sqr;
     L2SqrSQ8 = SQ8ComputeCodesL2Sqr;
+    L2SqrSQ8Int = getL2intAVX512;
 
     InnerProductSIMD4Ext = InnerProduct;
     InnerProductSIMD16Ext = InnerProduct;
@@ -126,6 +128,11 @@ GetInnerProductDistanceFunc(size_t dim) {
     } else {
         return vsag::InnerProductDistance;
     }
+}
+
+DistanceFuncInt
+GetL2DistanceFuncInt(size_t dim) {
+    return vsag::L2SqrSQ8Int;
 }
 
 PQDistanceFunc
