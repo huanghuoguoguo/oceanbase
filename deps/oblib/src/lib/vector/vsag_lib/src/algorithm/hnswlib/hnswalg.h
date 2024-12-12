@@ -518,25 +518,22 @@ public:
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
 
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            top_candidates(allocator_);
+        // std::priority_queue<std::pair<float, tableint>,
+        //                     vsag::Vector<std::pair<float, tableint>>,
+        //                     CompareByFirst>
+        //     top_candidates(allocator_);
+        std::vector<std::pair<float, tableint>> top_candidates;
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             candidate_set(allocator_);
 
         float lowerBound;
-        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
-            float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-            lowerBound = dist;
-            top_candidates.emplace(dist, ep_id);
-            candidate_set.emplace(-dist, ep_id);
-        } else {
-            lowerBound = std::numeric_limits<float>::max();
-            candidate_set.emplace(-lowerBound, ep_id);
-        }
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+        lowerBound = dist;
+        top_candidates.emplace_back(dist, ep_id);
+        candidate_set.emplace(-dist, ep_id);
+        bool flag = false;
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
@@ -575,7 +572,7 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (top_candidates.size() < ef || lowerBound > dist) {
+                    if (vec.size() < ef  || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -583,21 +580,41 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
 
-                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
-                            top_candidates.emplace(dist, candidate_id);
+                        if(!flag){
+                            top_candidates.emplace_back(dist, candidate_id);
+                        }else{
+                            std::push_heap(top_candidates.begin(),top_candidates.end(),CompareByFirst)
+                        }
+                        if(!flag && top_candidates.size() == ef){
+                            std::make_heap(top_candidates.begin(), top_candidates.end(), CompareByFirst);
+                            flag = true;
+                        } 
 
-                        if (top_candidates.size() > ef)
-                            top_candidates.pop();
+                        if (top_candidates.size() > ef){
+                            std::pop_heap(top_candidates.begin(),top_candidates.end(), CompareByFirst);
+                            top_candidates.pop_back();
+                        }
+                            
 
-                        if (!top_candidates.empty())
-                            lowerBound = top_candidates.top().first;
+                        if (flag && !top_candidates.empty()){
+                            lowerBound = top_candidates[0].first;
+                        }else{
+                            lowerBound = std::max(lowerBound, dist);
+                        }
+                            
                     }
                 }
             }
         }
-
+        std::priority_queue<std::pair<float, tableint>,
+                            vsag::Vector<std::pair<float, tableint>>,
+                            CompareByFirst>
+            top_candidates2(allocator_);
+        for(auto& kv:top_candidates){
+            top_candidates2.emplace(kv.first,kv.second);
+        }
         visited_list_pool_->releaseVisitedList(vl);
-        return top_candidates;
+        return top_candidates2;
     }
 
     template <bool has_deletions, bool collect_metrics = false>
