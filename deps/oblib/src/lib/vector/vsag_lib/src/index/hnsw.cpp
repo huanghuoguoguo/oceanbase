@@ -276,36 +276,30 @@ HNSW::knn_search(const DatasetPtr& query,
                  int64_t k,
                  const std::string& parameters,
                  hnswlib::BaseFilterFunctor* filter_ptr) const {
-    SlowTaskTimer t("hnsw knnsearch", 20);
-
-    try {
-
-
-        auto vector = query->GetFloat32Vectors();
+    auto vector = query->GetFloat32Vectors();
         std::array<uint8_t, 128> temp;
-// #ifdef ENABLE_AVX512
-//         for (int i = 0; i < 128; i += 16) {
-//             // 加载 16 个 float 到 SIMD 寄存器
-//             __m512 input_values = _mm512_loadu_ps(vector + i);
+#ifdef ENABLE_AVX512
+        for (int i = 0; i < 128; i += 16) {
+            // 加载 16 个 float 到 SIMD 寄存器
+            __m512 input_values = _mm512_loadu_ps(vector + i);
 
-//             // 使用 AVX512 指令将 float 转换为 int32
-//             __m512i int32_values = _mm512_cvttps_epi32(input_values);
+            // 使用 AVX512 指令将 float 转换为 int32
+            __m512i int32_values = _mm512_cvttps_epi32(input_values);
 
-//             // 截断到 int8 范围，并存储结果
-//             __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
-//             _mm_storeu_si128(reinterpret_cast<__m128i*>(temp.data() + i), int8_values);
-//         }
-// #else       
+            // 截断到 int8 范围，并存储结果
+            __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(temp.data() + i), int8_values);
+        }
+#else       
         for (size_t i = 0; i < 128; ++i) {
             float value = vector[i];
             // 将每个 float 值转换为 uint8_t，存储在 uint8_t 类型数组中
             temp[i] = static_cast<uint8_t>(value);
         }
-// #endif
+#endif
         
 
 
-        std::shared_lock lock(rw_mutex_);
 
         // check search parameters
         auto params = HnswSearchParameters::FromJson(parameters);
@@ -317,14 +311,10 @@ HNSW::knn_search(const DatasetPtr& query,
         // perform search
         std::priority_queue<std::pair<float, size_t>> key_results;
 
-        try {
-            key_results = alg_hnsw->searchKnn(
-                (const void*)vector, key_scan_k, key_scan_ef, filter_ptr);
-        } catch (const std::runtime_error& e) {
-            LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
-                                  "failed to perofrm knn_search(internalError): ",
-                                  e.what());
-        }
+
+        key_results = alg_hnsw->searchKnn(
+            (const void*)vector, key_scan_k, key_scan_ef, filter_ptr);
+    
         // 现在找出了k个hnsw实例，离目标向量最近，然后从中分别找到ef条结果。然后再排序。
 
         std::vector<std::pair<float, size_t>> kresults;
@@ -376,15 +366,6 @@ HNSW::knn_search(const DatasetPtr& query,
         }
 
         return std::move(result);
-    } catch (const std::invalid_argument& e) {
-        LOG_ERROR_AND_RETURNS(ErrorType::INVALID_ARGUMENT,
-                              "failed to perform knn_search(invalid argument): ",
-                              e.what());
-    } catch (const std::bad_alloc& e) {
-        LOG_ERROR_AND_RETURNS(ErrorType::NO_ENOUGH_MEMORY,
-                              "failed to perform knn_search(not enough memory): ",
-                              e.what());
-    }
 }
 
 // KMeans聚类算法
@@ -406,7 +387,7 @@ void HNSW::kmeansClustering(std::vector<std::vector<float>>& data, int k, std::v
     std::vector<int> counts(k, 0); // 每个聚类的点数
     bool changed = true;
     // 迭代直到聚类中心不再改变
-    while (count < 16 && changed) {
+    while (count < 100 && changed) {
         changed = false;
         count++;
         for (int i = 0; i < numPoints; ++i) {
