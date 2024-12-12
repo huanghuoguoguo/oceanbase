@@ -211,83 +211,64 @@ HNSW::knn_search(const DatasetPtr& query,
                  int64_t k,
                  const std::string& parameters,
                  hnswlib::BaseFilterFunctor* filter_ptr) const {
-    SlowTaskTimer t("hnsw knnsearch", 20);
+    auto vector = query->GetFloat32Vectors();
+    std::array<uint8_t, 128> temp;
+    // 服务器上用这个会报错，ecs不会。
+#ifdef ENABLE_AVX512
+    for (int i = 0; i < 128; i += 16) {
+        // 加载 16 个 float 到 SIMD 寄存器
+        __m512 input_values = _mm512_loadu_ps(vector + i);
 
-    try {
+        // 使用 AVX512 指令将 float 转换为 int32
+        __m512i int32_values = _mm512_cvttps_epi32(input_values);
 
-
-        auto vector = query->GetFloat32Vectors();
-        std::array<uint8_t, 128> temp;
-        // 服务器上用这个会报错，ecs不会。
-// #ifdef ENABLE_AVX512
-//         for (int i = 0; i < 128; i += 16) {
-//             // 加载 16 个 float 到 SIMD 寄存器
-//             __m512 input_values = _mm512_loadu_ps(vector + i);
-
-//             // 使用 AVX512 指令将 float 转换为 int32
-//             __m512i int32_values = _mm512_cvttps_epi32(input_values);
-
-//             // 截断到 int8 范围，并存储结果
-//             __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
-//             _mm_storeu_si128(reinterpret_cast<__m128i*>(temp.data() + i), int8_values);
-//         }
-// #else       
-        for (size_t i = 0; i < 128; ++i) {
-            float value = vector[i];
-            // 将每个 float 值转换为 uint8_t，存储在 uint8_t 类型数组中
-            temp[i] = static_cast<uint8_t>(value);
-        }
-// #endif
-        
-
-
-        std::shared_lock lock(rw_mutex_);
-
-        // check search parameters
-        auto params = HnswSearchParameters::FromJson(parameters);
-        // return result
-        auto result = Dataset::Make();
-
-
-        // perform search
-        std::vector<std::pair<float, size_t>> results;
-        try {
-            auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
-            results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search, k), filter_ptr);
-        } catch (const std::runtime_error& e) {
-            LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
-                                  "failed to perofrm knn_search(internalError): ",
-                                  e.what());
-        }
-
-        // update stats
-        {
-            std::lock_guard<std::mutex> lock(stats_mutex_);
-        }
-
-
-        result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
-        int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
-        result->Ids(ids);
-        float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
-        result->Distances(dists);
-        #pragma omp parallel for (k > 1000)
-        for (int64_t j = results.size() - 1; j >= 0; --j) {
-            dists[j] = results[j].first;
-            ids[j] = results[j].second;
-        }
-
-        return std::move(result);
-    } catch (const std::invalid_argument& e) {
-        LOG_ERROR_AND_RETURNS(ErrorType::INVALID_ARGUMENT,
-                              "failed to perform knn_search(invalid argument): ",
-                              e.what());
-    } catch (const std::bad_alloc& e) {
-        LOG_ERROR_AND_RETURNS(ErrorType::NO_ENOUGH_MEMORY,
-                              "failed to perform knn_search(not enough memory): ",
-                              e.what());
+        // 截断到 int8 范围，并存储结果
+        __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(temp.data() + i), int8_values);
     }
+#else       
+    for (size_t i = 0; i < 128; ++i) {
+        float value = vector[i];
+        // 将每个 float 值转换为 uint8_t，存储在 uint8_t 类型数组中
+        temp[i] = static_cast<uint8_t>(value);
+    }
+#endif
+    
+
+
+    std::shared_lock lock(rw_mutex_);
+
+    // check search parameters
+    auto params = HnswSearchParameters::FromJson(parameters);
+    // return result
+    auto result = Dataset::Make();
+
+
+    // perform search
+    std::vector<std::pair<float, size_t>> results;
+    try {
+        auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
+        results = hnsw->searchKnn2(
+            temp, k, std::max(params.ef_search, k), filter_ptr);
+    } catch (const std::runtime_error& e) {
+        LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
+                                "failed to perofrm knn_search(internalError): ",
+                                e.what());
+    }
+
+
+    result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
+    int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
+    result->Ids(ids);
+    float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
+    result->Distances(dists);
+    #pragma omp parallel for (k > 1000)
+    for (int64_t j = results.size() - 1; j >= 0; --j) {
+        dists[j] = results[j].first;
+        ids[j] = results[j].second;
+    }
+
+    return std::move(result);
 }
 
 template <typename FilterType>
