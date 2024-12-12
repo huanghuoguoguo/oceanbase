@@ -542,7 +542,7 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
             count++;
-            if ((-current_node_pair.first) > lowerBound &&
+            if (
                 (top_candidates.size() >= ef || !isIdAllowed)) {
                 break;
             }
