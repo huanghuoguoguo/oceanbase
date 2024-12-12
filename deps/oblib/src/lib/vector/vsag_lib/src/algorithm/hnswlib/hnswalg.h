@@ -541,9 +541,9 @@ public:
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-            count++;
-            if (top_candidates.size() >= ef) {
-                vsag::logger::warn("yhh size:{},ef:{},",top_candidates.size(),ef);    
+            
+            if ((-current_node_pair.first) > lowerBound &&
+                (top_candidates.size() >= ef || !isIdAllowed)) {
                 break;
             }
             candidate_set.pop();
@@ -572,7 +572,7 @@ public:
 #endif
                 if (!(visited_array[candidate_id] == visited_array_tag)) {
                     visited_array[candidate_id] = visited_array_tag;
-
+                    count++;
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (top_candidates.size() < ef || lowerBound > dist) {
