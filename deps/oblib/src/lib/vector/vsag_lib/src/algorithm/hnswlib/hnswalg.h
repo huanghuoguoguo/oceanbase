@@ -805,7 +805,7 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        // float threshold = 100000.f;
+
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
@@ -2010,8 +2010,6 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                metric_hops_++;
-                metric_distance_computations_ += size;
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
@@ -2026,7 +2024,7 @@ public:
                 }
             }
         }
-
+        vsag::logger::warn("yhh searchKnn3 dist:{}",curdist);
         std::priority_queue<std::pair<int, tableint>,
                             vsag::Vector<std::pair<int, tableint>>,
                             CompareByFirstInt>
