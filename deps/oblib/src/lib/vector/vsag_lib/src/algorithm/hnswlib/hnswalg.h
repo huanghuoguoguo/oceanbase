@@ -2084,11 +2084,10 @@ public:
         int j = top_candidates.size();
         while (!top_candidates.empty()) {
             std::pair<int, tableint> rez = top_candidates.top();
-            candidates[--j] = {rez.first, rez.second};
+            candidates[--j] = std::move(rez);
             top_candidates.pop();
         }
 
-        std::reverse(candidates.begin(), candidates.end());
 
         #pragma omp parallel for (k > 1000)
         for (int i = 0; i < candidates.size(); i++) {
