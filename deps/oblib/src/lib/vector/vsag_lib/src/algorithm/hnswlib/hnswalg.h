@@ -586,8 +586,11 @@ public:
                         if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
                             top_candidates.emplace(dist, candidate_id);
 
-                        if (top_candidates.size() > ef)
+                        if (top_candidates.size() > ef){
+                            vsag::logger::warn("yhh pop count:{},lowerbound:{}",count,lowerBound);
                             top_candidates.pop();
+                        }
+                            
 
                         if (!top_candidates.empty())
                             lowerBound = top_candidates.top().first;
@@ -595,7 +598,7 @@ public:
                 }
             }
         }
-        vsag::logger::warn("yhh count:{},size:{}",count,candidate_set.size());
+        vsag::logger::warn("yhh all count:{}",count);
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
     }
