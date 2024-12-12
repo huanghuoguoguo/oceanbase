@@ -528,22 +528,17 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
-        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
-            float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-            lowerBound = dist;
-            top_candidates.emplace(dist, ep_id);
-            candidate_set.emplace(-dist, ep_id);
-        } else {
-            lowerBound = std::numeric_limits<float>::max();
-            candidate_set.emplace(-lowerBound, ep_id);
-        }
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+        lowerBound = dist;
+        top_candidates.emplace(dist, ep_id);
+        candidate_set.emplace(-dist, ep_id);
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+                (top_candidates.size() >= ef)) {
                 break;
             }
             candidate_set.pop();
@@ -583,8 +578,7 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
 
-                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
-                            top_candidates.emplace(dist, candidate_id);
+                        top_candidates.emplace(dist, candidate_id);  
 
                         if (top_candidates.size() > ef)
                             top_candidates.pop();
@@ -1779,8 +1773,6 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                metric_hops_++;
-                metric_distance_computations_ += size;
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
@@ -1800,7 +1792,7 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-        if(k > 1000){
+        if(k * 5 > ef){
             top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }else{
@@ -1812,16 +1804,15 @@ public:
             top_candidates.pop();
         }
 
-        std::vector<std::pair<float, labeltype>> candidates;
-        candidates.reserve(top_candidates.size());
-
+        std::vector<std::pair<float, labeltype>> candidates(top_candidates.size());
+        // candidates.reserve(top_candidates.size());
+        int j = top_candidates.size();
         while (!top_candidates.empty()) {
             std::pair<float, tableint> rez = top_candidates.top();
-            candidates.emplace_back(rez.first, rez.second);
+            candidates[--j] = {rez.first, rez.second};
             top_candidates.pop();
         }
 
-        std::reverse(candidates.begin(), candidates.end());
 
         #pragma omp parallel for (k > 1000)
         for (int i = 0; i < candidates.size(); i++) {
