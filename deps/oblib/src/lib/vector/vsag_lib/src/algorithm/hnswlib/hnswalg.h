@@ -2066,15 +2066,13 @@ public:
                             CompareByFirstInt>
             top_candidates(allocator_);
         if(k * 4 > ef){
-            searchBaseLayerSTint<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+            top_candidates = searchBaseLayerSTint<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }else{
             top_candidates =
-            searchBaseLayerBSAint<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
+                searchBaseLayerBSAint<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
         }
         
-        if(k == 10000){
-            vsag::logger::warn("yhh pop before");
-        }
+
         while (top_candidates.size() > k) {
             top_candidates.pop();
         }
@@ -2087,17 +2085,13 @@ public:
             candidates[--j] = std::move(rez);
             top_candidates.pop();
         }
-        if(k == 10000){
-            vsag::logger::warn("yhh popdown");
-        }
+
 
         #pragma omp parallel for (k > 1000)
         for (int i = 0; i < candidates.size(); i++) {
             candidates[i].second = getExternalLabel(candidates[i].second);
         }
-        if(k == 10000){
-            vsag::logger::warn("yhh getExt done");
-        }
+
         return std::move(candidates);
     }
 

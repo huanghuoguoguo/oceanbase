@@ -236,7 +236,7 @@ HNSW::knn_search(const DatasetPtr& query,
     
 
 
-    std::shared_lock lock(rw_mutex_);
+    // std::shared_lock lock(rw_mutex_);
 
     // check search parameters
     auto params = HnswSearchParameters::FromJson(parameters);
@@ -257,9 +257,7 @@ HNSW::knn_search(const DatasetPtr& query,
     float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
     result->Distances(dists);
 
-    if(k == 10000){
-        vsag::logger::warn("yhh hnsw get before");
-    }
+
     #pragma omp parallel for (k > 1000)
     for (int64_t j = results.size() - 1; j >= 0; --j) {
         dists[j] = (float)(results[j].first);
