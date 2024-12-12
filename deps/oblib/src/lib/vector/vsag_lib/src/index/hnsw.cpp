@@ -215,10 +215,11 @@ HNSW::knn_search(const DatasetPtr& query,
     std::array<uint8_t, 128> temp;
     // 服务器上用这个会报错，ecs不会。
 #ifdef ENABLE_AVX512
+    logger::warn("yhh use");
     for (int i = 0; i < 128; i += 16) {
         // 加载 16 个 float 到 SIMD 寄存器
         __m512 input_values = _mm512_loadu_ps(vector + i);
-
+        
         // 使用 AVX512 指令将 float 转换为 int32
         __m512i int32_values = _mm512_cvttps_epi32(input_values);
 
