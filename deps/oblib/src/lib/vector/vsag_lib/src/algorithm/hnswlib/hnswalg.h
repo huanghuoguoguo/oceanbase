@@ -551,18 +551,34 @@ public:
             tableint current_node_id = current_node_pair.second;
             int* data = (int*)get_linklist0(current_node_id);
             size_t size = getListCount((linklistsizeint*)data);
+
+            // 将其全部取出来，尝试并行化。
             std::vector<labeltype> ids;
             std::vector<float> dists;
             int not_vis_count = 0;
+            // 并行化距离计算
+            #pragma omp parallel for reduction(+:not_vis_count)
             for (size_t j = 1; j <= size; j++) {
                 int candidate_id = *(data + j);
+
+                // 预取下一次循环的 `candidate_id` 的数据
+                if (j + 1 <= size) {
+                    __builtin_prefetch(getDataByInternalId(*(data + j + 1)), 0, 1);
+                }
+
                 if (!(visited_array[candidate_id] == visited_array_tag)) {
-                    not_vis_count++;
                     visited_array[candidate_id] = visited_array_tag;
-                    ids.push_back(candidate_id);
-                    char* currObj1 = (getDataByInternalId(candidate_id));
-                    float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    dists.push_back(dist);
+
+                    // 线程私有变量存储中间结果
+                    float dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_);
+
+                    // 临界区内更新共享资源
+                    #pragma omp critical
+                    {
+                        ids.push_back(candidate_id);
+                        dists.push_back(dist);
+                        not_vis_count++;
+                    }
                 }
             }
 
@@ -572,8 +588,7 @@ public:
                 if (top_candidates.size() < ef || lowerBound > dist) {
                     candidate_set.emplace(-dist, candidate_id);
 
-                    if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
-                        top_candidates.emplace(dist, candidate_id);
+                    top_candidates.emplace(dist, candidate_id);   
 
                     if (top_candidates.size() > ef)
                         top_candidates.pop();
