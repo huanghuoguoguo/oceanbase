@@ -543,6 +543,7 @@ public:
             std::pair<float, tableint> current_node_pair = candidate_set.top();
             count++;
             if (top_candidates.size() >= ef) {
+                vsag::logger::warn("yhh size:{},ef:{},",top_candidates.size(),ef);    
                 break;
             }
             candidate_set.pop();
@@ -594,7 +595,7 @@ public:
                 }
             }
         }
-        vsag::logger::warn("yhh count:{}",count);
+        vsag::logger::warn("yhh count:{},size:{}",count,candidate_set.size());
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
     }
