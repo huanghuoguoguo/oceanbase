@@ -583,7 +583,7 @@ public:
                         if(!flag){
                             top_candidates.emplace_back(dist, candidate_id);
                         }else{
-                            std::push_heap(top_candidates.begin(),top_candidates.end(),CompareByFirst())
+                            std::push_heap(top_candidates.begin(),top_candidates.end(),CompareByFirst());
                         }
                         if(!flag && top_candidates.size() == ef){
                             std::make_heap(top_candidates.begin(), top_candidates.end(), CompareByFirst());
