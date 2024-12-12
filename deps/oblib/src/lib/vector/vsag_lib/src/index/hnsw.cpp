@@ -326,9 +326,15 @@ HNSW::knn_search(const DatasetPtr& query,
                                   e.what());
         }
         // 现在找出了三个hnsw实例，离目标向量最近，然后从中分别找到ef条结果。然后再排序。
+
+        std::vector<std::pair<float, size_t>> kresults;
         while(!key_results.empty()){
             auto kv = key_results.top();
             key_results.pop();
+            kresults.emplace_back(kv);
+        }
+#pragma omp parallel for 
+        for(auto& kv:kresults){
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kv.second]);
             auto t_results = hnsw->searchKnn2(
                 temp, k, std::max(params.ef_search,k * 3), filter_ptr);
