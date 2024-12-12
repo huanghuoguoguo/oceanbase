@@ -109,6 +109,10 @@ inline int getL2(const void* pVect1v, const void* pVect2v){
 
 
 
+
+
+
+
 class HierarchicalNSW : public AlgorithmInterface<float> {
 private:
     static const tableint MAX_LABEL_OPERATION_LOCKS = 65536;
@@ -249,6 +253,14 @@ public:
                 if (in_edges_level0) {
                     delete in_edges_level0;
                 }
+    struct CompareByFirst2 {
+        constexpr bool
+        operator()(std::pair<int, tableint> const& a,
+                   std::pair<int, tableint> const& b) const noexcept {
+            return a.first < b.first;
+        }
+    };
+
                 auto& in_edges = *(reversed_link_lists_ + i);
                 if (in_edges) {
                     delete in_edges;
@@ -680,7 +692,7 @@ public:
             candidate_set(allocator_);
 
 
-        float dist = (float)getL2(data_point, getDataByInternalId(ep_id));
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
 
         float lowerBound = dist;
         float lowerBoundAns = dist;
@@ -728,13 +740,6 @@ public:
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (top_candidates.size() < ef || lowerBound > dist) {
-                        // if (candidate_set.size() < ef * 2) {
-                        //     // 如果候选列表很大了，我直接不要了。剩下的足够了。
-                        //     if (dist < lowerBound + threshold) {
-                        //         // 如果距离太大，就不要了。
-                        //         candidate_set.emplace(-dist, candidate_id);
-                        //     }
-                        // }
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -759,15 +764,117 @@ public:
                     }
                 }
             }
-            // 如果ans和top的最远距离过远，是否应该提前停止？比如lans是5w，l是10w，是不是应该直接停止？
-            // if(ans.size() == k && lowerBound - lowerBoundAns > threshold){
-            //     break;
-            // }
         }
 
         visited_list_pool_->releaseVisitedList(vl);
         return ans;
     }
+
+    template <bool has_deletions, bool collect_metrics = false>
+    std::priority_queue<std::pair<int, tableint>,
+                        vsag::Vector<std::pair<int, tableint>>,
+                        CompareByFirst>
+    searchBaseLayerBSAint(tableint ep_id,
+                      const void* data_point,
+                      size_t k,
+                      size_t ef,
+                      BaseFilterFunctor* isIdAllowed = nullptr) const {
+        auto vl = visited_list_pool_->getFreeVisitedList();
+        vl_type* visited_array = vl->mass;
+        vl_type visited_array_tag = vl->curV;
+
+        std::priority_queue<std::pair<int, tableint>,
+                            vsag::Vector<std::pair<int, tableint>>,
+                            CompareByFirst>
+            top_candidates(allocator_);
+        std::priority_queue<std::pair<int, tableint>,
+                        vsag::Vector<std::pair<int, tableint>>,
+                        CompareByFirst>
+        ans(allocator_);
+        std::priority_queue<std::pair<int, tableint>,
+                            vsag::Vector<std::pair<int, tableint>>,
+                            CompareByFirst>
+            candidate_set(allocator_);
+
+
+        int dist = getL2(data_point, getDataByInternalId(ep_id));
+
+        int lowerBound = dist;
+        int lowerBoundAns = dist;
+        top_candidates.emplace(dist, ep_id);
+        ans.emplace(dist, ep_id);
+        candidate_set.emplace(-dist, ep_id);
+
+        // float threshold = 100000.f;
+
+        visited_array[ep_id] = visited_array_tag; 
+        while (!candidate_set.empty()) {
+            std::pair<int, tableint> current_node_pair = candidate_set.top();
+
+            if ((-current_node_pair.first) > lowerBound &&
+                (top_candidates.size() >= ef || !isIdAllowed)) {
+                break;
+            }
+            candidate_set.pop();
+
+            tableint current_node_id = current_node_pair.second;
+            int* data = (int*)get_linklist0(current_node_id);
+            size_t size = getListCount((linklistsizeint*)data);
+
+
+            auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
+#ifdef USE_SSE
+            _mm_prefetch((char*)(visited_array + *(data + 1)), _MM_HINT_T0);
+            _mm_prefetch((char*)(visited_array + *(data + 1) + 64), _MM_HINT_T0);
+            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+            _mm_prefetch((char*)(data + 2), _MM_HINT_T0);
+#endif
+
+            for (size_t j = 1; j <= size; j++) {
+                int candidate_id = *(data + j);
+                size_t pre_l = std::min(j, size - 2);
+                auto vector_data_ptr =
+                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
+#ifdef USE_SSE
+                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
+                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
+#endif
+                if (!(visited_array[candidate_id] == visited_array_tag)) {
+                    visited_array[candidate_id] = visited_array_tag;
+
+                    char* currObj1 = (getDataByInternalId(candidate_id));
+                    int dist = getL2(data_point, currObj1);
+                    if (top_candidates.size() < ef || lowerBound > dist) {
+                        candidate_set.emplace(-dist, candidate_id);
+                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+
+                        top_candidates.emplace(dist, candidate_id);
+                        // 如果当前节点距离比ans小，将其加入ans
+                        if(ans.size() < k || dist < lowerBoundAns){
+                            ans.emplace(dist, candidate_id);
+                        }
+
+                        if (top_candidates.size() > ef)
+                            top_candidates.pop();
+                        if (ans.size() > k)
+                            ans.pop();
+                        if (!top_candidates.empty())
+                            lowerBound = top_candidates.top().first;
+                        if (!ans.empty())
+                            lowerBoundAns = ans.top().first;
+                    }
+                }
+            }
+        }
+
+        visited_list_pool_->releaseVisitedList(vl);
+        return ans;
+    }
+
 
     template <bool has_deletions, bool collect_metrics = false>
     std::priority_queue<std::pair<float, tableint>,
@@ -1870,6 +1977,72 @@ public:
 
         while (!top_candidates.empty()) {
             std::pair<float, tableint> rez = top_candidates.top();
+            candidates.emplace_back(rez.first, rez.second);
+            top_candidates.pop();
+        }
+
+        std::reverse(candidates.begin(), candidates.end());
+
+        #pragma omp parallel for (k > 1000)
+        for (int i = 0; i < candidates.size(); i++) {
+            candidates[i].second = getExternalLabel(candidates[i].second);
+        }
+        
+        return std::move(candidates);
+    }
+
+
+    std::vector<std::pair<int, labeltype>>
+    searchKnn3(std::array<uint8_t, 128>& sq8,
+              size_t k,
+              uint64_t ef,
+              BaseFilterFunctor* isIdAllowed = nullptr)  {
+        const void* query_data = (const void*)(sq8.data());
+
+        tableint currObj = enterpoint_node_;
+        int curdist =
+            fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        for (int level = maxlevel_; level > 0; level--) {
+            bool changed = true;
+            while (changed) {
+                changed = false;
+                unsigned int* data;
+
+                data = (unsigned int*)get_linklist(currObj, level);
+                int size = getListCount(data);
+                metric_hops_++;
+                metric_distance_computations_ += size;
+
+                tableint* datal = (tableint*)(data + 1);
+                for (int i = 0; i < size; i++) {
+                    tableint cand = datal[i];
+                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+
+                    if (d < curdist) {
+                        curdist = d;
+                        currObj = cand;
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        std::priority_queue<std::pair<int, tableint>,
+                            vsag::Vector<std::pair<int, tableint>>,
+                            CompareByFirst>
+            top_candidates(allocator_);
+        top_candidates =
+                searchBaseLayerBSAint<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
+
+        while (top_candidates.size() > k) {
+            top_candidates.pop();
+        }
+
+        std::vector<std::pair<int, labeltype>> candidates;
+        candidates.reserve(top_candidates.size());
+
+        while (!top_candidates.empty()) {
+            std::pair<int, tableint> rez = top_candidates.top();
             candidates.emplace_back(rez.first, rez.second);
             top_candidates.pop();
         }
