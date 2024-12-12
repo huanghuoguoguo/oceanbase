@@ -551,47 +551,35 @@ public:
             tableint current_node_id = current_node_pair.second;
             int* data = (int*)get_linklist0(current_node_id);
             size_t size = getListCount((linklistsizeint*)data);
-
-
-            auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
-#ifdef USE_SSE
-            _mm_prefetch((char*)(visited_array + *(data + 1)), _MM_HINT_T0);
-            _mm_prefetch((char*)(visited_array + *(data + 1) + 64), _MM_HINT_T0);
-            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-            _mm_prefetch((char*)(data + 2), _MM_HINT_T0);
-#endif
-
+            std::vector<labeltype> ids;
+            std::vector<float> dists;
+            int not_vis_count = 0;
             for (size_t j = 1; j <= size; j++) {
                 int candidate_id = *(data + j);
-                size_t pre_l = std::min(j, size - 2);
-                auto vector_data_ptr =
-                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
-#ifdef USE_SSE
-                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
-                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
-#endif
                 if (!(visited_array[candidate_id] == visited_array_tag)) {
+                    not_vis_count++;
                     visited_array[candidate_id] = visited_array_tag;
-
+                    ids.push_back(candidate_id);
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (top_candidates.size() < ef || lowerBound > dist) {
-                        candidate_set.emplace(-dist, candidate_id);
-                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
-                            candidate_set.top().second, offsetLevel0_);
-#ifdef USE_SSE
-                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-#endif
+                    dists.push_back(dist);
+                }
+            }
 
-                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
-                            top_candidates.emplace(dist, candidate_id);
+            for (size_t j = 0; j < not_vis_count; j++) {
+                int candidate_id = ids[j];
+                int dist = dists[j];
+                if (top_candidates.size() < ef || lowerBound > dist) {
+                    candidate_set.emplace(-dist, candidate_id);
 
-                        if (top_candidates.size() > ef)
-                            top_candidates.pop();
+                    if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
+                        top_candidates.emplace(dist, candidate_id);
 
-                        if (!top_candidates.empty())
-                            lowerBound = top_candidates.top().first;
-                    }
+                    if (top_candidates.size() > ef)
+                        top_candidates.pop();
+
+                    if (!top_candidates.empty())
+                        lowerBound = top_candidates.top().first;
                 }
             }
         }
@@ -1800,14 +1788,15 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-        if(k > 1000){
-            top_candidates =
+        // if(k > 1000){
+        //     top_candidates =
+        //         searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+        // }else{
+        //     top_candidates =
+        //         searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
+        // }
+        top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
-        }else{
-            top_candidates =
-                searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
-        }
-
         while (top_candidates.size() > k) {
             top_candidates.pop();
         }
