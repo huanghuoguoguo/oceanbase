@@ -582,15 +582,17 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
 
-                        if(!flag){
-                            top_candidates.emplace_back(dist, candidate_id);
-                        }else{
-                            std::push_heap(top_candidates.begin(),top_candidates.end(), compare);
-                        }
-                        if(!flag && top_candidates.size() == ef){
-                            std::make_heap(top_candidates.begin(), top_candidates.end(), compare);
-                            flag = true;
-                        } 
+                        // if(!flag){
+                        //     top_candidates.emplace_back(dist, candidate_id);
+                        // }else{
+                        //     std::push_heap(top_candidates.begin(),top_candidates.end(), compare);
+                        // }
+                        std::make_heap(top_candidates.begin(), top_candidates.end(), compare);
+                        std::push_heap(top_candidates.begin(),top_candidates.end(), compare);
+                        // if(!flag && top_candidates.size() == ef){
+                        //     std::make_heap(top_candidates.begin(), top_candidates.end(), compare);
+                        //     flag = true;
+                        // } 
 
                         if (top_candidates.size() > ef){
                             std::pop_heap(top_candidates.begin(),top_candidates.end(), compare);
@@ -598,12 +600,9 @@ public:
                         }
                             
 
-                        if (flag && !top_candidates.empty()){
-                            lowerBound = top_candidates[0].first;
-                        }else{
-                            lowerBound = std::min(lowerBound, dist);
-                        }
-                            
+                        lowerBound = top_candidates[0].first; 
+                        
+                        
                     }
                 }
             }
