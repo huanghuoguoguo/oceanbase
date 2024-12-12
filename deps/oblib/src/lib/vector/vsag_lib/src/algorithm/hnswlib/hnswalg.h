@@ -572,7 +572,7 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (vec.size() < ef  || lowerBound > dist) {
+                    if (top_candidates.size() < ef  || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -583,15 +583,15 @@ public:
                         if(!flag){
                             top_candidates.emplace_back(dist, candidate_id);
                         }else{
-                            std::push_heap(top_candidates.begin(),top_candidates.end(),CompareByFirst)
+                            std::push_heap(top_candidates.begin(),top_candidates.end(),CompareByFirst())
                         }
                         if(!flag && top_candidates.size() == ef){
-                            std::make_heap(top_candidates.begin(), top_candidates.end(), CompareByFirst);
+                            std::make_heap(top_candidates.begin(), top_candidates.end(), CompareByFirst());
                             flag = true;
                         } 
 
                         if (top_candidates.size() > ef){
-                            std::pop_heap(top_candidates.begin(),top_candidates.end(), CompareByFirst);
+                            std::pop_heap(top_candidates.begin(),top_candidates.end(), CompareByFirst());
                             top_candidates.pop_back();
                         }
                             
