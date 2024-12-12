@@ -256,6 +256,10 @@ HNSW::knn_search(const DatasetPtr& query,
     result->Ids(ids);
     float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
     result->Distances(dists);
+
+    if(k == 10000){
+        vsag::logger::warn("yhh hnsw get before");
+    }
     #pragma omp parallel for (k > 1000)
     for (int64_t j = results.size() - 1; j >= 0; --j) {
         dists[j] = (float)(results[j].first);
