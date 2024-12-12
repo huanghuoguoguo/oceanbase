@@ -635,7 +635,7 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        float threshold = 100000.f;
+        // float threshold = 100000.f;
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
@@ -675,14 +675,14 @@ public:
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (top_candidates.size() < ef || lowerBound > dist) {
-                        if (candidate_set.size() < ef * 2) {
-                            // 如果候选列表很大了，我直接不要了。剩下的足够了。
-                            if (dist < lowerBound + threshold) {
-                                // 如果距离太大，就不要了。
-                                candidate_set.emplace(-dist, candidate_id);
-                            }
-                        }
-                        // candidate_set.emplace(-dist, candidate_id);
+                        // if (candidate_set.size() < ef * 2) {
+                        //     // 如果候选列表很大了，我直接不要了。剩下的足够了。
+                        //     if (dist < lowerBound + threshold) {
+                        //         // 如果距离太大，就不要了。
+                        //         candidate_set.emplace(-dist, candidate_id);
+                        //     }
+                        // }
+                        candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
 #ifdef USE_SSE
