@@ -697,7 +697,7 @@ public:
                 }
             }
         }
-
+        vsag::logger::warn("yhh 1w done");
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
     }
@@ -2067,6 +2067,7 @@ public:
                             CompareByFirstInt>
             top_candidates(allocator_);
         if(k * 4 > ef){
+            vsag::logger::warn("yhh k:{}",k);
             searchBaseLayerSTint<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }else{
             top_candidates =
