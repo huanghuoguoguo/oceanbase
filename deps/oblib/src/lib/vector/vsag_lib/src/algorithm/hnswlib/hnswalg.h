@@ -552,39 +552,49 @@ public:
             int* data = (int*)get_linklist0(current_node_id);
             size_t size = getListCount((linklistsizeint*)data);
 
-            // 将其全部取出来，尝试并行化。
-            std::vector<labeltype> ids;
-            std::vector<float> dists;
-            int not_vis_count = 0;
-            // 并行化距离计算
-            #pragma omp parallel for reduction(+:not_vis_count)
-            for (size_t j = 1; j <= size; j++) {
-                int candidate_id = *(data + j);
+            std::vector<labeltype> global_ids;
+            std::vector<float> global_dists;
+            int global_not_vis_count = 0;
 
-                // 预取下一次循环的 `candidate_id` 的数据
-                if (j + 1 <= size) {
-                    __builtin_prefetch(getDataByInternalId(*(data + j + 1)), 0, 1);
+            #pragma omp parallel
+            {
+                // 声明线程局部存储
+                std::vector<labeltype> local_ids;
+                std::vector<float> local_dists;
+                int local_not_vis_count = 0;
+
+                #pragma omp for nowait
+                for (size_t j = 1; j <= size; j++) {
+                    int candidate_id = *(data + j);
+
+                    // 预取下一次循环的 `candidate_id` 的数据
+                    if (j + 1 <= size) {
+                        __builtin_prefetch(getDataByInternalId(*(data + j + 1)), 0, 1);
+                    }
+
+                    if (!(visited_array[candidate_id] == visited_array_tag)) {
+                        visited_array[candidate_id] = visited_array_tag;
+
+                        // 局部计算距离并存储
+                        float dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_);
+                        local_ids.push_back(candidate_id);
+                        local_dists.push_back(dist);
+                        local_not_vis_count++;
+                    }
                 }
 
-                if (!(visited_array[candidate_id] == visited_array_tag)) {
-                    visited_array[candidate_id] = visited_array_tag;
-
-                    // 线程私有变量存储中间结果
-                    float dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_);
-
-                    // 临界区内更新共享资源
-                    #pragma omp critical
-                    {
-                        ids.push_back(candidate_id);
-                        dists.push_back(dist);
-                        not_vis_count++;
-                    }
+                // 临界区中合并局部结果到全局变量
+                #pragma omp critical
+                {
+                    global_ids.insert(global_ids.end(), local_ids.begin(), local_ids.end());
+                    global_dists.insert(global_dists.end(), local_dists.begin(), local_dists.end());
+                    global_not_vis_count += local_not_vis_count;
                 }
             }
 
             for (size_t j = 0; j < not_vis_count; j++) {
-                int candidate_id = ids[j];
-                int dist = dists[j];
+                int candidate_id = global_ids[j];
+                int dist = global_dists[j];
                 if (top_candidates.size() < ef || lowerBound > dist) {
                     candidate_set.emplace(-dist, candidate_id);
 
