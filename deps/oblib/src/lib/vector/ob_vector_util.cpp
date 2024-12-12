@@ -104,9 +104,9 @@ int create_index(obvectorlib::VectorIndexPtr& index_handler, int index_type,
                                    static_cast<obvectorlib::IndexType>(index_type),
                                    dtype, metric,
                                    dim,
-                                   20,
+                                   18,
                                    260,
-                                   100,
+                                   110,
                                    allocator);
 #endif
 }
