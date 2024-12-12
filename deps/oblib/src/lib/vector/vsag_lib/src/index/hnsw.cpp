@@ -325,7 +325,7 @@ HNSW::knn_search(const DatasetPtr& query,
                                   "failed to perofrm knn_search(internalError): ",
                                   e.what());
         }
-        // 现在找出了三个hnsw实例，离目标向量最近，然后从中分别找到ef条结果。然后再排序。
+        // 现在找出了k个hnsw实例，离目标向量最近，然后从中分别找到ef条结果。然后再排序。
 
         std::vector<std::pair<float, size_t>> kresults;
         while(!key_results.empty()){
@@ -333,21 +333,35 @@ HNSW::knn_search(const DatasetPtr& query,
             key_results.pop();
             kresults.emplace_back(kv);
         }
-#pragma omp parallel for 
-        for(auto& kv:kresults){
-            auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kv.second]);
-            auto t_results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search,k * 4), filter_ptr);
-            results.insert(results.end(), t_results.begin(), t_results.end());
+        std::vector<std::vector<std::pair<float, size_t>>> local_results(omp_get_max_threads());
+
+        #pragma omp parallel for
+        for (size_t i = 0; i < kresults.size(); i++) {
+            auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kresults[i].second]);
+            auto t_results = hnsw->searchKnn2(temp, k, std::max(params.ef_search, k * 4), filter_ptr);
+            local_results[omp_get_thread_num()].insert(local_results[omp_get_thread_num()].end(),
+                                                    t_results.begin(), t_results.end());
         }
-        // Sort results by distance from large to small
-        std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
-            return a.first < b.first; // Sort descending by distance
-        });
-        
-        if (results.size() > k) {
-            results.resize(k);
+
+        // 合并与排序
+        std::priority_queue<std::pair<float, size_t>> top_k;
+        for (const auto& res : local_results) {
+            for (const auto& r : res) {
+                if (top_k.size() < k || r.first < top_k.top().first) {
+                    top_k.push(r);
+                    if (top_k.size() > k) {
+                        top_k.pop();
+                    }
+                }
+            }
         }
+
+        std::vector<std::pair<float, size_t>> results;
+        while (!top_k.empty()) {
+            results.emplace_back(top_k.top());
+            top_k.pop();
+        }
+        std::reverse(results.begin(), results.end());
 
         
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
