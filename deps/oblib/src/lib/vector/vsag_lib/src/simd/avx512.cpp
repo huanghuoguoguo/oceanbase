@@ -174,4 +174,20 @@ int getL2intAVX512(const void* pVect1v, const void* pVect2v){
     return total_sum; 
 }
 
+void transF2uint8(const float* vector, void* temp){
+    uint8_t* tar = (uint8_t*)temp;
+    for (int i = 0; i < 128; i += 16) {
+        // 加载 16 个 float 到 SIMD 寄存器
+        __m512 input_values = _mm512_loadu_ps(vector + i);
+        
+        // 使用 AVX512 指令将 float 转换为 int32
+        __m512i int32_values = _mm512_cvttps_epi32(input_values);
+
+        // 截断到 int8 范围，并存储结果
+        __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(tar + i), int8_values);
+    }
+}
+
+
 }  // namespace vsag

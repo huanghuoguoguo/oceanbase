@@ -295,7 +295,7 @@ private:
     bool empty_index_ = false;
     bool use_reversed_edges_ = false;
     bool is_init_memory_ = false;
-
+    TransFuncF2Int transfunc;
     std::shared_ptr<SafeAllocator> allocator_;
 
     mutable std::mutex stats_mutex_;

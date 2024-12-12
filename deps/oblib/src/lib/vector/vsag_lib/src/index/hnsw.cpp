@@ -63,7 +63,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
     if (ef_construction <= 0) {
         throw std::runtime_error(MESSAGE_PARAMETER);
     }
-
+    transfunc = vsag::GetF2IntTransFunc();
     if (use_conjugate_graph) {
         conjugate_graph_ = std::make_shared<ConjugateGraph>();
     }
@@ -213,27 +213,8 @@ HNSW::knn_search(const DatasetPtr& query,
                  hnswlib::BaseFilterFunctor* filter_ptr) const {
     auto vector = query->GetFloat32Vectors();
     std::array<uint8_t, 128> temp;
-    // 服务器上用这个会报错，ecs不会。
-#ifdef ENABLE_AVX512
-    logger::warn("yhh use");
-    for (int i = 0; i < 128; i += 16) {
-        // 加载 16 个 float 到 SIMD 寄存器
-        __m512 input_values = _mm512_loadu_ps(vector + i);
-        
-        // 使用 AVX512 指令将 float 转换为 int32
-        __m512i int32_values = _mm512_cvttps_epi32(input_values);
 
-        // 截断到 int8 范围，并存储结果
-        __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(temp.data() + i), int8_values);
-    }
-#else       
-    for (size_t i = 0; i < 128; ++i) {
-        float value = vector[i];
-        // 将每个 float 值转换为 uint8_t，存储在 uint8_t 类型数组中
-        temp[i] = static_cast<uint8_t>(value);
-    }
-#endif
+    transfunc(vector,temp.data());
     
 
 
