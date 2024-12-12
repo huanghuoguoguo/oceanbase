@@ -316,7 +316,7 @@ HNSW::knn_search(const DatasetPtr& query,
         int64_t key_scan_ef = 60;
         // perform search
         std::priority_queue<std::pair<float, size_t>> key_results;
-        std::vector<std::pair<float, size_t>> results;
+
         try {
             key_results = alg_hnsw->searchKnn(
                 (const void*)vector, key_scan_k, key_scan_ef, filter_ptr);
