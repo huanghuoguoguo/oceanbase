@@ -599,7 +599,7 @@ public:
                         if (flag && !top_candidates.empty()){
                             lowerBound = top_candidates[0].first;
                         }else{
-                            lowerBound = std::max(lowerBound, dist);
+                            lowerBound = std::min(lowerBound, dist);
                         }
                             
                     }
