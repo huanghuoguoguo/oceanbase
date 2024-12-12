@@ -592,7 +592,7 @@ public:
                 }
             }
 
-            for (size_t j = 0; j < not_vis_count; j++) {
+            for (size_t j = 0; j < global_not_vis_count; j++) {
                 int candidate_id = global_ids[j];
                 int dist = global_dists[j];
                 if (top_candidates.size() < ef || lowerBound > dist) {
