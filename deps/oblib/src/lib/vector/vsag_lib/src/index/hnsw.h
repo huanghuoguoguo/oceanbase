@@ -299,7 +299,7 @@ private:
     bool is_init_memory_ = false;
 
     std::shared_ptr<SafeAllocator> allocator_;
-    int k_ = 128;
+    int k_ = 512;
     
 
     std::vector<uint64_t> ids_;

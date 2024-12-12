@@ -312,8 +312,8 @@ HNSW::knn_search(const DatasetPtr& query,
         // return result
         auto result = Dataset::Make();
 
-        int64_t key_scan_k = 3;
-        int64_t key_scan_ef = 30;
+        int64_t key_scan_k = 5;
+        int64_t key_scan_ef = 60;
         // perform search
         std::priority_queue<std::pair<float, size_t>> key_results;
         std::vector<std::pair<float, size_t>> results;
@@ -337,7 +337,7 @@ HNSW::knn_search(const DatasetPtr& query,
         for(auto& kv:kresults){
             auto hnsw = std::dynamic_pointer_cast<hnswlib::HierarchicalNSW>(alg_hnsws_[kv.second]);
             auto t_results = hnsw->searchKnn2(
-                temp, k, std::max(params.ef_search,k * 3), filter_ptr);
+                temp, k, std::max(params.ef_search,k * 4), filter_ptr);
             results.insert(results.end(), t_results.begin(), t_results.end());
         }
         // Sort results by distance from large to small
