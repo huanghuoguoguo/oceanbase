@@ -594,126 +594,156 @@ public:
         return top_candidates;
     }
 
-    template <bool has_deletions, bool collect_metrics = false>
+template <bool has_deletions, bool collect_metrics = false>
+std::priority_queue<std::pair<float, tableint>,
+                    vsag::Vector<std::pair<float, tableint>>,
+                    CompareByFirst>
+searchBaseLayerST10000(tableint ep_id,
+                  const void* data_point,
+                  size_t k,
+                  size_t ef,
+                  BaseFilterFunctor* isIdAllowed = nullptr) const {
+    auto vl = visited_list_pool_->getFreeVisitedList();
+    vl_type* visited_array = vl->mass;
+    vl_type visited_array_tag = vl->curV;
+
+    // 声明块大小为常量
+    const size_t block_size = ef / k;
+
+    // 存储候选值的数组，分成k个块，每个块是一个堆
+    std::vector<std::pair<float, tableint>> data;
+    data.reserve(ef);
+
+    // 存储每个块的最大值及其在data中的索引
+    std::vector<std::pair<float, size_t>> key;
+    key.reserve(k);
+
     std::priority_queue<std::pair<float, tableint>,
                         vsag::Vector<std::pair<float, tableint>>,
                         CompareByFirst>
-    searchBaseLayerST10000(tableint ep_id,
-                      const void* data_point,
-                      size_t k,
-                      size_t ef,
-                      BaseFilterFunctor* isIdAllowed = nullptr) const {
-        auto vl = visited_list_pool_->getFreeVisitedList();
-        vl_type* visited_array = vl->mass;
-        vl_type visited_array_tag = vl->curV;
+        candidate_set(allocator_);
 
-        // 存储的是10000个候选值
-        std::vector<std::pair<float,labeltype>> data;
-        // reserve预留空间，此时size为0。
-        data.reserve(ef);
-        std::vector<std::pair<float,int>> key;
-        key.reserve(k);
+    float lowerBound;
+    float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+    lowerBound = dist;
 
-        
+    // 初始点加入data
+    data.emplace_back(dist, ep_id);
+    visited_array[ep_id] = visited_array_tag;
+    candidate_set.emplace(-dist, ep_id);
 
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            top_candidates(allocator_);
-        std::priority_queue<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            candidate_set(allocator_);
+    while (!candidate_set.empty()) {
+        std::pair<float, tableint> current_node_pair = candidate_set.top();
 
-        float lowerBound;
-        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-        lowerBound = dist;
-        top_candidates.emplace(dist, ep_id);
-        candidate_set.emplace(-dist, ep_id);
+        if ((-current_node_pair.first) > lowerBound && data.size() >= ef) {
+            break;
+        }
+        candidate_set.pop();
 
-        visited_array[ep_id] = visited_array_tag; 
-        while (!candidate_set.empty()) {
-            // 从候选点找一个离查询点最近的点。-dist，小顶堆，最近。
-            std::pair<float, tableint> current_node_pair = candidate_set.top();
-            // 如果最近的点都比lowerbound远，那么直接弹出。但是如果小于ef，证明搜索的量还不够，需要继续搜索。
-            if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef)) {
-                break;
-            }
-            candidate_set.pop();
+        tableint current_node_id = current_node_pair.second;
+        int* data_ptr = (int*)get_linklist0(current_node_id);
+        size_t size = getListCount((linklistsizeint*)data_ptr);
 
-            tableint current_node_id = current_node_pair.second;
-            int* data = (int*)get_linklist0(current_node_id);
-            size_t size = getListCount((linklistsizeint*)data);
-
-            // 预取邻居，可以忽略。
-            auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
+        // 预取优化保持不变
+        auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data_ptr + 1)), offsetData_);
 #ifdef USE_SSE
-            _mm_prefetch((char*)(visited_array + *(data + 1)), _MM_HINT_T0);
-            _mm_prefetch((char*)(visited_array + *(data + 1) + 64), _MM_HINT_T0);
-            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-            _mm_prefetch((char*)(data + 2), _MM_HINT_T0);
+        _mm_prefetch((char*)(visited_array + *(data_ptr + 1)), _MM_HINT_T0);
+        _mm_prefetch((char*)(visited_array + *(data_ptr + 1) + 64), _MM_HINT_T0);
+        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+        _mm_prefetch((char*)(data_ptr + 2), _MM_HINT_T0);
 #endif
-            // 遍历当前点的邻居
-            for (size_t j = 1; j <= size; j++) {
-                int candidate_id = *(data + j);
-                size_t pre_l = std::min(j, size - 2);
-                auto vector_data_ptr =
-                    data_level0_memory_->GetElementPtr((*(data + pre_l + 1)), offsetData_);
-#ifdef USE_SSE
-                _mm_prefetch((char*)(visited_array + *(data + pre_l + 1)), _MM_HINT_T0);
-                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
-#endif          
-                // 当前点有没有搜寻过
-                if (!(visited_array[candidate_id] == visited_array_tag)) {
-                    visited_array[candidate_id] = visited_array_tag;
 
-                    char* currObj1 = (getDataByInternalId(candidate_id));
-                    float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if(data.size()<ef){
-                        // 如果data的大小小于10000，一直加，不建堆。
-                        data.empalce_back(dist,id);
-                        // 如果=10000了，要维护堆的性质并且建立key堆
-                        if(data.size()==ef){
-                            // 分段建立堆，可以直接用std::make_heap(data.begin()+index*ef/k,data.begin()+inde*(ef/k+1)) 时间复杂度k*n,从数组建堆时间复杂度On
-                            // 然后每个堆弹出一个值，就是每个堆的最远值，建立key堆。
+        for (size_t j = 1; j <= size; j++) {
+            tableint candidate_id = *(data_ptr + j);
+
+            if (visited_array[candidate_id] != visited_array_tag) {
+                visited_array[candidate_id] = visited_array_tag;
+
+                char* currObj1 = (getDataByInternalId(candidate_id));
+                float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+
+                if (data.size() < ef) {
+                    // data还未满，直接添加
+                    data.emplace_back(dist, candidate_id);
+                    candidate_set.emplace(-dist, candidate_id);
+
+                    // 当data达到ef大小时，建立分块堆结构
+                    if (data.size() == ef) {
+                        // 为每个块建堆
+                        for (size_t i = 0; i < k; i++) {
+                            size_t start = i * block_size;
+                            size_t end = (i + 1) * block_size;
+                            std::make_heap(
+                                data.begin() + start,
+                                data.begin() + end,
+                                [](const std::pair<float, tableint>& a,
+                                   const std::pair<float, tableint>& b) {
+                                    return a.first > b.first;
+                                }
+                            );
+
+                            // 记录每个块的最大值到key中
+                            key.emplace_back(data[start].first, start);
                         }
-                    }else{
-                        // data有1w个了。
-                        if(dist<lowerBound){
-                            // 比1w个中的某个小。
-                            // 弹出key，根据key的索引，去那个堆上弹入弹出
-                            // 把索引堆上弹出的值放到key堆上
-                            // 更新lowerbound
-                        }
+                        // 建立key的最小堆
+                        std::make_heap(key.begin(), key.end());
+                        lowerBound = key.front().first;
                     }
+                } else if (dist < lowerBound) {
+                    // 找到key中最大值所在的块
+                    std::pop_heap(key.begin(), key.end());
+                    size_t block_idx = key.back().second / block_size;
+                    size_t block_start = block_idx * block_size;
 
+                    // 更新对应块中的最大值
+                    auto block_begin = data.begin() + block_start;
+                    auto block_end = block_begin + block_size;
 
-//                     if (top_candidates.size() < ef || lowerBound > dist) {
-                        
-//                         candidate_set.emplace(-dist, candidate_id);
-//                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
-//                             candidate_set.top().second, offsetLevel0_);
-// #ifdef USE_SSE
-//                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-// #endif
+                    std::pop_heap(
+                        block_begin,
+                        block_end,
+                        [](const std::pair<float, tableint>& a,
+                           const std::pair<float, tableint>& b) {
+                            return a.first > b.first;
+                        }
+                    );
 
-//                         top_candidates.emplace(dist, candidate_id);  
+                    *(block_end - 1) = std::make_pair(dist, candidate_id);
 
-//                         if (top_candidates.size() > ef)
-//                             top_candidates.pop();
+                    std::push_heap(
+                        block_begin,
+                        block_end,
+                        [](const std::pair<float, tableint>& a,
+                           const std::pair<float, tableint>& b) {
+                            return a.first > b.first;
+                        }
+                    );
 
-//                         if (!top_candidates.empty())
-//                             lowerBound = top_candidates.top().first;
-//                     }
+                    // 更新key
+                    key.back() = std::make_pair(block_begin->first, block_start);
+                    std::push_heap(key.begin(), key.end());
+                    lowerBound = key.front().first;
+
+                    candidate_set.emplace(-dist, candidate_id);
                 }
             }
         }
-        // 最后得到的是10000个元素的数组，并且分段的是堆。这里最后也可以改一下，直接返回数组，因为上层调用期望返回的就是数组。
-        // 这里先把10000个数组加到堆里返回，把前面的做了，召回率没有问题就在这做快排，然后快排可以就多线程归并。一步一步来。确保之前的环节没有问题。
-        visited_list_pool_->releaseVisitedList(vl);
-        return top_candidates;
     }
+
+    // 将结果转换为优先队列返回
+    std::priority_queue<std::pair<float, tableint>,
+                        vsag::Vector<std::pair<float, tableint>>,
+                        CompareByFirst>
+        top_candidates(allocator_);
+
+    // 将data中的所有元素加入结果队列
+    for (const auto& item : data) {
+        top_candidates.emplace(item.first, item.second);
+    }
+
+    visited_list_pool_->releaseVisitedList(vl);
+    return top_candidates;
+}
 
     template <bool has_deletions, bool collect_metrics = false>
     std::priority_queue<std::pair<float, tableint>,
