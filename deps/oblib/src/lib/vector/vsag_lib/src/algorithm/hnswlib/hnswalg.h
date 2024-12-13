@@ -1837,7 +1837,7 @@ public:
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }else{
             top_candidates =
-                searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
+                searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }
 
         while (top_candidates.size() > k) {
