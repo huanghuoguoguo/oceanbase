@@ -636,7 +636,7 @@ public:
         top_candidates.emplace(dist, ep_id);
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
-
+        int count = 0;
         int ansout_count = 0;
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
@@ -675,6 +675,7 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                    count++;
                     if (ans.size() < k){
                         // 推入候选集
                         candidate_set.emplace(-dist, candidate_id);
@@ -739,7 +740,7 @@ public:
                 }
             }
         }
-
+        vsag::logger::warn("yhh count:{},popcount:{}",count,ansout_count);
         visited_list_pool_->releaseVisitedList(vl);
         return ans;
     }
