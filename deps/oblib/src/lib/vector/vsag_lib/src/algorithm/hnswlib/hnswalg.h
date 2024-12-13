@@ -633,7 +633,7 @@ public:
 
         float lowerBound = dist;
         float lowerBoundAns = dist;
-        // top_candidates.emplace(dist, ep_id);
+        top_candidates.emplace(dist, ep_id);
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
@@ -676,10 +676,6 @@ public:
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (ans.size() < k){
-                        // 如果还没达到最终结果集，直接推入最终结果集。此时top为空。
-                        ans.emplace(dist, candidate_id);
-                        lowerBoundAns = ans.top().first;
-                        lowerBound = ans.top().first;
                         // 推入候选集
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
@@ -687,14 +683,25 @@ public:
 #ifdef USE_SSE
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
+                        // 如果还没达到最终结果集的大小k，直接推入最终结果集。此时top为空。
+                        ans.emplace(dist, candidate_id);
+                        lowerBoundAns = ans.top().first;
+                        lowerBound = std::max(ans.top().first,top_candidates.top().first);
+
                     } else {
                         // 最终结果集满了，考虑是否换入换出。
                         if (dist < lowerBoundAns){
+                            // 推入候选集
+                            candidate_set.emplace(-dist, candidate_id);
+                            auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
                             // 如果当前节点可以进入最终结果集，那么可以认为top集合不可能进入最终结果。
                             ans.emplace(dist, candidate_id);
                             ans.pop();
                             lowerBoundAns = ans.top().first;
-                            
                             // 最终结果集推入了，相应的top也应该弹出一位/顺位。
                             if (!top_candidates.empty()){
                                 top_candidates.pop();
@@ -703,15 +710,11 @@ public:
                                 }else{
                                     lowerBound = ans.top().first;
                                 }
+                            }else{
+                                lowerBound = ans.top().first;
                             }
-                            // 推入候选集
-                            candidate_set.emplace(-dist, candidate_id);
-                            auto vector_data_ptr = data_level0_memory_->GetElementPtr(
-                            candidate_set.top().second, offsetLevel0_);
-#ifdef USE_SSE
-                            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-#endif
-                        } else if (top_candidates.size() < ef || lowerBound > dist) {
+
+                        } else if (lowerBound > dist) {
                             // 最终结果集满且当前节点不足以进入最终结果集，进入次候选集。
                             candidate_set.emplace(-dist, candidate_id);
                             auto vector_data_ptr = data_level0_memory_->GetElementPtr(
