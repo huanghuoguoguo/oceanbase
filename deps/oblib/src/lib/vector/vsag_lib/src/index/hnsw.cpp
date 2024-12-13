@@ -246,15 +246,9 @@ HNSW::knn_search(const DatasetPtr& query,
 
     // perform search
     std::vector<std::pair<float, size_t>> results;
-    try {
-        auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
-        results = hnsw->searchKnn2(
+    auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
+    results = hnsw->searchKnn2(
             temp, k, std::max(params.ef_search, k), filter_ptr);
-    } catch (const std::runtime_error& e) {
-        LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
-                                "failed to perofrm knn_search(internalError): ",
-                                e.what());
-    }
 
 
     result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
