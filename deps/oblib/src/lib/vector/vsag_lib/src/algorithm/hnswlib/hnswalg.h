@@ -615,7 +615,6 @@ public:
 
         // 如果k=10，ef=100就是90，如果是k=10000，ef=100就是0
         ef = std::max(ef - k , (size_t)0);
-        vsag::logger::warn("yhh ef:{}",ef);
 
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
@@ -624,7 +623,7 @@ public:
         std::priority_queue<std::pair<float, tableint>,
                         vsag::Vector<std::pair<float, tableint>>,
                         CompareByFirst>
-        ans(allocator_);
+            ans(allocator_);
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
@@ -646,7 +645,7 @@ public:
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-            int cef = ef - ansout_count;
+            int cef = std::max(ef - ansout_count, 0);
             if ((-current_node_pair.first) > lowerBound &&
                 top_candidates.size() >= cef ) {
                 break;
@@ -732,14 +731,13 @@ public:
 #endif
 
                             top_candidates.emplace(dist, candidate_id);
-                            if (top_candidates.size() > cef){
+                            while (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
                             
-                            if (!top_candidates.empty()){
+                            if(!top_candidates.empty()){
                                 lowerBound = top_candidates.top().first;
-                            }
-                                
+                            }   
                         }
                     }
                 }
