@@ -666,7 +666,20 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    if (top_candidates.size() < ef || lowerBound > dist) {
+                    if(ans.size() < k){
+                        candidate_set.emplace(-dist, candidate_id);
+                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+                        top_candidates.emplace(dist, candidate_id);
+                        ans.emplace(dist, candidate_id);
+                        if (!ans.empty())
+                            lowerBoundAns = ans.top().first;
+                        if (!top_candidates.empty())
+                            lowerBound = top_candidates.top().first;
+                    } else if (top_candidates.size() < ef || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -676,18 +689,20 @@ public:
 
                         top_candidates.emplace(dist, candidate_id);
                         // 如果当前节点距离比ans小，将其加入ans
-                        if(ans.size() < k || dist < lowerBoundAns){
+                        if(dist < lowerBoundAns){
                             ans.emplace(dist, candidate_id);
+                            if (ans.size() > k)
+                                ans.pop();
+                            if (!ans.empty())
+                                lowerBoundAns = ans.top().first;
                         }
 
                         if (top_candidates.size() > ef)
                             top_candidates.pop();
-                        if (ans.size() > k)
-                            ans.pop();
+                
                         if (!top_candidates.empty())
                             lowerBound = top_candidates.top().first;
-                        if (!ans.empty())
-                            lowerBoundAns = ans.top().first;
+                        
                     }
                 }
             }
