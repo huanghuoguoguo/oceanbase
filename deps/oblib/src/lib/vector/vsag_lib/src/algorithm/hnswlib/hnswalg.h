@@ -646,8 +646,7 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
             int cef = ef - ansout_count;
-            if (cef < 0 || ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef)) {
-                vsag::logger::warn("yhh cef:{},count:{}",cef,count);
+            if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef) {
                 break;
             }
             candidate_set.pop();
@@ -703,24 +702,20 @@ public:
 #endif
                             // 如果当前节点可以进入最终结果集，那么可以认为top集合不可能进入最终结果。
                             ans.emplace(dist, candidate_id);
+                            auto a = ans.top();
                             // ans == k + 1
                             ans.pop();
                             // 记录最终结果集弹出的个数，是不是可以认为被最终结果集弹出的点。也不可能再回到最终结果集。
                             ansout_count++;
                             lowerBoundAns = ans.top().first;
                             // 最终结果集推入了，相应的top也应该弹出一位/顺位。ans推入了，就意味着有更近的点，top的店应该被弹出。
-                            if (!top_candidates.empty()){
+                            top_candidates.emplace(std::move(a));
+                            if (!top_candidates.empty()&&top_candidates.size() > cef - 1){
                                 top_candidates.pop();
-                                if(!top_candidates.empty()){
-                                    lowerBound = top_candidates.top().first;
-                                }else{
-                                    lowerBound = ans.top().first;
-                                }
-                            } else {
-                                // top为空，用ans作为下界。
-                                lowerBound = ans.top().first;
                             }
-
+                            if(!top_candidates.empty()){
+                                lowerBound = top_candidates.top().first;
+                            }
                         } else if (top_candidates.size() < cef || lowerBound > dist) {
                             // 最终结果集满且当前节点不足以进入最终结果集，进入次候选集。
                             candidate_set.emplace(-dist, candidate_id);
@@ -729,7 +724,6 @@ public:
 #ifdef USE_SSE
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
-                            vsag::logger::warn("yhh top_candidates.size:{},cef:{}",top_candidates.size(), cef);
                             top_candidates.emplace(dist, candidate_id);
                             while (top_candidates.size() > cef){
                                 top_candidates.pop();
@@ -737,7 +731,7 @@ public:
 
                             if(!top_candidates.empty()){
                                 lowerBound = top_candidates.top().first;
-                            }else{
+                            } else {
                                 lowerBound = ans.top().first;
                             }   
                         }
