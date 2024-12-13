@@ -646,8 +646,7 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
             int cef = ef - ansout_count + 1;
-            if ((-current_node_pair.first) > lowerBound &&
-                top_candidates.size() >= cef ) {
+            if (top_candidates.size() >= cef && (-current_node_pair.first) > lowerBound ) {
                 break;
             }
             candidate_set.pop();
