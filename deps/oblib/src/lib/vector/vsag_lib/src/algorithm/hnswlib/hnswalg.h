@@ -716,7 +716,7 @@ public:
                         auto block_end = block_begin + block_size;
 #ifdef USE_SSE
                         _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]), _MM_HINT_T0);
-                        // _mm_prefetch(reinterpret_cast<const char*>(&data[block_start] + 64), _MM_HINT_T0);
+                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start + 4]), _MM_HINT_T0);
 #endif
                         std::pop_heap(block_begin, block_end, comp);
 
