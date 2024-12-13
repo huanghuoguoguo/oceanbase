@@ -528,22 +528,16 @@ public:
             candidate_set(allocator_);
 
         float lowerBound;
-        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(ep_id))) {
-            float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-            lowerBound = dist;
-            top_candidates.emplace(dist, ep_id);
-            candidate_set.emplace(-dist, ep_id);
-        } else {
-            lowerBound = std::numeric_limits<float>::max();
-            candidate_set.emplace(-lowerBound, ep_id);
-        }
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+        lowerBound = dist;
+        top_candidates.emplace(dist, ep_id);
+        candidate_set.emplace(-dist, ep_id);
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
-            if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+            if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= ef) {
                 break;
             }
             candidate_set.pop();
@@ -583,14 +577,13 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
 
-                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
-                            top_candidates.emplace(dist, candidate_id);
+                        top_candidates.emplace(dist, candidate_id);    
 
                         if (top_candidates.size() > ef)
                             top_candidates.pop();
 
-                        if (!top_candidates.empty())
-                            lowerBound = top_candidates.top().first;
+                        lowerBound = top_candidates.top().first;
+                            
                     }
                 }
             }
@@ -1693,16 +1686,14 @@ public:
             top_candidates.pop();
         }
 
-        std::vector<std::pair<float, labeltype>> candidates;
-        candidates.reserve(top_candidates.size());
-
+        std::vector<std::pair<float, labeltype>> candidates(top_candidates.size());
+        int j = top_candidates.size();
         while (!top_candidates.empty()) {
             std::pair<float, tableint> rez = top_candidates.top();
-            candidates.emplace_back(rez.first, rez.second);
+            candidates[--j] = {rez.first, rez.second};
             top_candidates.pop();
         }
 
-        std::reverse(candidates.begin(), candidates.end());
 
         #pragma omp parallel for (k > 1000)
         for (int i = 0; i < candidates.size(); i++) {
