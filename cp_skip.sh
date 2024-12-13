@@ -1,12 +1,12 @@
 #!/bin/bash
-# git pull
+git pull
 # Stop the obcluster
 ./tools/deploy/obd.sh stop -n obcluster
 
 rm -rf /data/obcluster/log/*
 
 # Build the release
-bash build.sh release --init --make --silent -j2
+bash build.sh release --init --make --silent 
 if [ $? -ne 0 ]; then
   echo "Build failed. Exiting."
   exit 1
