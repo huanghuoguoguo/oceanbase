@@ -726,6 +726,7 @@ public:
 #ifdef USE_SSE
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
+
                             top_candidates.emplace(dist, candidate_id);
                             if (top_candidates.size() > cef){
                                 top_candidates.pop();
