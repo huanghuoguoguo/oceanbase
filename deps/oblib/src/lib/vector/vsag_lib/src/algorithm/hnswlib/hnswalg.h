@@ -645,7 +645,8 @@ public:
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-            int cef = ef - ansout_count;
+            // int cef = ef - ansout_count;
+            int cef = ef;
             if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef) {
                 break;
             }
@@ -710,7 +711,7 @@ public:
                             lowerBoundAns = ans.top().first;
                             // 最终结果集推入了，相应的top也应该弹出一位/顺位。ans推入了，就意味着有更近的点，top的店应该被弹出。
                             top_candidates.emplace(std::move(a));
-                            if (!top_candidates.empty()&&top_candidates.size() > cef - 1){
+                            if (!top_candidates.empty() && top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
                             if(!top_candidates.empty()){
@@ -725,15 +726,13 @@ public:
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
                             top_candidates.emplace(dist, candidate_id);
-                            while (top_candidates.size() > cef){
+                            if (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
 
                             if(!top_candidates.empty()){
                                 lowerBound = top_candidates.top().first;
-                            } else {
-                                lowerBound = ans.top().first;
-                            }   
+                            }  
                         }
                     }
                 }
