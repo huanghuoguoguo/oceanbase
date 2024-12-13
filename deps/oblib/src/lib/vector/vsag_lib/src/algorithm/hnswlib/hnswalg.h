@@ -689,7 +689,7 @@ public:
                                 key.emplace_back(max_value, start); 
                             }
                             // 建立key的最小堆
-                            std::make_heap(key.begin(), key.end());
+                            std::make_heap(key.begin(), key.end(), comp);
                             lowerBound = key.front().first;
                         }
                     } else if (dist < lowerBound) {
@@ -706,7 +706,10 @@ public:
                         // 更新对应块中的最大值
                         auto block_begin = vectors.begin() + block_start;
                         auto block_end = block_begin + block_size;
-
+#ifdef USE_SSE
+                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]), _MM_HINT_T0);
+                        // _mm_prefetch(reinterpret_cast<const char*>(&data[block_start] + 64), _MM_HINT_T0);
+#endif
                         std::pop_heap(block_begin, block_end, comp);
 
                         *(block_end - 1) = std::make_pair(dist, candidate_id);
@@ -766,8 +769,7 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
-            if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+            if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= ef) {
                 break;
             }
             candidate_set.pop();
