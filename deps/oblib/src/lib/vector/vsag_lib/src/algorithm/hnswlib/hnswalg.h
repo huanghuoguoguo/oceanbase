@@ -614,8 +614,7 @@ public:
         vl_type visited_array_tag = vl->curV;
 
         // 如果k=10，ef=100就是90，如果是k=10000，ef=100就是0
-        // ef = std::max(ef - k , (size_t)0);
-        vsag::logger::warn("yhh k:{},ef:{}",k,ef);
+        ef = std::max(ef - k , (size_t)0);
 
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
@@ -647,7 +646,8 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
             int cef = ef - ansout_count;
-            if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef) {
+            if (cef < 0 || ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef)) {
+                vsag::logger::warn("yhh cef:{},count:{}",cef,count);
                 break;
             }
             candidate_set.pop();
@@ -729,7 +729,7 @@ public:
 #ifdef USE_SSE
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
-                            vsag::logger::warn("yhh size:{},cef:{},lowerbound:{},dist:{}",top_candidates.size(),cef , lowerBound ,dist);
+                            vsag::logger::warn("yhh top_candidates.size:{},cef:{}",top_candidates.size(), cef);
                             top_candidates.emplace(dist, candidate_id);
                             while (top_candidates.size() > cef){
                                 top_candidates.pop();
@@ -737,13 +737,15 @@ public:
 
                             if(!top_candidates.empty()){
                                 lowerBound = top_candidates.top().first;
+                            }else{
+                                lowerBound = ans.top().first;
                             }   
                         }
                     }
                 }
             }
         }
-        vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{},ans.size():{}",count,ansout_count,lowerBound,ans.size());
+        // vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{},ans.size():{}",count,ansout_count,lowerBound,ans.size());
         visited_list_pool_->releaseVisitedList(vl);
         return std::move(ans);
     }
