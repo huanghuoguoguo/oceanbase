@@ -247,6 +247,14 @@ public:
         }
     };
 
+    struct CompareByFirstReverse {
+        constexpr bool
+        operator()(std::pair<float, tableint> const& a,
+                   std::pair<float, tableint> const& b) const noexcept {
+            return a.first > b.first;
+        }
+    };
+
     inline std::mutex&
     getLabelOpMutex(labeltype label) const {
         // calculate hash
@@ -726,9 +734,49 @@ public:
         }
 
         visited_list_pool_->releaseVisitedList(vl);
-        sort(vectors.rbegin(), vectors.rend(), comp);
+        auto c = CompareByFirstReverse();
+        // sort(vectors.rbegin(), vectors.rend(), comp);
+        #pragma omp parallel
+        {
+            quick_sort_parallel(vectors, 0, vectors.size() - 1, c);
+        }
         return std::move(vectors);
     }
+
+    template<typename T, typename Comparator>
+    void quick_sort_parallel(std::vector<T>& arr, int low, int high, Comparator comp) const {
+        if (low < high) {
+            // Partitioning index
+            int pivot = partition(arr, low, high, comp);
+
+            // Parallelize sorting of the two subarrays
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                quick_sort_parallel(arr, low, pivot - 1, comp);
+
+                #pragma omp section
+                quick_sort_parallel(arr, pivot + 1, high, comp);
+            }
+        }
+    }
+
+    template<typename T, typename Comparator>
+    int partition(std::vector<T>& arr, int low, int high, Comparator comp) const {
+        T pivot = arr[high];
+        int i = low - 1;
+
+        for (int j = low; j <= high - 1; j++) {
+            if (comp(arr[j], pivot)) {  // comp is a comparator function (e.g., <)
+                i++;
+                std::swap(arr[i], arr[j]);
+            }
+        }
+
+        std::swap(arr[i + 1], arr[high]);
+        return i + 1;
+    }
+
 
     template <bool has_deletions, bool collect_metrics = false>
     std::
