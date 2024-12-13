@@ -634,7 +634,7 @@ public:
 
         float lowerBound = dist;
         float lowerBoundAns = dist;
-        // top_candidates.emplace(dist, ep_id);
+        top_candidates.emplace(dist, ep_id);
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
@@ -738,7 +738,6 @@ public:
                 }
             }
         }
-        vsag::logger::warn("yhh ef:{},ansout_count:{}",ef,ansout_count);
         visited_list_pool_->releaseVisitedList(vl);
         return std::move(ans);
     }
