@@ -645,8 +645,8 @@ public:
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-            // int cef = ef - ansout_count;
-            int cef = ef;
+            int cef = ef - ansout_count/2;
+            // int cef = ef;
             if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef) {
                 break;
             }
@@ -727,7 +727,7 @@ public:
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
                             top_candidates.emplace(dist, candidate_id);
-                            if (top_candidates.size() > cef){
+                            while (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
 
