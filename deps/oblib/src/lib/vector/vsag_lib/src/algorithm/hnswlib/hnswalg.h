@@ -640,7 +640,7 @@ public:
 
         int count = 0;
         int ansout_count = 0;
-
+        int ans_in = 0;
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
@@ -680,7 +680,8 @@ public:
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     count++;
                     if (ans.size() < k){
-                        // 推入候选集
+                        // 推入候选集 应该至多只发生k次。
+                        ans_in++;
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                         candidate_set.top().second, offsetLevel0_);
@@ -730,7 +731,7 @@ public:
 #endif
 
                             top_candidates.emplace(dist, candidate_id);
-
+                            vsag::logger::warn("yhh cur top_size:{},cef:{}",top_candidates.size(),cef);
                             while (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
@@ -744,7 +745,7 @@ public:
                 }
             }
         }
-        vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{}",count,ansout_count,lowerBound);
+        vsag::logger::warn("yhh count:{},popcount:{},ans_in:{},lowerbound:{}",count,ansout_count,ans_in,lowerBound);
         visited_list_pool_->releaseVisitedList(vl);
         return ans;
     }
