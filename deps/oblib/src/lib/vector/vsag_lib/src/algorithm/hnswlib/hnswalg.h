@@ -629,8 +629,6 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        // float threshold = 100000.f;
-
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
@@ -669,13 +667,6 @@ public:
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (top_candidates.size() < ef || lowerBound > dist) {
-                        // if (candidate_set.size() < ef * 2) {
-                        //     // 如果候选列表很大了，我直接不要了。剩下的足够了。
-                        //     if (dist < lowerBound + threshold) {
-                        //         // 如果距离太大，就不要了。
-                        //         candidate_set.emplace(-dist, candidate_id);
-                        //     }
-                        // }
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -700,10 +691,6 @@ public:
                     }
                 }
             }
-            // 如果ans和top的最远距离过远，是否应该提前停止？比如lans是5w，l是10w，是不是应该直接停止？
-            // if(ans.size() == k && lowerBound - lowerBoundAns > threshold){
-            //     break;
-            // }
         }
 
         visited_list_pool_->releaseVisitedList(vl);
@@ -1797,7 +1784,7 @@ public:
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }else{
             top_candidates =
-                searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
+                searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }
 
         while (top_candidates.size() > k) {
@@ -1805,7 +1792,7 @@ public:
         }
 
         std::vector<std::pair<float, labeltype>> candidates(top_candidates.size());
-        // candidates.reserve(top_candidates.size());
+
         int j = top_candidates.size();
         while (!top_candidates.empty()) {
             std::pair<float, tableint> rez = top_candidates.top();
