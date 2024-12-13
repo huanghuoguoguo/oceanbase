@@ -248,7 +248,7 @@ HNSW::knn_search(const DatasetPtr& query,
     std::vector<std::pair<float, size_t>> results;
     auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
     results = hnsw->searchKnn2(
-            temp, k, std::max(params.ef_search, k), filter_ptr);
+            temp, k, params.ef_search, filter_ptr);
 
 
     result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());

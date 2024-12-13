@@ -633,8 +633,7 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
-            if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+            if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= ef) {
                 break;
             }
             candidate_set.pop();
@@ -1779,7 +1778,7 @@ public:
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-        if(k > 1000){
+        if(k == 10000){
             top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
         }else{
@@ -1787,9 +1786,9 @@ public:
                 searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }
 
-        while (top_candidates.size() > k) {
-            top_candidates.pop();
-        }
+        // while (top_candidates.size() > k) {
+        //     top_candidates.pop();
+        // }
 
         std::vector<std::pair<float, labeltype>> candidates(top_candidates.size());
         int j = top_candidates.size();
