@@ -636,11 +636,10 @@ searchBaseLayerST10000(tableint ep_id,
     while (!candidate_set.empty()) {
         std::pair<float, tableint> current_node_pair = candidate_set.top();
 
-        if ((-current_node_pair.first) > lowerBound && data.size() >= ef) {
+        if ((-current_node_pair.first) > lowerBound && data.size() >= k) {
             break;
         }
         candidate_set.pop();
-        vsag::logger::warn("yhh while,candi.size:{},data.size:{}",candidate_set.size(),data.size());
 
         tableint current_node_id = current_node_pair.second;
         int* data_ptr = (int*)get_linklist0(current_node_id);
@@ -667,7 +666,6 @@ searchBaseLayerST10000(tableint ep_id,
                     // data还未满，直接添加
                     data.emplace_back(dist, candidate_id);
                     candidate_set.emplace(-dist, candidate_id);
-                    vsag::logger::warn("yhh add happen,size:{}",data.size());
                     // 当data达到k大小时，建立分块堆结构
                     if (data.size() == k) {
                         // 为每个块建堆
