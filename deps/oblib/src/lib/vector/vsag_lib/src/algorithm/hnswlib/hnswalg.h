@@ -613,7 +613,7 @@ public:
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
         // 如果k=10，ef=100就是90，如果是k=10000，ef=100就是0
-        ef = std::min(ef - k , (size_t)0);
+        ef = std::max(ef - k , (size_t)0);
 
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
@@ -633,7 +633,7 @@ public:
 
         float lowerBound = dist;
         float lowerBoundAns = dist;
-        top_candidates.emplace(dist, ep_id);
+        // top_candidates.emplace(dist, ep_id);
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
         int count = 0;
@@ -687,7 +687,7 @@ public:
                         // 如果还没达到最终结果集的大小k，直接推入最终结果集。此时top为空。
                         ans.emplace(dist, candidate_id);
                         lowerBoundAns = ans.top().first;
-                        lowerBound = std::max(ans.top().first,top_candidates.top().first);
+                        lowerBound = ans.top().first;
 
                     } else {
                         // 最终结果集满了，考虑是否换入换出。
@@ -696,13 +696,14 @@ public:
                             candidate_set.emplace(-dist, candidate_id);
                             auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
-                            ansout_count++;
 #ifdef USE_SSE
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
                             // 如果当前节点可以进入最终结果集，那么可以认为top集合不可能进入最终结果。
                             ans.emplace(dist, candidate_id);
                             ans.pop();
+                            // 记录最终结果集弹出的个数，是不是可以认为被最终结果集弹出的点。也不可能再回到最终结果集。
+                            ansout_count++;
                             lowerBoundAns = ans.top().first;
                             // 最终结果集推入了，相应的top也应该弹出一位/顺位。
                             if (!top_candidates.empty()){
@@ -727,7 +728,7 @@ public:
 
                             top_candidates.emplace(dist, candidate_id);
 
-                            if (top_candidates.size() > (ef - ansout_count)){
+                            while (top_candidates.size() > (ef - ansout_count)){
                                 top_candidates.pop();
                             }
                             
