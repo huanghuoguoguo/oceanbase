@@ -638,7 +638,7 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        int count = 0;
+
         int ansout_count = 0;
 
 
@@ -646,7 +646,6 @@ public:
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
             int cef = ef - ansout_count/2;
-            // int cef = ef;
             if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef) {
                 break;
             }
@@ -679,7 +678,7 @@ public:
 
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                    count++;
+
                     if (ans.size() < k){
                         // 推入候选集 应该至多只发生k次。
                         candidate_set.emplace(-dist, candidate_id);
@@ -706,9 +705,9 @@ public:
                             ans.emplace(dist, candidate_id);
                             auto a = ans.top();
                             // ans == k + 1
+                            ++ansout_count;
                             ans.pop();
                             // 记录最终结果集弹出的个数，是不是可以认为被最终结果集弹出的点。也不可能再回到最终结果集。
-                            ansout_count++;
                             lowerBoundAns = ans.top().first;
                             // 最终结果集推入了，相应的top也应该弹出一位/顺位。ans推入了，就意味着有更近的点，top的店应该被弹出。
                             top_candidates.emplace(std::move(a));
@@ -739,6 +738,7 @@ public:
                 }
             }
         }
+        vsag::logger::warn("yhh ef:{},ansout_count:{}",ef,ansout_count);
         visited_list_pool_->releaseVisitedList(vl);
         return std::move(ans);
     }
