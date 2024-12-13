@@ -640,7 +640,7 @@ searchBaseLayerST10000(tableint ep_id,
             break;
         }
         candidate_set.pop();
-        vsag::logger::warn("yhh while");
+        vsag::logger::warn("yhh while,candi.size:{},data.size:{}",candidate_set.size(),data.size());
 
         tableint current_node_id = current_node_pair.second;
         int* data_ptr = (int*)get_linklist0(current_node_id);
@@ -657,7 +657,6 @@ searchBaseLayerST10000(tableint ep_id,
 
         for (size_t j = 1; j <= size; j++) {
             tableint candidate_id = *(data_ptr + j);
-            vsag::logger::warn("yhh for");
             if (visited_array[candidate_id] != visited_array_tag) {
                 visited_array[candidate_id] = visited_array_tag;
 
@@ -672,6 +671,7 @@ searchBaseLayerST10000(tableint ep_id,
                     // 当data达到k大小时，建立分块堆结构
                     if (data.size() == k) {
                         // 为每个块建堆
+                        vsag::logger::warn("yhh make");
                         for (size_t i = 0; i < block_nums; i++) {
                             size_t start = i * block_size;
                             size_t end = (i + 1) * block_size;
@@ -689,7 +689,6 @@ searchBaseLayerST10000(tableint ep_id,
                         lowerBound = key.front().first;
                     }
                 } else if (dist < lowerBound) {
-                    vsag::logger::warn("yhh dist<lowerbound happen");
                     candidate_set.emplace(-dist, candidate_id);
                     // 找到key中最大值所在的块
                     std::pop_heap(key.begin(), key.end());
@@ -1940,6 +1939,7 @@ searchBaseLayerST10000(tableint ep_id,
         if(k == 10000){
             top_candidates =
                 searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
+            vsag::logger::warn("yhh after size:{}",top_candidates.size());
         }else{
             top_candidates =
                 searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
