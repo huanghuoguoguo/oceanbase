@@ -677,13 +677,16 @@ public:
                         // 当data达到k大小时，建立分块堆结构
                         if (vectors.size() == k) {
                             // 为每个块建堆
+                            #pragma omp parallel for
                             for (size_t i = 0; i < block_nums; i++) {
                                 size_t start = i * block_size;
                                 size_t end = (i + 1) * block_size;
                                 std::make_heap(vectors.begin() + start, vectors.begin() + end, comp);
 
                                 // 记录每个块的最大值到key中
-                                key.emplace_back(vectors[start].first, start);
+                                float max_value = (vectors.begin() + start)->first;
+                                #pragma omp critical
+                                key.emplace_back(max_value, start); 
                             }
                             // 建立key的最小堆
                             std::make_heap(key.begin(), key.end());
