@@ -185,8 +185,8 @@ void transF2uint8(const void* vector, void* temp){
         __m512i int32_values = _mm512_cvttps_epi32(input_values);
 
         // 截断到 int8 范围，并存储结果
-        __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(tar + i), int8_values);
+        __m128i uint8_values = _mm512_cvtusepi32_epi8(int32_values);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(tar + i), uint8_values);
     }
 }
 
