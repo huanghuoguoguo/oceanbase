@@ -643,7 +643,7 @@ public:
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                top_candidates.size() >= ef ) {
+                top_candidates.size() >= (ef - ansout_count) ) {
                 break;
             }
             candidate_set.pop();
@@ -727,7 +727,7 @@ public:
 
                             top_candidates.emplace(dist, candidate_id);
 
-                            if (top_candidates.size() > ef){
+                            if (top_candidates.size() > (ef - ansout_count)){
                                 top_candidates.pop();
                             }
                             
@@ -740,7 +740,7 @@ public:
                 }
             }
         }
-        vsag::logger::warn("yhh count:{},popcount:{}",count,ansout_count);
+        vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{}",count,ansout_count,lowerBound);
         visited_list_pool_->releaseVisitedList(vl);
         return ans;
     }
