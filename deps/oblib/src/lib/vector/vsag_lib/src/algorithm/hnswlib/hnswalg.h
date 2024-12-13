@@ -606,17 +606,19 @@ searchBaseLayerST10000(tableint ep_id,
     auto vl = visited_list_pool_->getFreeVisitedList();
     vl_type* visited_array = vl->mass;
     vl_type visited_array_tag = vl->curV;
+    vsag::logger::warn("bob1 ef:{},k:{}",ef,k);
+    // 声明每个块大小为常量
+    const size_t block_size = ef;
+    //声明有多少块
+    const size_t block_nums = k / ef;
 
-    // 声明块大小为常量
-    const size_t block_size = ef / k;
-
-    // 存储候选值的数组，分成k个块，每个块是一个堆
+    // 存储候选值的数组，分成block_nums个块，每个块是一个堆
     std::vector<std::pair<float, tableint>> data;
-    data.reserve(ef);
+    data.reserve(block_nums);
 
     // 存储每个块的最大值及其在data中的索引
     std::vector<std::pair<float, size_t>> key;
-    key.reserve(k);
+    key.reserve(block_size);
 
     std::priority_queue<std::pair<float, tableint>,
                         vsag::Vector<std::pair<float, tableint>>,
@@ -1943,7 +1945,7 @@ searchBaseLayerST10000(tableint ep_id,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             top_candidates(allocator_);
-        if(k * 5 > ef){
+        if(k == 10000){
             top_candidates =
                 searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }else{
