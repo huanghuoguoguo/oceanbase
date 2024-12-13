@@ -645,7 +645,7 @@ public:
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-            int cef = std::max(ef - ansout_count, 0);
+            int cef = ef - ansout_count;
             if ((-current_node_pair.first) > lowerBound &&
                 top_candidates.size() >= cef ) {
                 break;
@@ -709,7 +709,7 @@ public:
                             // 记录最终结果集弹出的个数，是不是可以认为被最终结果集弹出的点。也不可能再回到最终结果集。
                             ansout_count++;
                             lowerBoundAns = ans.top().first;
-                            // 最终结果集推入了，相应的top也应该弹出一位/顺位。
+                            // 最终结果集推入了，相应的top也应该弹出一位/顺位。ans推入了，就意味着有更近的点，top的店应该被弹出。
                             if (!top_candidates.empty()){
                                 top_candidates.pop();
                                 if(!top_candidates.empty()){
@@ -734,7 +734,7 @@ public:
                             while (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
-                            
+
                             if(!top_candidates.empty()){
                                 lowerBound = top_candidates.top().first;
                             }   
