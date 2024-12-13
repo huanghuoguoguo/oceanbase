@@ -669,7 +669,7 @@ searchBaseLayerST10000(tableint ep_id,
                     // data还未满，直接添加
                     data.emplace_back(dist, candidate_id);
                     candidate_set.emplace(-dist, candidate_id);
-
+                    vsag::logger::warn("yhh add happen,size:{}",data.size());
                     // 当data达到k大小时，建立分块堆结构
                     if (data.size() == k) {
                         // 为每个块建堆
@@ -690,6 +690,7 @@ searchBaseLayerST10000(tableint ep_id,
                         lowerBound = key.front().first;
                     }
                 } else if (dist < lowerBound) {
+                    vsag::logger::warn("yhh dist<lowerbound happen");
                     // 找到key中最大值所在的块
                     std::pop_heap(key.begin(), key.end());
                     size_t block_start = key.back().second;
@@ -733,7 +734,7 @@ searchBaseLayerST10000(tableint ep_id,
     for (const auto& item : data) {
         top_candidates.emplace(item.first, item.second);
     }
-    vsag::logger::warn("yhh top.size()",top_candidates.size());
+    vsag::logger::warn("yhh top.size:{},data.size:{}",top_candidates.size(),data.size());
     visited_list_pool_->releaseVisitedList(vl);
     return top_candidates;
 }
