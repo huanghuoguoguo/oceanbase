@@ -607,18 +607,18 @@ searchBaseLayerST10000(tableint ep_id,
     vl_type* visited_array = vl->mass;
     vl_type visited_array_tag = vl->curV;
     vsag::logger::warn("bob1 ef:{},k:{}",ef,k);
-    // 声明每个块大小为常量
+    // 声明每个块大小为常量 每个区间ef/100的长度
     const size_t block_size = ef;
-    //声明有多少块
+    //声明有多少块 10000/100=100个区间
     const size_t block_nums = k / ef;
 
     // 存储候选值的数组，分成block_nums个块，每个块是一个堆
     std::vector<std::pair<float, tableint>> data;
-    data.reserve(block_nums);
+    data.reserve(k);
 
     // 存储每个块的最大值及其在data中的索引
     std::vector<std::pair<float, size_t>> key;
-    key.reserve(block_size);
+    key.reserve(block_nums);
 
     std::priority_queue<std::pair<float, tableint>,
                         vsag::Vector<std::pair<float, tableint>>,
@@ -664,15 +664,15 @@ searchBaseLayerST10000(tableint ep_id,
                 char* currObj1 = (getDataByInternalId(candidate_id));
                 float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
 
-                if (data.size() < ef) {
+                if (data.size() < k) {
                     // data还未满，直接添加
                     data.emplace_back(dist, candidate_id);
                     candidate_set.emplace(-dist, candidate_id);
 
-                    // 当data达到ef大小时，建立分块堆结构
-                    if (data.size() == ef) {
+                    // 当data达到k大小时，建立分块堆结构
+                    if (data.size() == k) {
                         // 为每个块建堆
-                        for (size_t i = 0; i < k; i++) {
+                        for (size_t i = 0; i < block_nums; i++) {
                             size_t start = i * block_size;
                             size_t end = (i + 1) * block_size;
                             std::make_heap(
@@ -694,8 +694,7 @@ searchBaseLayerST10000(tableint ep_id,
                 } else if (dist < lowerBound) {
                     // 找到key中最大值所在的块
                     std::pop_heap(key.begin(), key.end());
-                    size_t block_idx = key.back().second / block_size;
-                    size_t block_start = block_idx * block_size;
+                    size_t block_start = key.back().second;
 
                     // 更新对应块中的最大值
                     auto block_begin = data.begin() + block_start;
