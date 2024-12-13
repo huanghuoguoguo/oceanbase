@@ -607,12 +607,10 @@ searchBaseLayerST10000(tableint ep_id,
     vl_type* visited_array = vl->mass;
     vl_type visited_array_tag = vl->curV;
     auto comp = CompareByFirst();
-    vsag::logger::warn("yhh ef:{},k:{}",ef,k);
     // 声明每个块大小为常量 每个区间ef/100的长度
     const size_t block_size = ef;
     //声明有多少块 10000/100=100个区间
     const size_t block_nums = k / ef;
-    vsag::logger::warn("yhh block_size:{},block_nums:{}",block_size,block_nums);
     // 存储候选值的数组，分成block_nums个块，每个块是一个堆
     std::vector<std::pair<float, tableint>> data;
     data.reserve(k);
@@ -642,6 +640,7 @@ searchBaseLayerST10000(tableint ep_id,
             break;
         }
         candidate_set.pop();
+        vsag::logger::warn("yhh while");
 
         tableint current_node_id = current_node_pair.second;
         int* data_ptr = (int*)get_linklist0(current_node_id);
@@ -658,7 +657,7 @@ searchBaseLayerST10000(tableint ep_id,
 
         for (size_t j = 1; j <= size; j++) {
             tableint candidate_id = *(data_ptr + j);
-
+            vsag::logger::warn("yhh for");
             if (visited_array[candidate_id] != visited_array_tag) {
                 visited_array[candidate_id] = visited_array_tag;
 
@@ -691,6 +690,7 @@ searchBaseLayerST10000(tableint ep_id,
                     }
                 } else if (dist < lowerBound) {
                     vsag::logger::warn("yhh dist<lowerbound happen");
+                    candidate_set.emplace(-dist, candidate_id);
                     // 找到key中最大值所在的块
                     std::pop_heap(key.begin(), key.end());
                     size_t block_start = key.back().second;
@@ -718,7 +718,7 @@ searchBaseLayerST10000(tableint ep_id,
                     std::push_heap(key.begin(), key.end(), comp);
                     lowerBound = key.front().first;
 
-                    candidate_set.emplace(-dist, candidate_id);
+                    
                 }
             }
         }
@@ -734,7 +734,7 @@ searchBaseLayerST10000(tableint ep_id,
     for (const auto& item : data) {
         top_candidates.emplace(item.first, item.second);
     }
-    vsag::logger::warn("yhh top.size:{},data.size:{}",top_candidates.size(),data.size());
+    vsag::logger::warn("yhh top.size:{},data.size:{}", top_candidates.size(), data.size());
     visited_list_pool_->releaseVisitedList(vl);
     return top_candidates;
 }
