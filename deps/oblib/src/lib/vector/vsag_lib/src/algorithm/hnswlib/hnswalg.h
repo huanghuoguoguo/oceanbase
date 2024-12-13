@@ -641,10 +641,7 @@ public:
 
         int count = 0;
         int ansout_count = 0;
-<<<<<<< HEAD
-        int ans_in = 0;
-=======
->>>>>>> 51cab8159d (f)
+
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
