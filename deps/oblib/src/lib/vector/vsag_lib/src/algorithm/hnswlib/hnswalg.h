@@ -640,12 +640,12 @@ public:
 
 
         int ansout_count = 0;
-
+        int cef = ef;
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-            int cef = ef - ansout_count/2;
+            cef = ef - ansout_count/2;
             if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef) {
                 break;
             }
@@ -1805,8 +1805,6 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                metric_hops_++;
-                metric_distance_computations_ += size;
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
