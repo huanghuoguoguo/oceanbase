@@ -606,12 +606,13 @@ searchBaseLayerST10000(tableint ep_id,
     auto vl = visited_list_pool_->getFreeVisitedList();
     vl_type* visited_array = vl->mass;
     vl_type visited_array_tag = vl->curV;
-    vsag::logger::warn("bob1 ef:{},k:{}",ef,k);
+    auto comp = CompareByFirst();
+    vsag::logger::warn("yhh ef:{},k:{}",ef,k);
     // 声明每个块大小为常量 每个区间ef/100的长度
     const size_t block_size = ef;
     //声明有多少块 10000/100=100个区间
     const size_t block_nums = k / ef;
-
+    vsag::logger::warn("yhh block_size:{},block_nums:{}",block_size,block_nums);
     // 存储候选值的数组，分成block_nums个块，每个块是一个堆
     std::vector<std::pair<float, tableint>> data;
     data.reserve(k);
@@ -678,10 +679,7 @@ searchBaseLayerST10000(tableint ep_id,
                             std::make_heap(
                                 data.begin() + start,
                                 data.begin() + end,
-                                [](const std::pair<float, tableint>& a,
-                                   const std::pair<float, tableint>& b) {
-                                    return a.first > b.first;
-                                }
+                                comp
                             );
 
                             // 记录每个块的最大值到key中
@@ -703,10 +701,7 @@ searchBaseLayerST10000(tableint ep_id,
                     std::pop_heap(
                         block_begin,
                         block_end,
-                        [](const std::pair<float, tableint>& a,
-                           const std::pair<float, tableint>& b) {
-                            return a.first > b.first;
-                        }
+                        comp
                     );
 
                     *(block_end - 1) = std::make_pair(dist, candidate_id);
@@ -714,15 +709,12 @@ searchBaseLayerST10000(tableint ep_id,
                     std::push_heap(
                         block_begin,
                         block_end,
-                        [](const std::pair<float, tableint>& a,
-                           const std::pair<float, tableint>& b) {
-                            return a.first > b.first;
-                        }
+                        comp
                     );
 
                     // 更新key
                     key.back() = std::make_pair(block_begin->first, block_start);
-                    std::push_heap(key.begin(), key.end());
+                    std::push_heap(key.begin(), key.end(), comp);
                     lowerBound = key.front().first;
 
                     candidate_set.emplace(-dist, candidate_id);
@@ -741,7 +733,7 @@ searchBaseLayerST10000(tableint ep_id,
     for (const auto& item : data) {
         top_candidates.emplace(item.first, item.second);
     }
-
+    vsag::logger::warn("yhh top.size()",top_candidates.size());
     visited_list_pool_->releaseVisitedList(vl);
     return top_candidates;
 }
