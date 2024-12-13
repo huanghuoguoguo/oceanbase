@@ -614,7 +614,8 @@ public:
         vl_type visited_array_tag = vl->curV;
 
         // 如果k=10，ef=100就是90，如果是k=10000，ef=100就是0
-        ef = std::max(ef - k , (size_t)0);
+        // ef = std::max(ef - k , (size_t)0);
+        vsag::logger::warn("yhh k:{},ef:{}",k,ef);
 
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
@@ -645,8 +646,8 @@ public:
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-            int cef = ef - ansout_count + 1;
-            if (top_candidates.size() >= cef && (-current_node_pair.first) > lowerBound ) {
+            int cef = ef - ansout_count;
+            if ((-current_node_pair.first) > lowerBound && top_candidates.size() >= cef) {
                 break;
             }
             candidate_set.pop();
@@ -690,7 +691,6 @@ public:
                         // 如果还没达到最终结果集的大小k，直接推入最终结果集。此时top为空。
                         ans.emplace(dist, candidate_id);
                         lowerBoundAns = ans.top().first;
-
                     } else {
                         // 最终结果集满了，考虑是否换入换出。
                         if (dist < lowerBoundAns){
@@ -729,7 +729,7 @@ public:
 #ifdef USE_SSE
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
-
+                            vsag::logger::warn("yhh size:{},cef:{},lowerbound:{},dist:{}",top_candidates.size(),cef , lowerBound ,dist);
                             top_candidates.emplace(dist, candidate_id);
                             while (top_candidates.size() > cef){
                                 top_candidates.pop();
@@ -743,9 +743,9 @@ public:
                 }
             }
         }
-        vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{}",count,ansout_count,lowerBound);
+        vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{},ans.size():{}",count,ansout_count,lowerBound,ans.size());
         visited_list_pool_->releaseVisitedList(vl);
-        return ans;
+        return std::move(ans);
     }
 
     template <bool has_deletions, bool collect_metrics = false>
