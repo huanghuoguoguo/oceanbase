@@ -637,13 +637,13 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-
+        int ansout_count = 0;
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
             if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef || !isIdAllowed)) {
+                top_candidates.size() >= ef ) {
                 break;
             }
             candidate_set.pop();
@@ -695,6 +695,7 @@ public:
                             candidate_set.emplace(-dist, candidate_id);
                             auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
+                            ansout_count++;
 #ifdef USE_SSE
                             _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
@@ -714,7 +715,7 @@ public:
                                 lowerBound = ans.top().first;
                             }
 
-                        } else if (lowerBound > dist) {
+                        } else if (top_candidates.size() < (ef - ansout_count) || lowerBound > dist) {
                             // 最终结果集满且当前节点不足以进入最终结果集，进入次候选集。
                             candidate_set.emplace(-dist, candidate_id);
                             auto vector_data_ptr = data_level0_memory_->GetElementPtr(
