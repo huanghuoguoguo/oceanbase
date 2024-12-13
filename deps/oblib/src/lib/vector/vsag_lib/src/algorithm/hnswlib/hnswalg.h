@@ -612,6 +612,7 @@ public:
         auto vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
+
         // 如果k=10，ef=100就是90，如果是k=10000，ef=100就是0
         ef = std::max(ef - k , (size_t)0);
 
@@ -636,14 +637,16 @@ public:
         // top_candidates.emplace(dist, ep_id);
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
+
         int count = 0;
         int ansout_count = 0;
+
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
-
+            int cef = ef - ansout_count;
             if ((-current_node_pair.first) > lowerBound &&
-                top_candidates.size() >= (ef - ansout_count) ) {
+                top_candidates.size() >= cef ) {
                 break;
             }
             candidate_set.pop();
@@ -717,7 +720,7 @@ public:
                                 lowerBound = ans.top().first;
                             }
 
-                        } else if (top_candidates.size() < (ef - ansout_count) || lowerBound > dist) {
+                        } else if (top_candidates.size() < cef || lowerBound > dist) {
                             // 最终结果集满且当前节点不足以进入最终结果集，进入次候选集。
                             candidate_set.emplace(-dist, candidate_id);
                             auto vector_data_ptr = data_level0_memory_->GetElementPtr(
@@ -728,7 +731,7 @@ public:
 
                             top_candidates.emplace(dist, candidate_id);
 
-                            while (top_candidates.size() > (ef - ansout_count)){
+                            while (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
                             
