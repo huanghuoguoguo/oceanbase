@@ -595,7 +595,7 @@ public:
     }
 
 template <bool has_deletions, bool collect_metrics = false>
-std::priority_queue<std::pair<float, tableint>,
+std::vector<std::pair<float, tableint>,
                     vsag::Vector<std::pair<float, tableint>>,
                     CompareByFirst>
 searchBaseLayerST10000(tableint ep_id,
@@ -669,7 +669,6 @@ searchBaseLayerST10000(tableint ep_id,
                     // 当data达到k大小时，建立分块堆结构
                     if (data.size() == k) {
                         // 为每个块建堆
-                        vsag::logger::warn("yhh make");
                         for (size_t i = 0; i < block_nums; i++) {
                             size_t start = i * block_size;
                             size_t end = (i + 1) * block_size;
@@ -721,23 +720,13 @@ searchBaseLayerST10000(tableint ep_id,
         }
     }
 
-    // 将结果转换为优先队列返回
-    std::priority_queue<std::pair<float, tableint>,
-                        vsag::Vector<std::pair<float, tableint>>,
-                        CompareByFirst>
-        top_candidates(allocator_);
-
-    // 将data中的所有元素加入结果队列
-    for (const auto& item : data) {
-        top_candidates.emplace(item.first, item.second);
-    }
-    vsag::logger::warn("yhh top.size:{},data.size:{}", top_candidates.size(), data.size());
     visited_list_pool_->releaseVisitedList(vl);
-    return top_candidates;
+    sort(data.rbegin(),data.rend(),comp);
+    return data;
 }
 
     template <bool has_deletions, bool collect_metrics = false>
-    std::priority_queue<std::pair<float, tableint>,
+    std::vector<std::pair<float, tableint>,
                         vsag::Vector<std::pair<float, tableint>>,
                         CompareByFirst>
     searchBaseLayerBSA(tableint ep_id,
@@ -811,13 +800,6 @@ searchBaseLayerST10000(tableint ep_id,
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (top_candidates.size() < ef || lowerBound > dist) {
-                        // if (candidate_set.size() < ef * 2) {
-                        //     // 如果候选列表很大了，我直接不要了。剩下的足够了。
-                        //     if (dist < lowerBound + threshold) {
-                        //         // 如果距离太大，就不要了。
-                        //         candidate_set.emplace(-dist, candidate_id);
-                        //     }
-                        // }
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                             candidate_set.top().second, offsetLevel0_);
@@ -842,14 +824,17 @@ searchBaseLayerST10000(tableint ep_id,
                     }
                 }
             }
-            // 如果ans和top的最远距离过远，是否应该提前停止？比如lans是5w，l是10w，是不是应该直接停止？
-            // if(ans.size() == k && lowerBound - lowerBoundAns > threshold){
-            //     break;
-            // }
         }
 
         visited_list_pool_->releaseVisitedList(vl);
-        return ans;
+        std::vector<std::pair<float, labeltype>> ans_vec(ans.size());
+        int j = ans.size();
+        while (!ans.empty()) {
+            std::pair<float, tableint> rez = ans.top();
+            ans_vec[--j] = {rez.first, rez.second};
+            ans.pop();
+        }
+        return std::move(ans_vec);
     }
 
     template <bool has_deletions, bool collect_metrics = false>
@@ -1930,39 +1915,25 @@ searchBaseLayerST10000(tableint ep_id,
             }
         }
 
-        std::priority_queue<std::pair<float, tableint>,
+        std::vector<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
-            top_candidates(allocator_);
+            ans(allocator_);
         if(k == 10000){
-            top_candidates =
+            ans =
                 searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
-            vsag::logger::warn("yhh after size:{}",top_candidates.size());
         }else{
-            top_candidates =
+            ans =
                 searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
-        }
-
-        while (top_candidates.size() > k) {
-            top_candidates.pop();
-        }
-
-        std::vector<std::pair<float, labeltype>> candidates(top_candidates.size());
-        // candidates.reserve(top_candidates.size());
-        int j = top_candidates.size();
-        while (!top_candidates.empty()) {
-            std::pair<float, tableint> rez = top_candidates.top();
-            candidates[--j] = {rez.first, rez.second};
-            top_candidates.pop();
-        }
+        }        
 
 
         #pragma omp parallel for (k > 1000)
         for (int i = 0; i < candidates.size(); i++) {
-            candidates[i].second = getExternalLabel(candidates[i].second);
+            ans[i].second = getExternalLabel(ans[i].second);
         }
         
-        return std::move(candidates);
+        return std::move(ans);
     }
 
     std::priority_queue<std::pair<float, labeltype>>
