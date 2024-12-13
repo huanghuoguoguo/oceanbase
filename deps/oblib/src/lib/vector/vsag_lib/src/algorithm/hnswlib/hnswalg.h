@@ -641,7 +641,10 @@ public:
 
         int count = 0;
         int ansout_count = 0;
+<<<<<<< HEAD
         int ans_in = 0;
+=======
+>>>>>>> 51cab8159d (f)
 
         visited_array[ep_id] = visited_array_tag; 
         while (!candidate_set.empty()) {
@@ -683,7 +686,6 @@ public:
                     count++;
                     if (ans.size() < k){
                         // 推入候选集 应该至多只发生k次。
-                        ans_in++;
                         candidate_set.emplace(-dist, candidate_id);
                         auto vector_data_ptr = data_level0_memory_->GetElementPtr(
                         candidate_set.top().second, offsetLevel0_);
@@ -693,7 +695,6 @@ public:
                         // 如果还没达到最终结果集的大小k，直接推入最终结果集。此时top为空。
                         ans.emplace(dist, candidate_id);
                         lowerBoundAns = ans.top().first;
-                        lowerBound = ans.top().first;
 
                     } else {
                         // 最终结果集满了，考虑是否换入换出。
@@ -707,6 +708,7 @@ public:
 #endif
                             // 如果当前节点可以进入最终结果集，那么可以认为top集合不可能进入最终结果。
                             ans.emplace(dist, candidate_id);
+                            // ans == k + 1
                             ans.pop();
                             // 记录最终结果集弹出的个数，是不是可以认为被最终结果集弹出的点。也不可能再回到最终结果集。
                             ansout_count++;
@@ -719,8 +721,8 @@ public:
                                 }else{
                                     lowerBound = ans.top().first;
                                 }
-                            }else{
-                                lowerBound = ans.top().first;
+                            } else {
+                                lowerBound = top_candidates.top().first;
                             }
 
                         } else if (top_candidates.size() < cef || lowerBound > dist) {
@@ -733,8 +735,7 @@ public:
 #endif
 
                             top_candidates.emplace(dist, candidate_id);
-                            vsag::logger::warn("yhh cur top_size:{},cef:{}",top_candidates.size(),cef);
-                            while (top_candidates.size() > cef){
+                            if (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
                             
@@ -747,7 +748,7 @@ public:
                 }
             }
         }
-        vsag::logger::warn("yhh count:{},popcount:{},ans_in:{},lowerbound:{}",count,ansout_count,ans_in,lowerBound);
+        vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{}",count,ansout_count,lowerBound);
         visited_list_pool_->releaseVisitedList(vl);
         return ans;
     }
