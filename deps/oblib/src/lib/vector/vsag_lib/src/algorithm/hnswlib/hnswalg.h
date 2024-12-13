@@ -694,6 +694,7 @@ public:
                     } else {
                         // 最终结果集满了，考虑是否换入换出。
                         if (dist < lowerBoundAns){
+                            // 期望是ans的结果都比top的小。
                             // 推入候选集
                             candidate_set.emplace(-dist, candidate_id);
                             auto vector_data_ptr = data_level0_memory_->GetElementPtr(
@@ -711,7 +712,7 @@ public:
                             lowerBoundAns = ans.top().first;
                             // 最终结果集推入了，相应的top也应该弹出一位/顺位。ans推入了，就意味着有更近的点，top的店应该被弹出。
                             top_candidates.emplace(std::move(a));
-                            if (!top_candidates.empty() && top_candidates.size() > cef){
+                            if (top_candidates.size() > cef){
                                 top_candidates.pop();
                             }
                             if(!top_candidates.empty()){
@@ -738,7 +739,6 @@ public:
                 }
             }
         }
-        // vsag::logger::warn("yhh count:{},popcount:{},lowerbound:{},ans.size():{}",count,ansout_count,lowerBound,ans.size());
         visited_list_pool_->releaseVisitedList(vl);
         return std::move(ans);
     }
