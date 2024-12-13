@@ -634,7 +634,7 @@ public:
 
         float lowerBound = dist;
         float lowerBoundAns = dist;
-        // top_candidates.emplace(dist, ep_id);
+        top_candidates.emplace(dist, ep_id);
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
