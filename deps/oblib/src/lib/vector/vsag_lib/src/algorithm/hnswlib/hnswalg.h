@@ -718,7 +718,8 @@ public:
                                     lowerBound = ans.top().first;
                                 }
                             } else {
-                                lowerBound = top_candidates.top().first;
+                                // top为空，用ans作为下界。
+                                lowerBound = ans.top().first;
                             }
 
                         } else if (top_candidates.size() < cef || lowerBound > dist) {
