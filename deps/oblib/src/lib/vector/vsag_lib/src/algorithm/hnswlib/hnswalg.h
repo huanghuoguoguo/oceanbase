@@ -31,9 +31,9 @@
 #include <random>
 #include <stdexcept>
 #include <unordered_set>
-#include "../../logger.h"
 
 #include "../../default_allocator.h"
+#include "../../logger.h"
 #include "../../simd/simd.h"
 #include "../../utils.h"
 #include "block_manager.h"
@@ -72,8 +72,6 @@ private:
     size_t ef_construction_{0};
     size_t dim_{0};
 
-
-    
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
 
@@ -533,12 +531,11 @@ public:
         top_candidates.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        visited_array[ep_id] = visited_array_tag; 
+        visited_array[ep_id] = visited_array_tag;
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
-            if ((-current_node_pair.first) > lowerBound &&
-                (top_candidates.size() >= ef)) {
+            if ((-current_node_pair.first) > lowerBound && (top_candidates.size() >= ef)) {
                 break;
             }
             candidate_set.pop();
@@ -546,7 +543,6 @@ public:
             tableint current_node_id = current_node_pair.second;
             int* data = (int*)get_linklist0(current_node_id);
             size_t size = getListCount((linklistsizeint*)data);
-
 
             auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
 #ifdef USE_SSE
@@ -578,7 +574,7 @@ public:
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
 
-                        top_candidates.emplace(dist, candidate_id);  
+                        top_candidates.emplace(dist, candidate_id);
 
                         if (top_candidates.size() > ef)
                             top_candidates.pop();
@@ -594,146 +590,148 @@ public:
         return top_candidates;
     }
 
-template <bool has_deletions, bool collect_metrics = false>
-std::vector<std::pair<float, tableint>,
-                    vsag::Vector<std::pair<float, tableint>>,
-                    CompareByFirst>
-searchBaseLayerST10000(tableint ep_id,
-                  const void* data_point,
-                  size_t k,
-                  size_t ef,
-                  BaseFilterFunctor* isIdAllowed = nullptr) const {
-    auto vl = visited_list_pool_->getFreeVisitedList();
-    vl_type* visited_array = vl->mass;
-    vl_type visited_array_tag = vl->curV;
-    auto comp = CompareByFirst();
-    // 声明每个块大小为常量 每个区间ef/100的长度
-    const size_t block_size = ef;
-    //声明有多少块 10000/100=100个区间
-    const size_t block_nums = k / ef;
-    // 存储候选值的数组，分成block_nums个块，每个块是一个堆
-    std::vector<std::pair<float, tableint>> data;
-    data.reserve(k);
+    template <bool has_deletions, bool collect_metrics = false>
+    std::
+        vector<std::pair<float, int64_t>>
+        searchBaseLayerST10000(tableint ep_id,
+                               const void* data_point,
+                               size_t k,
+                               size_t ef,
+                               BaseFilterFunctor* isIdAllowed = nullptr) const {
+        auto vl = visited_list_pool_->getFreeVisitedList();
+        vl_type* visited_array = vl->mass;
+        vl_type visited_array_tag = vl->curV;
+        auto comp = CompareByFirst();
+        // 声明每个块大小为常量 每个区间ef/100的长度
+        const size_t block_size = ef;
+        //声明有多少块 10000/100=100个区间
+        const size_t block_nums = k / ef;
+        // 存储候选值的数组，分成block_nums个块，每个块是一个堆
+        alignas(64) std::vector<std::pair<float, int64_t>> vectors;
+        vectors.reserve(k);
 
-    // 存储每个块的最大值及其在data中的索引
-    std::vector<std::pair<float, size_t>> key;
-    key.reserve(block_nums);
+        // 存储每个块的最大值及其在data中的索引
+        alignas(64) std::vector<std::pair<float, int64_t>> key;
+        key.reserve(block_nums);
 
-    std::priority_queue<std::pair<float, tableint>,
-                        vsag::Vector<std::pair<float, tableint>>,
-                        CompareByFirst>
-        candidate_set(allocator_);
+        std::priority_queue<std::pair<float, int64_t>,
+                            vsag::Vector<std::pair<float, int64_t>>,
+                            CompareByFirst>
+            candidate_set(allocator_);
 
-    float lowerBound;
-    float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-    lowerBound = dist;
+        float lowerBound;
+        float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+        lowerBound = dist;
 
-    // 初始点加入data
-    data.emplace_back(dist, ep_id);
-    visited_array[ep_id] = visited_array_tag;
-    candidate_set.emplace(-dist, ep_id);
+        // 初始点加入vectors
+        vectors.emplace_back(dist, ep_id);
+        visited_array[ep_id] = visited_array_tag;
+        candidate_set.emplace(-dist, ep_id);
 
-    while (!candidate_set.empty()) {
-        std::pair<float, tableint> current_node_pair = candidate_set.top();
+        while (!candidate_set.empty()) {
+            std::pair<float, tableint> current_node_pair = candidate_set.top();
 
-        if ((-current_node_pair.first) > lowerBound && data.size() >= k) {
-            break;
-        }
-        candidate_set.pop();
+            if ((-current_node_pair.first) > lowerBound && vectors.size() >= k) {
+                break;
+            }
+            candidate_set.pop();
 
-        tableint current_node_id = current_node_pair.second;
-        int* data_ptr = (int*)get_linklist0(current_node_id);
-        size_t size = getListCount((linklistsizeint*)data_ptr);
+            tableint current_node_id = current_node_pair.second;
+            int* data_ptr = (int*)get_linklist0(current_node_id);
+            size_t size = getListCount((linklistsizeint*)data_ptr);
 
-        // 预取优化保持不变
-        auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data_ptr + 1)), offsetData_);
+            // 预取优化保持不变
+            auto vector_data_ptr =
+                data_level0_memory_->GetElementPtr((*(data_ptr + 1)), offsetData_);
 #ifdef USE_SSE
-        _mm_prefetch((char*)(visited_array + *(data_ptr + 1)), _MM_HINT_T0);
-        _mm_prefetch((char*)(visited_array + *(data_ptr + 1) + 64), _MM_HINT_T0);
-        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-        _mm_prefetch((char*)(data_ptr + 2), _MM_HINT_T0);
+            _mm_prefetch((char*)(visited_array + *(data_ptr + 1)), _MM_HINT_T0);
+            _mm_prefetch((char*)(visited_array + *(data_ptr + 1) + 64), _MM_HINT_T0);
+            _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+            _mm_prefetch((char*)(data_ptr + 2), _MM_HINT_T0);
 #endif
 
-        for (size_t j = 1; j <= size; j++) {
-            tableint candidate_id = *(data_ptr + j);
-            if (visited_array[candidate_id] != visited_array_tag) {
-                visited_array[candidate_id] = visited_array_tag;
+            for (size_t j = 1; j <= size; j++) {
+                tableint candidate_id = *(data_ptr + j);
+                size_t pre_l = std::min(j, size - 2);
+                auto vector_data_ptr =
+                    data_level0_memory_->GetElementPtr((*(data_ptr + pre_l + 1)), offsetData_);
+#ifdef USE_SSE
+                _mm_prefetch((char*)(visited_array + *(data_ptr + pre_l + 1)), _MM_HINT_T0);
+                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
+#endif
+                if (visited_array[candidate_id] != visited_array_tag) {
+                    visited_array[candidate_id] = visited_array_tag;
 
-                char* currObj1 = (getDataByInternalId(candidate_id));
-                float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                    char* currObj1 = (getDataByInternalId(candidate_id));
+                    float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
 
-                if (data.size() < k) {
-                    // data还未满，直接添加
-                    data.emplace_back(dist, candidate_id);
-                    candidate_set.emplace(-dist, candidate_id);
-                    // 当data达到k大小时，建立分块堆结构
-                    if (data.size() == k) {
-                        // 为每个块建堆
-                        for (size_t i = 0; i < block_nums; i++) {
-                            size_t start = i * block_size;
-                            size_t end = (i + 1) * block_size;
-                            std::make_heap(
-                                data.begin() + start,
-                                data.begin() + end,
-                                comp
-                            );
+                    if (vectors.size() < k) {
+                        // data还未满，直接添加
+                        vectors.emplace_back(dist, candidate_id);
+                        candidate_set.emplace(-dist, candidate_id);
+                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+                        // 当data达到k大小时，建立分块堆结构
+                        if (vectors.size() == k) {
+                            // 为每个块建堆
+                            for (size_t i = 0; i < block_nums; i++) {
+                                size_t start = i * block_size;
+                                size_t end = (i + 1) * block_size;
+                                std::make_heap(vectors.begin() + start, vectors.begin() + end, comp);
 
-                            // 记录每个块的最大值到key中
-                            key.emplace_back(data[start].first, start);
+                                // 记录每个块的最大值到key中
+                                key.emplace_back(vectors[start].first, start);
+                            }
+                            // 建立key的最小堆
+                            std::make_heap(key.begin(), key.end());
+                            lowerBound = key.front().first;
                         }
-                        // 建立key的最小堆
-                        std::make_heap(key.begin(), key.end());
+                    } else if (dist < lowerBound) {
+                        candidate_set.emplace(-dist, candidate_id);
+                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+                        // 找到key中最大值所在的块
+                        std::pop_heap(key.begin(), key.end());
+                        size_t block_start = key.back().second;
+
+                        // 更新对应块中的最大值
+                        auto block_begin = vectors.begin() + block_start;
+                        auto block_end = block_begin + block_size;
+
+                        std::pop_heap(block_begin, block_end, comp);
+
+                        *(block_end - 1) = std::make_pair(dist, candidate_id);
+
+                        std::push_heap(block_begin, block_end, comp);
+
+                        // 更新key
+                        key.back() = std::make_pair(block_begin->first, block_start);
+                        std::push_heap(key.begin(), key.end(), comp);
                         lowerBound = key.front().first;
                     }
-                } else if (dist < lowerBound) {
-                    candidate_set.emplace(-dist, candidate_id);
-                    // 找到key中最大值所在的块
-                    std::pop_heap(key.begin(), key.end());
-                    size_t block_start = key.back().second;
-
-                    // 更新对应块中的最大值
-                    auto block_begin = data.begin() + block_start;
-                    auto block_end = block_begin + block_size;
-
-                    std::pop_heap(
-                        block_begin,
-                        block_end,
-                        comp
-                    );
-
-                    *(block_end - 1) = std::make_pair(dist, candidate_id);
-
-                    std::push_heap(
-                        block_begin,
-                        block_end,
-                        comp
-                    );
-
-                    // 更新key
-                    key.back() = std::make_pair(block_begin->first, block_start);
-                    std::push_heap(key.begin(), key.end(), comp);
-                    lowerBound = key.front().first;
-
-                    
                 }
             }
         }
+
+        visited_list_pool_->releaseVisitedList(vl);
+        sort(vectors.rbegin(), vectors.rend(), comp);
+        return std::move(vectors);
     }
 
-    visited_list_pool_->releaseVisitedList(vl);
-    sort(data.rbegin(),data.rend(),comp);
-    return data;
-}
-
     template <bool has_deletions, bool collect_metrics = false>
-    std::vector<std::pair<float, tableint>,
-                        vsag::Vector<std::pair<float, tableint>>,
-                        CompareByFirst>
-    searchBaseLayerBSA(tableint ep_id,
-                      const void* data_point,
-                      size_t k,
-                      size_t ef,
-                      BaseFilterFunctor* isIdAllowed = nullptr) const {
+    std::
+        vector<std::pair<float, int64_t>>
+        searchBaseLayerBSA(tableint ep_id,
+                           const void* data_point,
+                           size_t k,
+                           size_t ef,
+                           BaseFilterFunctor* isIdAllowed = nullptr) const {
         auto vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
@@ -743,14 +741,13 @@ searchBaseLayerST10000(tableint ep_id,
                             CompareByFirst>
             top_candidates(allocator_);
         std::priority_queue<std::pair<float, tableint>,
-                        vsag::Vector<std::pair<float, tableint>>,
-                        CompareByFirst>
-        ans(allocator_);
+                            vsag::Vector<std::pair<float, tableint>>,
+                            CompareByFirst>
+            ans(allocator_);
         std::priority_queue<std::pair<float, tableint>,
                             vsag::Vector<std::pair<float, tableint>>,
                             CompareByFirst>
             candidate_set(allocator_);
-
 
         float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
 
@@ -762,7 +759,7 @@ searchBaseLayerST10000(tableint ep_id,
 
         // float threshold = 100000.f;
 
-        visited_array[ep_id] = visited_array_tag; 
+        visited_array[ep_id] = visited_array_tag;
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
@@ -775,7 +772,6 @@ searchBaseLayerST10000(tableint ep_id,
             tableint current_node_id = current_node_pair.second;
             int* data = (int*)get_linklist0(current_node_id);
             size_t size = getListCount((linklistsizeint*)data);
-
 
             auto vector_data_ptr = data_level0_memory_->GetElementPtr((*(data + 1)), offsetData_);
 #ifdef USE_SSE
@@ -809,7 +805,7 @@ searchBaseLayerST10000(tableint ep_id,
 
                         top_candidates.emplace(dist, candidate_id);
                         // 如果当前节点距离比ans小，将其加入ans
-                        if(ans.size() < k || dist < lowerBoundAns){
+                        if (ans.size() < k || dist < lowerBoundAns) {
                             ans.emplace(dist, candidate_id);
                         }
 
@@ -827,7 +823,7 @@ searchBaseLayerST10000(tableint ep_id,
         }
 
         visited_list_pool_->releaseVisitedList(vl);
-        std::vector<std::pair<float, labeltype>> ans_vec(ans.size());
+        std::vector<std::pair<float, int64_t>> ans_vec(ans.size());
         int j = ans.size();
         while (!ans.empty()) {
             std::pair<float, tableint> rez = ans.top();
@@ -922,7 +918,7 @@ searchBaseLayerST10000(tableint ep_id,
                         _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////////////////
 #endif
 
-                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id))) 
+                        if ((!isIdAllowed) || (*isIdAllowed)(getExternalLabel(candidate_id)))
                             top_candidates.emplace(dist, candidate_id);
 
                         if (!top_candidates.empty())
@@ -1789,8 +1785,6 @@ searchBaseLayerST10000(tableint ep_id,
         // std::shared_ptr<float[]> normalize_data;
         // normalize_vector(data_point, normalize_data);
 
-
-
         std::unique_lock<std::recursive_mutex> lock_el(link_list_locks_[cur_c]);
         int curlevel = getRandomLevel(mult_);
         if (level > 0)
@@ -1805,7 +1799,6 @@ searchBaseLayerST10000(tableint ep_id,
         tableint enterpoint_copy = enterpoint_node_;
 
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
-
 
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
@@ -1882,11 +1875,11 @@ searchBaseLayerST10000(tableint ep_id,
         return cur_c;
     }
 
-    std::vector<std::pair<float, labeltype>>
+    std::vector<std::pair<float, int64_t>>
     searchKnn2(std::array<uint8_t, 128>& sq8,
-              size_t k,
-              uint64_t ef,
-              BaseFilterFunctor* isIdAllowed = nullptr)  {
+               size_t k,
+               uint64_t ef,
+               BaseFilterFunctor* isIdAllowed = nullptr) {
         const void* query_data = (const void*)(sq8.data());
 
         tableint currObj = enterpoint_node_;
@@ -1915,24 +1908,20 @@ searchBaseLayerST10000(tableint ep_id,
             }
         }
 
-        std::vector<std::pair<float, tableint>,
-                            vsag::Vector<std::pair<float, tableint>>,
-                            CompareByFirst>
-            ans(allocator_);
-        if(k == 10000){
-            ans =
-                searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
-        }else{
-            ans =
-                searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(ef, k), isIdAllowed);
-        }        
+        std::vector<std::pair<float, int64_t>>
+            ans;
+        if (k == 10000) {
+            ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
+        } else {
+            ans = searchBaseLayerBSA<false, true>(
+                currObj, query_data, k, ef, isIdAllowed);
+        }
 
-
-        #pragma omp parallel for (k > 1000)
-        for (int i = 0; i < candidates.size(); i++) {
+#pragma omp parallel for (k > 1000)
+        for (int i = 0; i < ans.size(); i++) {
             ans[i].second = getExternalLabel(ans[i].second);
         }
-        
+
         return std::move(ans);
     }
 
@@ -1984,7 +1973,7 @@ searchBaseLayerST10000(tableint ep_id,
             top_candidates(allocator_);
 
         top_candidates =
-                searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
+            searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), isIdAllowed);
 
         while (top_candidates.size() > k) {
             top_candidates.pop();

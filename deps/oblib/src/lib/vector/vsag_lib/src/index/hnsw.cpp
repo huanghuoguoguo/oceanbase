@@ -245,7 +245,7 @@ HNSW::knn_search(const DatasetPtr& query,
 
 
     // perform search
-    std::vector<std::pair<float, size_t>> results;
+    std::vector<std::pair<float, int64_t>> results;
     try {
         auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
         results = hnsw->searchKnn2(
