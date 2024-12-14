@@ -700,6 +700,8 @@ public:
                     std::push_heap(vectors.begin(), vectors.end(), comp);
                     if (vectors.size() == k) {
                         // data 达到 k，建立分块堆结构
+                        
+                    omp_set_nested(1);
 #pragma omp parallel for
                         for (size_t i = 0; i < block_nums; i++) {
                             int thread_id = omp_get_thread_num();
