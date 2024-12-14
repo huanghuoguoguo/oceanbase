@@ -702,6 +702,8 @@ public:
                         // data 达到 k，建立分块堆结构
 #pragma omp parallel for
                         for (size_t i = 0; i < block_nums; i++) {
+                            int thread_id = omp_get_thread_num();
+                            vsag::logger::warn("yhh trid:{}",thread_id);
                             size_t start = i * block_size;
                             size_t end = std::min(start + block_size, k);
                             std::make_heap(vectors.begin() + start, vectors.begin() + end, comp);
