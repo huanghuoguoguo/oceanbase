@@ -687,7 +687,7 @@ public:
                 float dist = distances[j];
                 if (dist == std::numeric_limits<float>::max())
                     continue;  // 跳过已访问节点
-
+                visited_array[candidate_id] = visited_array_tag;
                 if (vectors.size() < k) {
                     candidate_set.emplace(-dist, candidate_id);
                     auto vector_data_ptr = data_level0_memory_->GetElementPtr(
@@ -751,7 +751,6 @@ public:
         sort(vectors.rbegin(), vectors.rend(), comp);
         // #pragma omp parallel
         //         { quick_sort_parallel(vectors, 0, vectors.size() - 1, c); }
-        vsag::logger::warn("yhh vectors.size:{}",vectors.size());
         return std::move(vectors);
     }
 
