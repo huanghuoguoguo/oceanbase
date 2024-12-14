@@ -737,10 +737,10 @@ public:
         }
 
         visited_list_pool_->releaseVisitedList(vl);
-//         auto c = CompareByFirstReverse();
-// // sort(vectors.rbegin(), vectors.rend(), comp);
-// #pragma omp parallel
-//         { quick_sort_parallel(vectors, 0, vectors.size() - 1, c); }
+        //         auto c = CompareByFirstReverse();
+        // // sort(vectors.rbegin(), vectors.rend(), comp);
+        // #pragma omp parallel
+        //         { quick_sort_parallel(vectors, 0, vectors.size() - 1, c); }
         return std::move(vectors);
     }
 
@@ -1939,39 +1939,64 @@ public:
         tableint currObj = enterpoint_node_;
         float curdist =
             fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        //         for (int level = maxlevel_; level > 0; level--) {
+        //             bool changed = true;
+        //             while (changed) {
+        //                 changed = false;
+        //                 unsigned int* data = (unsigned int*)get_linklist(currObj, level);
+        //                 int size = getListCount(data);
+
+        //                 tableint* datal = (tableint*)(data + 1);  // Pointer to candidate IDs
+        //                 std::vector<float> distances(size);
+
+        // // Parallel computation of distances
+        // #pragma omp parallel for
+        //                 for (int i = 0; i < size; i++) {
+        //                     // Prefetch data to improve cache performance
+        //                     _mm_prefetch(reinterpret_cast<const char*>(getDataByInternalId(datal[i])),
+        //                                  _MM_HINT_T0);
+
+        //                     // Compute the distance
+        //                     distances[i] =
+        //                         fstdistfunc_(query_data, getDataByInternalId(datal[i]), dist_func_param_);
+        //                 }
+
+        //                 // Find the closest candidate and update currObj and curdist
+        //                 for (int i = 0; i < size; i++) {
+        //                     if (distances[i] < curdist) {
+        //                         curdist = distances[i];
+        //                         currObj = datal[i];
+        //                         changed = true;
+        //                     }
+        //                 }
+        //             }
+        //         }
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
             while (changed) {
                 changed = false;
-                unsigned int* data = (unsigned int*)get_linklist(currObj, level);
+                unsigned int* data;
+
+                data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
+                metric_hops_++;
+                metric_distance_computations_ += size;
 
-                tableint* datal = (tableint*)(data + 1);  // Pointer to candidate IDs
-                std::vector<float> distances(size);
-
-// Parallel computation of distances
-#pragma omp parallel for
+                tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
-                    // Prefetch data to improve cache performance
-                    _mm_prefetch(reinterpret_cast<const char*>(getDataByInternalId(datal[i])),
-                                 _MM_HINT_T0);
+                    tableint cand = datal[i];
+                    if (cand < 0 || cand > max_elements_)
+                        throw std::runtime_error("cand error");
+                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
-                    // Compute the distance
-                    distances[i] =
-                        fstdistfunc_(query_data, getDataByInternalId(datal[i]), dist_func_param_);
-                }
-
-                // Find the closest candidate and update currObj and curdist
-                for (int i = 0; i < size; i++) {
-                    if (distances[i] < curdist) {
-                        curdist = distances[i];
-                        currObj = datal[i];
+                    if (d < curdist) {
+                        curdist = d;
+                        currObj = cand;
                         changed = true;
                     }
                 }
             }
         }
-
         std::vector<std::pair<float, int64_t>> ans;
         if (k == 10000) {
             ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
