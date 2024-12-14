@@ -17,7 +17,7 @@
 #include "hnsw.h"
 
 #include <fmt/format-inl.h>
-
+#include <omp.h>
 #include <cstdint>
 #include <exception>
 #include <new>

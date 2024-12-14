@@ -17,7 +17,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
-
+#include <omp.h>
 #include <atomic>
 #include <cstdint>
 #include <cstring>
