@@ -20,3 +20,6 @@ target_link_libraries (vsag_test ${VSAG_DEP_LIBS})
 target_link_libraries (vsag_static_test ${VSAG_DEP_LIBS})
 maybe_add_dependencies (vsag_test spdlog roaring openblas boost mkl)
 maybe_add_dependencies (vsag_static_test spdlog roaring openblas boost mkl)
+
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+

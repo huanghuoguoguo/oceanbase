@@ -16,8 +16,9 @@
 #pragma once
 
 #include <assert.h>
-#include <stdlib.h>
 #include <omp.h>
+#include <stdlib.h>
+
 #include <atomic>
 #include <cstdint>
 #include <cstring>
@@ -700,12 +701,12 @@ public:
                     std::push_heap(vectors.begin(), vectors.end(), comp);
                     if (vectors.size() == k) {
                         // data 达到 k，建立分块堆结构
-                        
-                    omp_set_nested(1);
+
+                        omp_set_nested(1);
 #pragma omp parallel for
                         for (size_t i = 0; i < block_nums; i++) {
                             int thread_id = omp_get_thread_num();
-                            vsag::logger::warn("yhh trid:{}",thread_id);
+                            vsag::logger::warn("yhh trid:{}", thread_id);
                             size_t start = i * block_size;
                             size_t end = std::min(start + block_size, k);
                             std::make_heap(vectors.begin() + start, vectors.begin() + end, comp);
@@ -1993,9 +1994,15 @@ public:
             ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }
 
-#pragma omp parallel for (k > 1000)
-        for (int i = 0; i < ans.size(); i++) {
-            ans[i].second = getExternalLabel(ans[i].second);
+        if (k > 1000) {
+#pragma omp parallel for
+            for (int i = 0; i < ans.size(); i++) {
+                ans[i].second = getExternalLabel(ans[i].second);
+            }
+        } else {
+            for (int i = 0; i < ans.size(); i++) {
+                ans[i].second = getExternalLabel(ans[i].second);
+            }
         }
 
         return std::move(ans);

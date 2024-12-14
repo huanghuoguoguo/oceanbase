@@ -18,6 +18,7 @@
 
 #include <fmt/format-inl.h>
 #include <omp.h>
+
 #include <cstdint>
 #include <exception>
 #include <new>
@@ -72,7 +73,6 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
         allocator = DefaultAllocator::Instance();
     }
     allocator_ = std::shared_ptr<SafeAllocator>(new SafeAllocator(allocator));
-
 
     if (!use_static_) {
         alg_hnsw =
@@ -226,15 +226,13 @@ HNSW::knn_search(const DatasetPtr& query,
         __m128i int8_values = _mm512_cvtsepi32_epi8(int32_values);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(temp.data() + i), int8_values);
     }
-#else       
+#else
     for (size_t i = 0; i < 128; ++i) {
         float value = vector[i];
         // 将每个 float 值转换为 uint8_t，存储在 uint8_t 类型数组中
         temp[i] = static_cast<uint8_t>(value);
     }
 #endif
-    
-
 
     std::shared_lock lock(rw_mutex_);
 
@@ -243,31 +241,34 @@ HNSW::knn_search(const DatasetPtr& query,
     // return result
     auto result = Dataset::Make();
 
-
     // perform search
     std::vector<std::pair<float, int64_t>> results;
     try {
         auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
-        results = hnsw->searchKnn2(
-            temp, k, params.ef_search, filter_ptr);
+        results = hnsw->searchKnn2(temp, k, params.ef_search, filter_ptr);
     } catch (const std::runtime_error& e) {
-        LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
-                                "failed to perofrm knn_search(internalError): ",
-                                e.what());
+        LOG_ERROR_AND_RETURNS(
+            ErrorType::INTERNAL_ERROR, "failed to perofrm knn_search(internalError): ", e.what());
     }
-
 
     result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
     int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
     result->Ids(ids);
     float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
     result->Distances(dists);
-    #pragma omp parallel for (k > 1000)
-    for (int64_t j = results.size() - 1; j >= 0; --j) {
-        int thread_id = omp_get_thread_num();
-        vsag::logger::warn("yhh hnsw trid:{}",thread_id);
-        dists[j] = results[j].first;
-        ids[j] = results[j].second;
+    if (k > 1000) {
+#pragma omp parallel for
+        for (int64_t j = results.size() - 1; j >= 0; --j) {
+            int thread_id = omp_get_thread_num();
+            vsag::logger::warn("yhh hnsw trid:{}", thread_id);
+            dists[j] = results[j].first;
+            ids[j] = results[j].second;
+        }
+    } else {
+        for (int64_t j = results.size() - 1; j >= 0; --j) {
+            dists[j] = results[j].first;
+            ids[j] = results[j].second;
+        }
     }
 
     return std::move(result);
