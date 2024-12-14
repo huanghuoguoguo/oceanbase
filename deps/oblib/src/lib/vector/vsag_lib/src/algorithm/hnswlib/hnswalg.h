@@ -689,6 +689,12 @@ public:
                     continue;  // 跳过已访问节点
 
                 if (vectors.size() < k) {
+                    candidate_set.emplace(-dist, candidate_id);
+                    auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                        candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                    _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
                     // data 还未满，直接添加
                     vectors.emplace_back(dist, candidate_id);
                     std::push_heap(vectors.begin(), vectors.end(), comp);
@@ -703,6 +709,7 @@ public:
                             // 记录每个块的最大值到 key 中
                             key.emplace_back((vectors.begin() + start)->first, start);
                         }
+
                         std::make_heap(key.begin(), key.end(), comp);
                         lowerBound = key.front().first;
                     }
