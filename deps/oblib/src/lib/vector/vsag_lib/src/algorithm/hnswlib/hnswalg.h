@@ -606,6 +606,7 @@ public:
                            size_t ef,
                            BaseFilterFunctor* isIdAllowed = nullptr) const {
         auto vl = visited_list_pool_->getFreeVisitedList();
+        vsag::logger::warn("yhh use searchBaseLayerST10000");
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
         auto comp = CompareByFirst();
@@ -736,10 +737,10 @@ public:
         }
 
         visited_list_pool_->releaseVisitedList(vl);
-        auto c = CompareByFirstReverse();
-// sort(vectors.rbegin(), vectors.rend(), comp);
-#pragma omp parallel
-        { quick_sort_parallel(vectors, 0, vectors.size() - 1, c); }
+//         auto c = CompareByFirstReverse();
+// // sort(vectors.rbegin(), vectors.rend(), comp);
+// #pragma omp parallel
+//         { quick_sort_parallel(vectors, 0, vectors.size() - 1, c); }
         return std::move(vectors);
     }
 
