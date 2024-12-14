@@ -599,13 +599,12 @@ public:
     }
 
     template <bool has_deletions, bool collect_metrics = false>
-    std::
-        vector<std::pair<float, int64_t>>
-        searchBaseLayerST10000(tableint ep_id,
-                               const void* data_point,
-                               size_t k,
-                               size_t ef,
-                               BaseFilterFunctor* isIdAllowed = nullptr) const {
+    std::vector<std::pair<float, int64_t>>
+    searchBaseLayerST10000(tableint ep_id,
+                           const void* data_point,
+                           size_t k,
+                           size_t ef,
+                           BaseFilterFunctor* isIdAllowed = nullptr) const {
         auto vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
@@ -684,17 +683,18 @@ public:
 #endif
                         // 当data达到k大小时，建立分块堆结构
                         if (vectors.size() == k) {
-                            // 为每个块建堆
-                            #pragma omp parallel for
+// 为每个块建堆
+#pragma omp parallel for
                             for (size_t i = 0; i < block_nums; i++) {
                                 size_t start = i * block_size;
                                 size_t end = (i + 1) * block_size;
-                                std::make_heap(vectors.begin() + start, vectors.begin() + end, comp);
+                                std::make_heap(
+                                    vectors.begin() + start, vectors.begin() + end, comp);
 
                                 // 记录每个块的最大值到key中
                                 float max_value = (vectors.begin() + start)->first;
-                                #pragma omp critical
-                                key.emplace_back(max_value, start); 
+#pragma omp critical
+                                key.emplace_back(max_value, start);
                             }
                             // 建立key的最小堆
                             std::make_heap(key.begin(), key.end(), comp);
@@ -715,8 +715,10 @@ public:
                         auto block_begin = vectors.begin() + block_start;
                         auto block_end = block_begin + block_size;
 #ifdef USE_SSE
-                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]), _MM_HINT_T0);
-                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start + 4]), _MM_HINT_T0);
+                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]),
+                                     _MM_HINT_T0);
+                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start + 4]),
+                                     _MM_HINT_T0);
 #endif
                         std::pop_heap(block_begin, block_end, comp);
 
@@ -735,34 +737,34 @@ public:
 
         visited_list_pool_->releaseVisitedList(vl);
         auto c = CompareByFirstReverse();
-        // sort(vectors.rbegin(), vectors.rend(), comp);
-        #pragma omp parallel
-        {
-            quick_sort_parallel(vectors, 0, vectors.size() - 1, c);
-        }
+// sort(vectors.rbegin(), vectors.rend(), comp);
+#pragma omp parallel
+        { quick_sort_parallel(vectors, 0, vectors.size() - 1, c); }
         return std::move(vectors);
     }
 
-    template<typename T, typename Comparator>
-    void quick_sort_parallel(std::vector<T>& arr, int low, int high, Comparator comp) const {
+    template <typename T, typename Comparator>
+    void
+    quick_sort_parallel(std::vector<T>& arr, int low, int high, Comparator comp) const {
         if (low < high) {
             // Partitioning index
             int pivot = partition(arr, low, high, comp);
 
-            // Parallelize sorting of the two subarrays
-            #pragma omp parallel sections
+// Parallelize sorting of the two subarrays
+#pragma omp parallel sections
             {
-                #pragma omp section
+#pragma omp section
                 quick_sort_parallel(arr, low, pivot - 1, comp);
 
-                #pragma omp section
+#pragma omp section
                 quick_sort_parallel(arr, pivot + 1, high, comp);
             }
         }
     }
 
-    template<typename T, typename Comparator>
-    int partition(std::vector<T>& arr, int low, int high, Comparator comp) const {
+    template <typename T, typename Comparator>
+    int
+    partition(std::vector<T>& arr, int low, int high, Comparator comp) const {
         T pivot = arr[high];
         int i = low - 1;
 
@@ -777,15 +779,13 @@ public:
         return i + 1;
     }
 
-
     template <bool has_deletions, bool collect_metrics = false>
-    std::
-        vector<std::pair<float, int64_t>>
-        searchBaseLayerBSA(tableint ep_id,
-                           const void* data_point,
-                           size_t k,
-                           size_t ef,
-                           BaseFilterFunctor* isIdAllowed = nullptr) const {
+    std::vector<std::pair<float, int64_t>>
+    searchBaseLayerBSA(tableint ep_id,
+                       const void* data_point,
+                       size_t k,
+                       size_t ef,
+                       BaseFilterFunctor* isIdAllowed = nullptr) const {
         auto vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
@@ -1942,32 +1942,40 @@ public:
             bool changed = true;
             while (changed) {
                 changed = false;
-                unsigned int* data;
-
-                data = (unsigned int*)get_linklist(currObj, level);
+                unsigned int* data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
 
-                tableint* datal = (tableint*)(data + 1);
-                for (int i = 0; i < size; i++) {
-                    tableint cand = datal[i];
-                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                tableint* datal = (tableint*)(data + 1);  // Pointer to candidate IDs
+                std::vector<float> distances(size);
 
-                    if (d < curdist) {
-                        curdist = d;
-                        currObj = cand;
+// Parallel computation of distances
+#pragma omp parallel for
+                for (int i = 0; i < size; i++) {
+                    // Prefetch data to improve cache performance
+                    _mm_prefetch(reinterpret_cast<const char*>(getDataByInternalId(datal[i])),
+                                 _MM_HINT_T0);
+
+                    // Compute the distance
+                    distances[i] =
+                        fstdistfunc_(query_data, getDataByInternalId(datal[i]), dist_func_param_);
+                }
+
+                // Find the closest candidate and update currObj and curdist
+                for (int i = 0; i < size; i++) {
+                    if (distances[i] < curdist) {
+                        curdist = distances[i];
+                        currObj = datal[i];
                         changed = true;
                     }
                 }
             }
         }
 
-        std::vector<std::pair<float, int64_t>>
-            ans;
+        std::vector<std::pair<float, int64_t>> ans;
         if (k == 10000) {
             ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
         } else {
-            ans = searchBaseLayerBSA<false, true>(
-                currObj, query_data, k, ef, isIdAllowed);
+            ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }
 
 #pragma omp parallel for (k > 1000)
