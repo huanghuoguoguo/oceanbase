@@ -292,7 +292,7 @@ set(VSAG_LIB_DIR ${VSAG_BASE_DIR}/_deps)
 
 # Create shared library
 add_library(ob_vsag_test SHARED ob_vsag_lib.cpp)
-target_compile_options(ob_vsag_test PRIVATE -std=c++17)
+target_compile_options(ob_vsag_test PRIVATE -std=c++17 -fopenmp) # 添加-fopenmp
 target_include_directories(ob_vsag_test PRIVATE
                            ${VSAG_BASE_DIR}/include
                            ${VSAG_LIB_DIR}/nlohmann_json-src/include
@@ -304,7 +304,7 @@ add_dependencies(ob_vsag_test vsag_static_test)
 
 # Create static library
 add_library(ob_vsag_static_test STATIC ob_vsag_lib.cpp)
-target_compile_options(ob_vsag_static_test PRIVATE -std=c++17)
+target_compile_options(ob_vsag_static_test PRIVATE -std=c++17 -fopenmp) # 添加-fopenmp
 target_compile_definitions(ob_vsag_static_test PUBLIC _GLIBCXX_USE_CXX11_ABI=0)
 target_include_directories(ob_vsag_static_test PUBLIC
                            ${VSAG_BASE_DIR}/include
@@ -314,3 +314,4 @@ target_include_directories(ob_vsag_static_test PUBLIC
 add_dependencies(ob_vsag_static_test vsag_static_test)
 
 add_subdirectory (example)
+target_link_libraries(ob_vsag_static_test PUBLIC libgomp_static.a)
