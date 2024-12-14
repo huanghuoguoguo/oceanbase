@@ -2008,6 +2008,8 @@ public:
         }
 #pragma omp parallel for
         for (int i = 0; i < num; i++) {
+            int thread_id = omp_get_thread_num();
+            vsag::logger::warn("yhh trid:{}",thread_id);
             for (int j = 0; j < k; j++) {
                 float app_dist =
                     naive_product_dist(train_knn[i * k + j].second, train_data + i * dim);
@@ -2028,7 +2030,10 @@ public:
             node_cluster_dist_ = (float*)allocator_->Allocate(max_elements_ * sizeof(float));
         double ave_encode_loss = 0.0;
 #pragma omp parallel for
+
         for (int i = left_range; i < right_range; i++) {
+            int thread_id = omp_get_thread_num();
+            vsag::logger::warn("yhh trid:{}",thread_id);
             float dist_to_centroid = 0.0;
             for (int j = 0; j < pq_chunk; j++) {
                 uint8_t belong = 0;

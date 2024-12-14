@@ -151,9 +151,9 @@ tl::expected<std::vector<int64_t>, Error>
 HNSW::add(const DatasetPtr& base) {
     SlowTaskTimer t("hnsw add", 20);
 
-    if (use_static_) {
-        LOG_ERROR_AND_RETURNS(ErrorType::UNSUPPORTED_INDEX_OPERATION,
-                              "static index does not support add");
+    // if (use_static_) {
+    //     LOG_ERROR_AND_RETURNS(ErrorType::UNSUPPORTED_INDEX_OPERATION,
+    //                           "static index does not support add");
     }
     try {
         auto base_dim = base->GetDim();
@@ -176,7 +176,9 @@ HNSW::add(const DatasetPtr& base) {
                 failed_ids.push_back(ids[i]);
             }
         }
-
+        if(alg_hnsw->getCurrentElementCount() == 1000000){
+            alg_hnsw->encode_hnsw_data();
+        }
         return failed_ids;
     } catch (const std::invalid_argument& e) {
         LOG_ERROR_AND_RETURNS(
