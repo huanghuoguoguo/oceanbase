@@ -289,6 +289,7 @@ add_dependencies (vsag_test version)
 # set path
 set(VSAG_BASE_DIR ${CMAKE_BINARY_DIR})
 set(VSAG_LIB_DIR ${VSAG_BASE_DIR}/_deps)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
 # Create shared library
 add_library(ob_vsag_test SHARED ob_vsag_lib.cpp)
