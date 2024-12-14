@@ -314,4 +314,3 @@ target_include_directories(ob_vsag_static_test PUBLIC
 add_dependencies(ob_vsag_static_test vsag_static_test)
 
 add_subdirectory (example)
-#target_link_libraries(ob_vsag_static_test PUBLIC libgomp_static.a)
