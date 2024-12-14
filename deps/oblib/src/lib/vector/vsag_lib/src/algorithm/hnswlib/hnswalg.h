@@ -748,7 +748,7 @@ public:
 
         visited_list_pool_->releaseVisitedList(vl);
         // auto c = CompareByFirstReverse();
-        sort(vectors.rbegin(), vectors.rend(), comp);
+        // sort(vectors.rbegin(), vectors.rend(), comp);
         // #pragma omp parallel
         //         { quick_sort_parallel(vectors, 0, vectors.size() - 1, c); }
         return std::move(vectors);
