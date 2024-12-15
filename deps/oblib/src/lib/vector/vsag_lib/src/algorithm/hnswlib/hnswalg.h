@@ -664,6 +664,8 @@ public:
 
 #pragma omp parallel for
             for (size_t j = 0; j < size; j++) {
+                int thread_id = omp_get_thread_num();
+                vsag::logger::warn("yhh id:{}", thread_id);
                 tableint candidate_id = *(data_ptr + j + 1);
                 candidates[j] = candidate_id;
                 if (visited_array[candidate_id] != visited_array_tag) {

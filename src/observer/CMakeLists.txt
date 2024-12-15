@@ -523,7 +523,6 @@ target_link_libraries(observer
   -static-libstdc++
   ${link_malloc_hook}
   ${BOLT_OPT}
-  libgomp_static.a
 )
 
 execute_process(
