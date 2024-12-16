@@ -244,7 +244,7 @@ HNSW::knn_search(const DatasetPtr& query,
     // perform search
     std::vector<std::pair<float, int64_t>> results;
     try {
-        auto hnsw = reinterpret_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
+        auto hnsw = static_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
         results = hnsw->searchKnn2(temp, k, params.ef_search, filter_ptr);
     } catch (const std::runtime_error& e) {
         LOG_ERROR_AND_RETURNS(
@@ -256,19 +256,9 @@ HNSW::knn_search(const DatasetPtr& query,
     result->Ids(ids);
     float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
     result->Distances(dists);
-    if (k > 1000) {
-#pragma omp parallel for
-        for (int64_t j = results.size() - 1; j >= 0; --j) {
-            int thread_id = omp_get_thread_num();
-            vsag::logger::warn("yhh hnsw trid:{}", thread_id);
-            dists[j] = results[j].first;
-            ids[j] = results[j].second;
-        }
-    } else {
-        for (int64_t j = results.size() - 1; j >= 0; --j) {
-            dists[j] = results[j].first;
-            ids[j] = results[j].second;
-        }
+    for (int64_t j = results.size() - 1; j >= 0; --j) {
+        dists[j] = results[j].first;
+        ids[j] = results[j].second;
     }
 
     return std::move(result);

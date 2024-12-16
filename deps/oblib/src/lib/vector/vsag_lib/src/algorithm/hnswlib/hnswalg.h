@@ -658,97 +658,79 @@ public:
             _mm_prefetch((char*)(data_ptr + 2), _MM_HINT_T0);
 #endif
 
-            // Step 1: 计算所有邻居的距离
-            std::vector<float> distances(size);
-            std::vector<tableint> candidates(size);
-
-#pragma omp parallel for
-            for (size_t j = 0; j < size; j++) {
-                int thread_id = omp_get_thread_num();
-                vsag::logger::warn("yhh id:{}", thread_id);
-                tableint candidate_id = *(data_ptr + j + 1);
-                candidates[j] = candidate_id;
+            for (size_t j = 1; j <= size; j++) {
+                tableint candidate_id = *(data_ptr + j);
+                size_t pre_l = std::min(j, size - 2);
+                auto vector_data_ptr =
+                    data_level0_memory_->GetElementPtr((*(data_ptr + pre_l + 1)), offsetData_);
+#ifdef USE_SSE
+                _mm_prefetch((char*)(visited_array + *(data_ptr + pre_l + 1)), _MM_HINT_T0);
+                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
+#endif
                 if (visited_array[candidate_id] != visited_array_tag) {
-                    // 预取当前节点
-                    size_t pre_l = std::min(j, size - 2);
-                    auto vector_data_ptr =
-                        data_level0_memory_->GetElementPtr((*(data_ptr + pre_l + 1)), offsetData_);
-#ifdef USE_SSE
-                    _mm_prefetch((char*)(visited_array + *(data_ptr + pre_l + 1)), _MM_HINT_T0);
-                    _mm_prefetch(vector_data_ptr, _MM_HINT_T0);  ////////////
-#endif
+                    visited_array[candidate_id] = visited_array_tag;
+
                     char* currObj1 = (getDataByInternalId(candidate_id));
-                    distances[j] = fstdistfunc_(data_point, currObj1, dist_func_param_);
-                } else {
-                    distances[j] = std::numeric_limits<float>::max();  // 标记为已访问
-                }
-            }
+                    float dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
 
-            // Step 2: 主线程处理距离和更新逻辑
-            for (size_t j = 0; j < size; j++) {
-                tableint candidate_id = candidates[j];
-                float dist = distances[j];
-                if (dist == std::numeric_limits<float>::max())
-                    continue;  // 跳过已访问节点
-                visited_array[candidate_id] = visited_array_tag;
-                if (vectors.size() < k) {
-                    candidate_set.emplace(-dist, candidate_id);
-                    auto vector_data_ptr = data_level0_memory_->GetElementPtr(
-                        candidate_set.top().second, offsetLevel0_);
+                    if (vectors.size() < k) {
+                        // data还未满，直接添加
+                        vectors.emplace_back(dist, candidate_id);
+                        candidate_set.emplace(-dist, candidate_id);
+                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
 #ifdef USE_SSE
-                    _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
 #endif
-                    // data 还未满，直接添加
-                    vectors.emplace_back(dist, candidate_id);
-                    std::push_heap(vectors.begin(), vectors.end(), comp);
-                    if (vectors.size() == k) {
-                        // data 达到 k，建立分块堆结构
-
-
+                        // 当data达到k大小时，建立分块堆结构
+                        if (vectors.size() == k) {
+// 为每个块建堆
 #pragma omp parallel for
-                        for (size_t i = 0; i < block_nums; i++) {
-                            int thread_id = omp_get_thread_num();
-                            vsag::logger::warn("yhh trid:{}", thread_id);
-                            size_t start = i * block_size;
-                            size_t end = std::min(start + block_size, k);
-                            std::make_heap(vectors.begin() + start, vectors.begin() + end, comp);
-#pragma omp critical
-                            // 记录每个块的最大值到 key 中
-                            key.emplace_back((vectors.begin() + start)->first, start);
-                        }
+                            for (size_t i = 0; i < block_nums; i++) {
+                                size_t start = i * block_size;
+                                size_t end = (i + 1) * block_size;
+                                std::make_heap(
+                                    vectors.begin() + start, vectors.begin() + end, comp);
 
-                        std::make_heap(key.begin(), key.end(), comp);
+                                // 记录每个块的最大值到key中
+                                float max_value = (vectors.begin() + start)->first;
+                                key[i] = {max_value, start};
+                            }
+                            // 建立key的最小堆
+                            std::make_heap(key.begin(), key.end(), comp);
+                            lowerBound = key.front().first;
+                        }
+                    } else if (dist < lowerBound) {
+                        candidate_set.emplace(-dist, candidate_id);
+                        auto vector_data_ptr = data_level0_memory_->GetElementPtr(
+                            candidate_set.top().second, offsetLevel0_);
+#ifdef USE_SSE
+                        _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+                        // 找到key中最大值所在的块
+                        std::pop_heap(key.begin(), key.end());
+                        size_t block_start = key.back().second;
+
+                        // 更新对应块中的最大值
+                        auto block_begin = vectors.begin() + block_start;
+                        auto block_end = block_begin + block_size;
+// #ifdef USE_SSE
+//                         _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]),
+//                                      _MM_HINT_T0);
+//                         _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start + 4]),
+//                                      _MM_HINT_T0);
+// #endif
+                        std::pop_heap(block_begin, block_end, comp);
+
+                        *(block_end - 1) = std::make_pair(dist, candidate_id);
+
+                        std::push_heap(block_begin, block_end, comp);
+
+                        // 更新key
+                        key.back() = std::make_pair(block_begin->first, block_start);
+                        std::push_heap(key.begin(), key.end(), comp);
                         lowerBound = key.front().first;
                     }
-                } else if (dist < lowerBound) {
-                    candidate_set.emplace(-dist, candidate_id);
-                    auto vector_data_ptr = data_level0_memory_->GetElementPtr(
-                        candidate_set.top().second, offsetLevel0_);
-#ifdef USE_SSE
-                    _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-#endif
-                    // 找到key中最大值所在的块
-                    std::pop_heap(key.begin(), key.end());
-                    size_t block_start = key.back().second;
-
-                    // 更新对应块中的最大值
-                    auto block_begin = vectors.begin() + block_start;
-                    auto block_end = block_begin + block_size;
-#ifdef USE_SSE
-                    _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]), _MM_HINT_T0);
-                    _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start + 4]),
-                                 _MM_HINT_T0);
-#endif
-                    std::pop_heap(block_begin, block_end, comp);
-
-                    *(block_end - 1) = std::make_pair(dist, candidate_id);
-
-                    std::push_heap(block_begin, block_end, comp);
-
-                    // 更新key
-                    key.back() = std::make_pair(block_begin->first, block_start);
-                    std::push_heap(key.begin(), key.end(), comp);
-                    lowerBound = key.front().first;
                 }
             }
         }
@@ -829,8 +811,6 @@ public:
         ans.emplace(dist, ep_id);
         candidate_set.emplace(-dist, ep_id);
 
-        // float threshold = 100000.f;
-
         visited_array[ep_id] = visited_array_tag;
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
@@ -878,16 +858,17 @@ public:
                         // 如果当前节点距离比ans小，将其加入ans
                         if (ans.size() < k || dist < lowerBoundAns) {
                             ans.emplace(dist, candidate_id);
+                            if (ans.size() > k) {
+                                ans.pop();
+                            }
+                            lowerBoundAns = ans.top().first;
                         }
 
                         if (top_candidates.size() > ef)
                             top_candidates.pop();
-                        if (ans.size() > k)
-                            ans.pop();
+
                         if (!top_candidates.empty())
                             lowerBound = top_candidates.top().first;
-                        if (!ans.empty())
-                            lowerBoundAns = ans.top().first;
                     }
                 }
             }
@@ -1990,15 +1971,8 @@ public:
             ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }
 
-        if (k > 1000) {
-#pragma omp parallel for
-            for (int i = 0; i < ans.size(); i++) {
-                ans[i].second = getExternalLabel(ans[i].second);
-            }
-        } else {
-            for (int i = 0; i < ans.size(); i++) {
-                ans[i].second = getExternalLabel(ans[i].second);
-            }
+        for (int i = 0; i < ans.size(); i++) {
+            ans[i].second = getExternalLabel(ans[i].second);
         }
 
         return std::move(ans);
