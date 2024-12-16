@@ -1984,12 +1984,12 @@ public:
         }
 
         std::vector<std::pair<float, int64_t>> ans;
-        if (k == 10000) {
-            ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
-        } else {
-            ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
-        }
-
+        // if (k == 10000) {
+        //     ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
+        // } else {
+        //     ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
+        // }
+        ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         if (k > 1000) {
 #pragma omp parallel for
             for (int i = 0; i < ans.size(); i++) {
