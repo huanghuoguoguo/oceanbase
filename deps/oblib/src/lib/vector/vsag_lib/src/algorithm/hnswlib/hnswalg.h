@@ -167,8 +167,8 @@ public:
 
         data_level0_memory_ =
             std::make_shared<BlockManager>(size_data_per_element_, block_size_limit, allocator_);
+        
         data_element_per_block_ = block_size_limit / size_data_per_element_;
-
         cur_element_count_ = 0;
 
         visited_list_pool_ = std::make_shared<VisitedListPool>(1, max_elements, allocator_);
@@ -601,7 +601,7 @@ public:
 
     template <bool has_deletions, bool collect_metrics = false>
     std::vector<std::pair<float, int64_t>>
-    searchBaseLayerST10000(tableint ep_id,
+    searchBaseLayerSTLarge(tableint ep_id,
                            const void* data_point,
                            size_t k,
                            size_t ef,
@@ -684,8 +684,8 @@ public:
 #endif
                         // 当data达到k大小时，建立分块堆结构
                         if (vectors.size() == k) {
-// 为每个块建堆
-#pragma omp parallel for
+// 为每个块建堆 多线程时间会翻倍？？为什么？？
+// #pragma omp parallel for
                             for (size_t i = 0; i < block_nums; i++) {
                                 size_t start = i * block_size;
                                 size_t end = (i + 1) * block_size;
@@ -694,7 +694,7 @@ public:
 
                                 // 记录每个块的最大值到key中
                                 float max_value = (vectors.begin() + start)->first;
-                                key[i] = {max_value, start};
+                                key.emplace_back(max_value, start);
                             }
                             // 建立key的最小堆
                             std::make_heap(key.begin(), key.end(), comp);
@@ -714,12 +714,12 @@ public:
                         // 更新对应块中的最大值
                         auto block_begin = vectors.begin() + block_start;
                         auto block_end = block_begin + block_size;
-// #ifdef USE_SSE
-//                         _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]),
-//                                      _MM_HINT_T0);
-//                         _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start + 4]),
-//                                      _MM_HINT_T0);
-// #endif
+#ifdef USE_SSE
+                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start]),
+                                     _MM_HINT_T0);
+                        _mm_prefetch(reinterpret_cast<const char*>(&vectors[block_start + 4]),
+                                     _MM_HINT_T0);
+#endif
                         std::pop_heap(block_begin, block_end, comp);
 
                         *(block_end - 1) = std::make_pair(dist, candidate_id);
@@ -1344,9 +1344,9 @@ public:
                 writer.Write(link_lists_[i], link_list_size);
             }
         }
-        if (normalize_) {
-            writer.Write(reinterpret_cast<char*>(molds_), max_elements_ * sizeof(float));
-        }
+        // if (normalize_) {
+        //     writer.Write(reinterpret_cast<char*>(molds_), max_elements_ * sizeof(float));
+        // }
     }
 
     // load using reader
@@ -1433,32 +1433,32 @@ public:
                 reader.Read(link_lists_[i], link_list_size);
             }
         }
-        if (normalize_) {
-            reader.Read(reinterpret_cast<char*>(molds_), max_elements_ * sizeof(float));
-        }
+        // if (normalize_) {
+        //     reader.Read(reinterpret_cast<char*>(molds_), max_elements_ * sizeof(float));
+        // }
 
-        if (use_reversed_edges_) {
-            for (int internal_id = 0; internal_id < cur_element_count_; ++internal_id) {
-                for (int level = 0; level <= element_levels_[internal_id]; ++level) {
-                    unsigned int* data = get_linklist_at_level(internal_id, level);
-                    auto link_list = data + 1;
-                    auto size = getListCount(data);
-                    for (int j = 0; j < size; ++j) {
-                        auto id = link_list[j];
-                        auto& in_edges = getEdges(id, level);
-                        in_edges.insert(internal_id);
-                    }
-                }
-            }
-        }
-
-        for (size_t i = 0; i < cur_element_count_; i++) {
-            if (isMarkedDeleted(i)) {
-                num_deleted_ += 1;
-                if (allow_replace_deleted_)
-                    deleted_elements_.insert(i);
-            }
-        }
+        // if (use_reversed_edges_) {
+        //     for (int internal_id = 0; internal_id < cur_element_count_; ++internal_id) {
+        //         for (int level = 0; level <= element_levels_[internal_id]; ++level) {
+        //             unsigned int* data = get_linklist_at_level(internal_id, level);
+        //             auto link_list = data + 1;
+        //             auto size = getListCount(data);
+        //             for (int j = 0; j < size; ++j) {
+        //                 auto id = link_list[j];
+        //                 auto& in_edges = getEdges(id, level);
+        //                 in_edges.insert(internal_id);
+        //             }
+        //         }
+        //     }
+        // }
+        // 没有删除元素。
+        // for (size_t i = 0; i < cur_element_count_; i++) {
+        //     if (isMarkedDeleted(i)) {
+        //         num_deleted_ += 1;
+        //         if (allow_replace_deleted_)
+        //             deleted_elements_.insert(i);
+        //     }
+        // }
     }
 
     const float*
@@ -1945,14 +1945,10 @@ public:
 
                 data = (unsigned int*)get_linklist(currObj, level);
                 int size = getListCount(data);
-                metric_hops_++;
-                metric_distance_computations_ += size;
 
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
                     tableint cand = datal[i];
-                    if (cand < 0 || cand > max_elements_)
-                        throw std::runtime_error("cand error");
                     float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
                     if (d < curdist) {
@@ -1965,10 +1961,11 @@ public:
         }
 
         std::vector<std::pair<float, int64_t>> ans;
-        if (k == 10000) {
-            ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
+        if (k > 4 * ef) {
+            // 如果k很大。走别的搜索函数。
+            ans = searchBaseLayerSTLarge<false, true>(currObj, query_data, k, ef, isIdAllowed);
         } else {
-            ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
+            ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(k,ef), isIdAllowed);
         }
 
         for (int i = 0; i < ans.size(); i++) {
