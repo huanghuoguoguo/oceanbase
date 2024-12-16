@@ -42,10 +42,10 @@ BlockManager::GetElementPtr(size_t index, size_t offset) {
     size_t offset_in_block = total_offset % block_size_;
     auto res = blocks_[block_index] + offset_in_block + offset;
 
-#ifdef USE_SSE
-    // 预取即将访问的块
-    _mm_prefetch(reinterpret_cast<const char*>(res), _MM_HINT_T0);
-#endif
+// #ifdef USE_SSE
+//     // 预取即将访问的块
+//     _mm_prefetch(reinterpret_cast<const char*>(res), _MM_HINT_T0);
+// #endif
     // 返回具体地址
     return res;
 }

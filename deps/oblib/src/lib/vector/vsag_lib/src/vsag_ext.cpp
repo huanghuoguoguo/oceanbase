@@ -131,11 +131,7 @@ IndexHandler::KnnSearch(DatasetHandler* query,
         invalid_bitset = invalid->bitset_;
     }
     auto ret = index_->KnnSearch(query->dataset_, k, parameters, invalid_bitset);
-    if (ret.has_value()) {
-        return DatasetHandler::Make(ret.value());
-    } else {
-        return tl::unexpected(ret.error());
-    }
+    return DatasetHandler::Make(ret.value());
 }
 
 tl::expected<DatasetHandler*, Error>

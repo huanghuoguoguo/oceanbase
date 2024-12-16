@@ -167,7 +167,7 @@ public:
 
         data_level0_memory_ =
             std::make_shared<BlockManager>(size_data_per_element_, block_size_limit, allocator_);
-        
+
         data_element_per_block_ = block_size_limit / size_data_per_element_;
         cur_element_count_ = 0;
 
@@ -684,8 +684,8 @@ public:
 #endif
                         // 当data达到k大小时，建立分块堆结构
                         if (vectors.size() == k) {
-// 为每个块建堆 多线程时间会翻倍？？为什么？？
-// #pragma omp parallel for
+                            // 为每个块建堆 多线程时间会翻倍？？为什么？？
+                            // #pragma omp parallel for
                             for (size_t i = 0; i < block_nums; i++) {
                                 size_t start = i * block_size;
                                 size_t end = (i + 1) * block_size;
@@ -1949,7 +1949,11 @@ public:
                 tableint* datal = (tableint*)(data + 1);
                 for (int i = 0; i < size; i++) {
                     tableint cand = datal[i];
-                    float d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                    auto vector_data_ptr = getDataByInternalId(cand);
+#ifdef USE_SSE
+                    _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+                    float d = fstdistfunc_(query_data, vector_data_ptr, dist_func_param_);
 
                     if (d < curdist) {
                         curdist = d;
@@ -1965,9 +1969,10 @@ public:
             // 如果k很大。走别的搜索函数。
             ans = searchBaseLayerSTLarge<false, true>(currObj, query_data, k, ef, isIdAllowed);
         } else {
-            ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(k,ef), isIdAllowed);
+            ans = searchBaseLayerBSA<false, true>(
+                currObj, query_data, k, std::max(k, ef), isIdAllowed);
         }
-
+        // ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(k,ef), isIdAllowed);
         for (int i = 0; i < ans.size(); i++) {
             ans[i].second = getExternalLabel(ans[i].second);
         }
