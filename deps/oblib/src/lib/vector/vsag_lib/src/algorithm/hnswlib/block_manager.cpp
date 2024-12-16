@@ -23,6 +23,7 @@ BlockManager::BlockManager(size_t size_data_per_element,
     : max_elements_(0), size_data_per_element_(size_data_per_element), allocator_(allocator) {
     data_num_per_block_ = block_size_limit / size_data_per_element_;
     block_size_ = size_data_per_element * data_num_per_block_;
+    size_t block_size_log2_ = std::log2(block_size_);
 }
 
 BlockManager::~BlockManager() {
@@ -33,8 +34,18 @@ BlockManager::~BlockManager() {
 
 char*
 BlockManager::GetElementPtr(size_t index, size_t offset) {
-    size_t block_index = (index * size_data_per_element_) / block_size_;
-    size_t offset_in_block = (index * size_data_per_element_) % block_size_;
+    // 计算总偏移量
+    size_t total_offset = index * size_data_per_element_;
+
+    // 使用位运算代替除法和取模
+    size_t block_index = total_offset >> block_size_log2_;
+    size_t offset_in_block = total_offset & (block_size_ - 1);
+#ifdef USE_SSE
+    // 预取即将访问的块
+    _mm_prefetch(reinterpret_cast<const char*>(blocks_[block_index]), _MM_HINT_T0);
+#endif
+
+    // 返回具体地址
     return blocks_[block_index] + offset_in_block + offset;
 }
 

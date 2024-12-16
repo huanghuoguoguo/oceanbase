@@ -71,5 +71,6 @@ private:
     size_t max_elements_ = 0;
     std::vector<size_t> block_lens_ = {};
     vsag::Allocator* const allocator_ = nullptr;
+    size_t block_size_log2_ = 0;
 };
 }  // namespace hnswlib
