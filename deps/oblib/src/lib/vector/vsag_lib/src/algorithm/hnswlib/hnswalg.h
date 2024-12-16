@@ -662,10 +662,8 @@ public:
             std::vector<float> distances(size);
             std::vector<tableint> candidates(size);
 
-#pragma omp parallel for
+// #pragma omp parallel for
             for (size_t j = 0; j < size; j++) {
-                int thread_id = omp_get_thread_num();
-                vsag::logger::warn("yhh id:{}", thread_id);
                 tableint candidate_id = *(data_ptr + j + 1);
                 candidates[j] = candidate_id;
                 if (visited_array[candidate_id] != visited_array_tag) {
@@ -1984,12 +1982,11 @@ public:
         }
 
         std::vector<std::pair<float, int64_t>> ans;
-        // if (k == 10000) {
-        //     ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
-        // } else {
-        //     ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
-        // }
-        ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
+        if (k == 10000) {
+            ans = searchBaseLayerST10000<false, true>(currObj, query_data, k, ef, isIdAllowed);
+        } else {
+            ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
+        }
         if (k > 1000) {
 #pragma omp parallel for
             for (int i = 0; i < ans.size(); i++) {
