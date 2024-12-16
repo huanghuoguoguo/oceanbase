@@ -262,7 +262,7 @@ HNSW::knn_search(const DatasetPtr& query,
     result->Ids(ids);
     float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
     result->Distances(dists);
-    #pragma omp parallel for (k > 1000)
+//    #pragma omp parallel for (k > 1000)
     for (int64_t j = results.size() - 1; j >= 0; --j) {
         dists[j] = results[j].first;
         ids[j] = results[j].second;
