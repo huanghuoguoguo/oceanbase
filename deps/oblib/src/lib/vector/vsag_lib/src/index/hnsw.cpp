@@ -257,10 +257,8 @@ HNSW::knn_search(const DatasetPtr& query,
     float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
     result->Distances(dists);
     if (k > 1000) {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t j = results.size() - 1; j >= 0; --j) {
-            int thread_id = omp_get_thread_num();
-            vsag::logger::warn("yhh hnsw trid:{}", thread_id);
             dists[j] = results[j].first;
             ids[j] = results[j].second;
         }
