@@ -72,9 +72,11 @@ private:
     size_t maxM0_{0};
     size_t ef_construction_{0};
     size_t dim_{0};
-
+    // int max_capacity = 10000;
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
+
+    std::unordered_map<tableint, std::unordered_set<tableint>> in_;
 
     std::shared_ptr<VisitedListPool> visited_list_pool_{nullptr};
 
@@ -619,14 +621,14 @@ public:
         vectors.reserve(k);
 
         // 存储每个块的最大值及其在data中的索引
-        alignas(64) std::vector<std::pair<float, int64_t>> key;
-        key.reserve(block_nums);
+        alignas(64) std::vector<std::pair<float, int64_t>> key(block_nums);
+        // key.reserve(block_nums);
 
         std::priority_queue<std::pair<float, int64_t>,
                             vsag::Vector<std::pair<float, int64_t>>,
                             CompareByFirst>
             candidate_set(allocator_);
-
+        
         float lowerBound;
         float dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
         lowerBound = dist;
@@ -635,7 +637,6 @@ public:
         vectors.emplace_back(dist, ep_id);
         visited_array[ep_id] = visited_array_tag;
         candidate_set.emplace(-dist, ep_id);
-
         while (!candidate_set.empty()) {
             std::pair<float, tableint> current_node_pair = candidate_set.top();
 
@@ -685,8 +686,9 @@ public:
                         // 当data达到k大小时，建立分块堆结构
                         if (vectors.size() == k) {
                             // 为每个块建堆 多线程时间会翻倍？？为什么？？
-                            // #pragma omp parallel for
+// #pragma omp parallel for
                             for (size_t i = 0; i < block_nums; i++) {
+                                // vsag::logger::warn("yhh id:{},all:{}",omp_get_thread_num(),omp_get_num_threads());
                                 size_t start = i * block_size;
                                 size_t end = (i + 1) * block_size;
                                 std::make_heap(
@@ -694,7 +696,8 @@ public:
 
                                 // 记录每个块的最大值到key中
                                 float max_value = (vectors.begin() + start)->first;
-                                key.emplace_back(max_value, start);
+                                // key.emplace_back(max_value, start);
+                                key[i] = {max_value, start};
                             }
                             // 建立key的最小堆
                             std::make_heap(key.begin(), key.end(), comp);
@@ -1963,9 +1966,28 @@ public:
                 }
             }
         }
+        int ocurobj = currObj;
+        if(in_.find(currObj) != in_.end()){
+            // 循环找到可能最近的点。从该点出发会不会更快收敛？
+            auto& in = in_[currObj];
+            for(auto& i:in){
+                auto vector_data_ptr = getDataByInternalId(i);
+#ifdef USE_SSE
+                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
+#endif
+                float d = fstdistfunc_(query_data, vector_data_ptr, dist_func_param_);
+                // 找到实际更近的？
+                if(d < curdist){
+                    curdist = d;
+                    currObj = i;
+                }
+            }
+            
+        }
+
 
         std::vector<std::pair<float, int64_t>> ans;
-        if (k > 4 * ef) {
+        if (k > ef) {
             // 如果k很大。走别的搜索函数。
             ans = searchBaseLayerSTLarge<false, true>(currObj, query_data, k, ef, isIdAllowed);
         } else {
@@ -1973,6 +1995,10 @@ public:
                 currObj, query_data, k, std::max(k, ef), isIdAllowed);
         }
         // ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(k,ef), isIdAllowed);
+        if(!ans.empty() && ans[0].second != currObj){
+            // 将最近的点推入缓存。
+            in_[ocurobj].insert(ans[0].second);
+        }
         for (int i = 0; i < ans.size(); i++) {
             ans[i].second = getExternalLabel(ans[i].second);
         }
