@@ -106,7 +106,7 @@ int create_index(obvectorlib::VectorIndexPtr& index_handler, int index_type,
                                    dim,
                                    21,
                                    500,
-                                   93,
+                                   94,
                                    allocator);
 #endif
 }
@@ -152,7 +152,7 @@ int knn_search(obvectorlib::VectorIndexPtr index_handler, float* query_vector,in
 #else
   return obvectorlib::knn_search(index_handler, query_vector, dim, topk,
                                  result_dist, result_ids, result_size,
-                                 93, invalid);
+                                 94, invalid);
 #endif
 }
 
