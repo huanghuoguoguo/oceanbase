@@ -57,7 +57,7 @@ HNSW::HNSW(std::shared_ptr<hnswlib::SpaceInterface> space_interface,
       use_static_(use_static),
       use_conjugate_graph_(use_conjugate_graph),
       use_reversed_edges_(use_reversed_edges) {
-    dim_ = *((size_t*)space->get_dist_func_param());
+    dim_ = *((size_t*)space->get_dist_func_param()) * 4;
 
     M = std::min(std::max(M, MINIMAL_M), MAXIMAL_M);
 
@@ -170,9 +170,14 @@ HNSW::add(const DatasetPtr& base) {
             return tl::unexpected(result.error());
         }
         for (int64_t i = 0; i < num_elements; ++i) {
+            std::vector<uint8_t> temp(base_dim);
+            for (size_t j = 0; j < base_dim; ++j) {
+                float value = vectors[j];
+                temp[j] = static_cast<uint8_t>(value);
+            }
             // noexcept runtime
-            if (!alg_hnsw->addPoint((const void*)(vectors + i * dim_), ids[i])) {
-                logger::debug("duplicate point: {}", i);
+            if (!alg_hnsw->addPoint((const void*)(temp.data()), ids[i])) {
+                logger::warn("duplicate point: {}", i);
                 failed_ids.push_back(ids[i]);
             }
         }
@@ -203,27 +208,33 @@ HNSW::knn_search(const DatasetPtr& query,
                  int64_t k,
                  const std::string& parameters,
                  hnswlib::BaseFilterFunctor* filter_ptr) const {
-    SlowTaskTimer t("hnsw knnsearch", 20);
+    // SlowTaskTimer t("hnsw knnsearch", 20);
 
     try {
         // cannot perform search on empty index
-        if (empty_index_) {
-            auto ret = Dataset::Make();
-            ret->Dim(0)->NumElements(1);
-            return ret;
-        }
+        // if (empty_index_) {
+        //     auto ret = Dataset::Make();
+        //     ret->Dim(0)->NumElements(1);
+        //     return ret;
+        // }
 
         // check query vector
-        CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
+        // CHECK_ARGUMENT(query->GetNumElements() == 1, "query dataset should contain 1 vector only");
         auto vector = query->GetFloat32Vectors();
         int64_t query_dim = query->GetDim();
-        CHECK_ARGUMENT(
-            query_dim == dim_,
-            fmt::format("query.dim({}) must be equal to index.dim({})", query_dim, dim_));
+        std::array<uint8_t, 128> temp;
+        for (size_t i = 0; i < query_dim; ++i) {
+            float value = vector[i];
+            // 将每个 float 值转换为 uint8_t，存储在 uint8_t 类型数组中
+            temp[i] = static_cast<uint8_t>(value);
+        }
+        // CHECK_ARGUMENT(
+        //     query_dim == dim_,
+        //     fmt::format("query.dim({}) must be equal to index.dim({})", query_dim, dim_));
 
         // check k
-        CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
-        k = std::min(k, GetNumElements());
+        // CHECK_ARGUMENT(k > 0, fmt::format("k({}) must be greater than 0", k))
+        // k = std::min(k, GetNumElements());
 
         std::shared_lock lock(rw_mutex_);
 
@@ -231,12 +242,11 @@ HNSW::knn_search(const DatasetPtr& query,
         auto params = HnswSearchParameters::FromJson(parameters);
 
         // perform search
-        std::priority_queue<std::pair<float, size_t>> results;
-        double time_cost;
+        // std::priority_queue<std::pair<float, size_t>> results;
+        std::vector<std::pair<float, int64_t>> results;
         try {
-            Timer t(time_cost);
-            results = alg_hnsw->searchKnn(
-                (const void*)(vector), k, std::max(params.ef_search, k), filter_ptr);
+            auto hnsw = static_cast<hnswlib::HierarchicalNSW*>(alg_hnsw.get());
+            results = hnsw->searchKnn2(temp, k, params.ef_search, filter_ptr);
         } catch (const std::runtime_error& e) {
             LOG_ERROR_AND_RETURNS(ErrorType::INTERNAL_ERROR,
                                   "failed to perofrm knn_search(internalError): ",
@@ -244,43 +254,40 @@ HNSW::knn_search(const DatasetPtr& query,
         }
 
         // update stats
-        {
-            std::lock_guard<std::mutex> lock(stats_mutex_);
-            result_queues_[STATSTIC_KNN_TIME].Push(time_cost);
-        }
+        // {
+        //     std::lock_guard<std::mutex> lock(stats_mutex_);
+        //     result_queues_[STATSTIC_KNN_TIME].Push(time_cost);
+        // }
 
         // return result
         auto result = Dataset::Make();
-        if (results.size() == 0) {
-            result->Dim(0)->NumElements(1);
-            return result;
-        }
+        // if (results.size() == 0) {
+        //     result->Dim(0)->NumElements(1);
+        //     return result;
+        // }
 
-        // perform conjugate graph enhancement
-        if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
-            std::shared_lock lock(rw_mutex_);
-            time_cost = 0;
-            Timer t(time_cost);
+        // // perform conjugate graph enhancement
+        // if (use_conjugate_graph_ and params.use_conjugate_graph_search) {
+        //     std::shared_lock lock(rw_mutex_);
+        //     time_cost = 0;
+        //     Timer t(time_cost);
 
-            auto func = [this, vector](int64_t label) {
-                return this->alg_hnsw->getDistanceByLabel(label, vector);
-            };
-            conjugate_graph_->EnhanceResult(results, func);
-        }
+        //     auto func = [this, vector](int64_t label) {
+        //         return this->alg_hnsw->getDistanceByLabel(label, vector);
+        //     };
+        //     conjugate_graph_->EnhanceResult(results, func);
+        // }
 
         // return result
 
         result->Dim(results.size())->NumElements(1)->Owner(true, allocator_->GetRawAllocator());
-
         int64_t* ids = (int64_t*)allocator_->Allocate(sizeof(int64_t) * results.size());
         result->Ids(ids);
         float* dists = (float*)allocator_->Allocate(sizeof(float) * results.size());
         result->Distances(dists);
-
         for (int64_t j = results.size() - 1; j >= 0; --j) {
-            dists[j] = results.top().first;
-            ids[j] = results.top().second;
-            results.pop();
+            dists[j] = results[j].first;
+            ids[j] = results[j].second;
         }
 
         return std::move(result);
