@@ -6,7 +6,7 @@ git pull
 rm -rf /data/obcluster/log/*
 
 # Build the release
-bash build.sh release --init --make --silent
+bash build.sh release --init --make --silent -j2
 if [ $? -ne 0 ]; then
   echo "Build failed. Exiting."
   exit 1
@@ -44,6 +44,24 @@ if [ $? -ne 0 ]; then
   echo "Plotting failed. Exiting."
   exit 1
 fi
+
+python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
+python plot.py --dataset sift-128-euclidean --recompute
+
+python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
+python plot.py --dataset sift-128-euclidean --recompute
+
+cd /root/source/oceanbase
+./tools/deploy/obd.sh restart -n obcluster
+cd /root/source/ann-benchmarks
+
+
+python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
+python plot.py --dataset sift-128-euclidean --recompute
+
+cd /root/source/ann-benchmarks/ann_benchmarks/algorithms/oceanbase
+python hybrid_ann.py
+
 
 # Change to oceanbase source directory
 cd /root/source/oceanbase
