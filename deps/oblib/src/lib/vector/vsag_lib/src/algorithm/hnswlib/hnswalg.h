@@ -1965,12 +1965,12 @@ public:
         }
 
         std::vector<std::pair<float, int64_t>> ans;
-        if (k > 4 * ef) {
+        if (k > ef) {
             // 如果k很大。走别的搜索函数。
             ans = searchBaseLayerSTLarge<false, true>(currObj, query_data, k, ef, isIdAllowed);
         } else {
             ans = searchBaseLayerBSA<false, true>(
-                currObj, query_data, k, std::max(k, ef), isIdAllowed);
+                currObj, query_data, k, ef, isIdAllowed);
         }
         // ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(k,ef), isIdAllowed);
         for (int i = 0; i < ans.size(); i++) {
