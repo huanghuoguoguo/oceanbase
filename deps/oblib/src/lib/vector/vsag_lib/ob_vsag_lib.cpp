@@ -130,27 +130,13 @@ int HnswIndexHandler::knn_search(const vsag::DatasetPtr& query, int64_t topk,
                const std::string& parameters,
                const float*& dist, const int64_t*& ids, int64_t &result_size,
                const std::function<bool(int64_t)>& filter) {
-    vsag::logger::debug("  search_parameters:{}", parameters);
-    vsag::logger::debug("  topk:{}", topk);
-    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
 
     auto result = index_->KnnSearch(query, topk, parameters, filter);
-    if (result.has_value()) {
-        //result的生命周期
-        result.value()->Owner(false);
-        ids = result.value()->GetIds();
-        dist = result.value()->GetDistances();
-        result_size = result.value()->GetDim();
-        // print the results
-        for (int64_t i = 0; i < result_size; ++i) {
-            vsag::logger::debug("  knn search id : {}, distance : {}",ids[i],dist[i]);
-        }
-        return 0; 
-    } else {
-        error = result.error().type;
-    }
-
-    return static_cast<int>(error);
+    result.value()->Owner(false);
+    ids = result.value()->GetIds();
+    dist = result.value()->GetDistances();
+    result_size = result.value()->GetDim();
+    return 0; 
 }
 
 bool is_init_ = vsag::init();
@@ -313,15 +299,7 @@ int get_index_number(VectorIndexPtr& index_handler, int64_t &size) {
 int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_t topk,
                const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
                void* invalid) {
-    vsag::logger::debug("TRACE LOG[knn_search]:");
-    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
-    int ret = 0;
-    if (index_handler == nullptr || query_vector == nullptr) {
-        vsag::logger::debug("   null pointer addr, index_handler:{}, query_vector:{}",
-                                                   (void*)index_handler, (void*)query_vector);
-        return static_cast<int>(error);
-    }
-    SlowTaskTimer t("knn_search");
+
     roaring::api::roaring64_bitmap_t *bitmap = static_cast<roaring::api::roaring64_bitmap_t*>(invalid);
     auto filter = [bitmap](int64_t id) -> bool {
         return roaring::api::roaring64_bitmap_contains(bitmap, id);
@@ -330,11 +308,8 @@ int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_
     HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
     auto query = vsag::Dataset::Make();
     query->NumElements(1)->Dim(dim)->Float32Vectors(query_vector)->Owner(false);
-    ret = hnsw->knn_search(query, topk, search_parameters.dump(), dist, ids, result_size, filter);
-    if (ret != 0) {
-        vsag::logger::error("   knn search error happend, ret={}", ret);
-    }
-    return ret;
+    hnsw->knn_search(query, topk, search_parameters.dump(), dist, ids, result_size, filter);
+    return 0;
 }
 
 int serialize(VectorIndexPtr& index_handler, const std::string dir) {

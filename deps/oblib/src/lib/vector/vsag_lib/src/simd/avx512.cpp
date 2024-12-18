@@ -85,4 +85,42 @@ InnerProductSIMD16ExtAVX512(const void* pVect1v, const void* pVect2v, const void
     return sum;
 }
 
+float 
+SQ8ComputeCodesL2Sqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+    uint8_t* x = (uint8_t*)pVect1v;
+    uint8_t* y = (uint8_t*)pVect2v;
+
+    __m512i sum = _mm512_setzero_si512(); // Initialize sum as zero
+    for (int i = 0; i < 128; i += 16) {  
+        // Load 32 bytes (256 bits) from each vector
+        __m128i code1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(x + i));  
+        
+        __m128i code2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(y + i));  
+
+        // Convert to 32-bit integers
+        __m512i codes1_512 = _mm512_cvtepu8_epi32(code1);  
+        
+        __m512i codes2_512 = _mm512_cvtepu8_epi32(code2);  
+
+        // Calculate differences
+        __m512i diff = _mm512_sub_epi32(codes1_512, codes2_512);  
+
+        // Square differences
+        __m512i diff_squared = _mm512_mullo_epi32(diff, diff);  
+
+        // Accumulate squared differences
+        sum = _mm512_add_epi32(sum, diff_squared);
+    }    
+
+    // Sum up all elements in the 512-bit register
+    int PORTABLE_ALIGN64 TmpRes[16];
+    _mm512_storeu_si512(TmpRes, sum);
+
+    int total_sum = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
+                TmpRes[7] + TmpRes[8] + TmpRes[9] + TmpRes[10] + TmpRes[11] + TmpRes[12] +
+                TmpRes[13] + TmpRes[14] + TmpRes[15];
+
+    return static_cast<float>(total_sum); 
+}
+
 }  // namespace vsag

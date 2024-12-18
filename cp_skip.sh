@@ -30,20 +30,12 @@ fi
 echo "Waiting for 30 seconds..."
 sleep 30
 
+
 # Run the benchmark
 cd /root/source/ann-benchmarks
-python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1
-if [ $? -ne 0 ]; then
-  echo "Benchmark run failed. Exiting."
-  exit 1
-fi
 
-# Plot the results
+python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
 python plot.py --dataset sift-128-euclidean --recompute
-if [ $? -ne 0 ]; then
-  echo "Plotting failed. Exiting."
-  exit 1
-fi
 
 python run.py --algorithm oceanbase --local --force --dataset sift-128-euclidean --runs 1 --skip_fit
 python plot.py --dataset sift-128-euclidean --recompute
@@ -61,11 +53,10 @@ python plot.py --dataset sift-128-euclidean --recompute
 
 cd /root/source/ann-benchmarks/ann_benchmarks/algorithms/oceanbase
 python hybrid_ann.py
-
-
 # Change to oceanbase source directory
 cd /root/source/oceanbase
 
+sleep 10
 # Stop the obcluster
 ./tools/deploy/obd.sh stop -n obcluster
 if [ $? -ne 0 ]; then
