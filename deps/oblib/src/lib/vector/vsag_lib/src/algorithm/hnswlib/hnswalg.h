@@ -76,7 +76,7 @@ private:
     double mult_{0.0}, revSize_{0.0};
     int maxlevel_{0};
 
-    std::unordered_map<tableint, std::unordered_set<tableint>> in_;
+    // std::unordered_map<tableint, std::unordered_set<tableint>> in_;
 
     std::shared_ptr<VisitedListPool> visited_list_pool_{nullptr};
 
@@ -1966,24 +1966,6 @@ public:
                 }
             }
         }
-        int ocurobj = currObj;
-        if(in_.find(currObj) != in_.end()){
-            // 循环找到可能最近的点。从该点出发会不会更快收敛？
-            auto& in = in_[currObj];
-            for(auto& i:in){
-                auto vector_data_ptr = getDataByInternalId(i);
-#ifdef USE_SSE
-                _mm_prefetch(vector_data_ptr, _MM_HINT_T0);
-#endif
-                float d = fstdistfunc_(query_data, vector_data_ptr, dist_func_param_);
-                // 找到实际更近的？
-                if(d < curdist){
-                    curdist = d;
-                    currObj = i;
-                }
-            }
-            
-        }
 
 
         std::vector<std::pair<float, int64_t>> ans;
@@ -1995,10 +1977,6 @@ public:
                 currObj, query_data, k, std::max(k, ef), isIdAllowed);
         }
         // ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(k,ef), isIdAllowed);
-        if(!ans.empty() && ans[0].second != currObj){
-            // 将最近的点推入缓存。
-            in_[ocurobj].insert(ans[0].second);
-        }
         for (int i = 0; i < ans.size(); i++) {
             ans[i].second = getExternalLabel(ans[i].second);
         }
