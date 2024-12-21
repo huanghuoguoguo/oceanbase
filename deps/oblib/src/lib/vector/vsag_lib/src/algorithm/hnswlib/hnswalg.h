@@ -1814,7 +1814,6 @@ public:
 
     tableint
     addPoint(const void* data_point, labeltype label, int level) {
-        vsag::logger::warn("yhh add1");
         tableint cur_c = 0;
         {
             // Checking if the element with the same label already exists
@@ -1842,7 +1841,7 @@ public:
         int curlevel = getRandomLevel(mult_);
         if (level > 0)
             curlevel = level;
-
+        vsag::logger::warn("yhh add3");
         element_levels_[cur_c] = curlevel;
         std::unique_lock<std::mutex> lock(global_);
         int maxlevelcopy = maxlevel_;
@@ -1850,13 +1849,13 @@ public:
             lock.unlock();
         tableint currObj = enterpoint_node_;
         tableint enterpoint_copy = enterpoint_node_;
-        vsag::logger::warn("yhh add3");
+        vsag::logger::warn("yhh add4");
+        
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
-
+        vsag::logger::warn("yhh add5");
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
-        vsag::logger::warn("yhh add4");
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1865,7 +1864,7 @@ public:
             link_lists_[cur_c] = new_link_lists;
             memset(link_lists_[cur_c], 0, size_links_per_element_ * curlevel + 1);
         }
-        vsag::logger::warn("yhh add5");
+        
         if ((signed)currObj != -1) {
             if (curlevel < maxlevelcopy) {
                 float curdist =
