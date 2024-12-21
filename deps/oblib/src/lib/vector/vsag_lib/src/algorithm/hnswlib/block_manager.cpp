@@ -44,7 +44,7 @@ BlockManager::GetElementPtr(size_t index, size_t offset) {
     size_t block_index = total_offset / block_size_;
     // size_t offset_in_block = total_offset & block_size_;
     size_t offset_in_block = total_offset % block_size_;
-    vsag::logger::warn("yhh get:{},{},{}",total_offset,block_index,offset_in_block);
+    // vsag::logger::warn("yhh get:{},{},{}",total_offset,block_index,offset_in_block);
     // size_t block_index = total_offset / block_size_;
     // size_t offset_in_block = total_offset % block_size_;
     auto res = blocks_[block_index] + offset_in_block + offset;
