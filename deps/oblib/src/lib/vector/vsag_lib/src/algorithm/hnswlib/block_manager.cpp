@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #include "block_manager.h"
+
 #include "../../logger.h"
 namespace hnswlib {
 
@@ -25,6 +26,7 @@ BlockManager::BlockManager(size_t size_data_per_element,
     // block_size_ = size_data_per_element * data_num_per_block_;
     block_size_ = block_size_limit - 1;
     block_size_log2_ = std::log(block_size_limit);
+    vsag::logger::warn("yhh cons:{}-,{}", block_size_, block_size_log2_);
 }
 
 BlockManager::~BlockManager() {
@@ -35,7 +37,6 @@ BlockManager::~BlockManager() {
 
 char*
 BlockManager::GetElementPtr(size_t index, size_t offset) {
-    vsag::logger::warn("yhh getE:{}-,{}",index,offset);
     size_t total_offset = index * size_data_per_element_;
 
     // 使用位运算代替除法和取模
@@ -45,23 +46,24 @@ BlockManager::GetElementPtr(size_t index, size_t offset) {
     // size_t offset_in_block = total_offset % block_size_;
     auto res = blocks_[block_index] + offset_in_block + offset;
 
-// #ifdef USE_SSE
-//     // 预取即将访问的块
-//     _mm_prefetch(reinterpret_cast<const char*>(res), _MM_HINT_T0);
-// #endif
+    // #ifdef USE_SSE
+    //     // 预取即将访问的块
+    //     _mm_prefetch(reinterpret_cast<const char*>(res), _MM_HINT_T0);
+    // #endif
     // 返回具体地址
     return res;
 }
 
 bool
 BlockManager::Resize(size_t new_max_elements) {
+    vsag::logger::warn("yhh resize1");
     if (new_max_elements < max_elements_) {
         throw std::runtime_error("new_max_elements is less than max_elements_");
     }
 
     size_t new_full_blocks = (new_max_elements * size_data_per_element_) / block_size_;
     size_t new_remaining_size = (new_max_elements * size_data_per_element_) % block_size_;
-
+    vsag::logger::warn("yhh resize2");
     try {
         bool append_more_block = blocks_.size() <= new_full_blocks;
         // Adjust the size of the last block. There are two scenarios here: when more blocks
@@ -79,21 +81,23 @@ BlockManager::Resize(size_t new_max_elements) {
             blocks_.back() = static_cast<char*>(new_last_block);
             block_lens_.back() = new_last_block_size;
         }
-
+        vsag::logger::warn("yhh resize3");
         // If the current number of blocks is less than the number of complete blocks needed, proceed with padding.
         while (blocks_.size() < new_full_blocks) {
             blocks_.push_back(static_cast<char*>(allocator_->Allocate(block_size_)));
             block_lens_.push_back(block_size_);
         }
-
+        vsag::logger::warn("yhh resize4");
         // Padding the last block is necessary only when there are not enough blocks.
         if (new_remaining_size > 0 && append_more_block) {
             blocks_.push_back(static_cast<char*>(allocator_->Allocate(new_remaining_size)));
             block_lens_.push_back(new_remaining_size);
         }
         max_elements_ = new_max_elements;
+        vsag::logger::warn("yhh resize5");
         return true;
     } catch (const std::bad_alloc&) {
+        vsag::logger::warn("yhh resize6");
         return false;
     }
 }

@@ -1814,7 +1814,7 @@ public:
 
     tableint
     addPoint(const void* data_point, labeltype label, int level) {
-        vsag::logger::warn("yhh add");
+        vsag::logger::warn("yhh add1");
         tableint cur_c = 0;
         {
             // Checking if the element with the same label already exists
@@ -1834,7 +1834,7 @@ public:
             cur_element_count_++;
             label_lookup_[label] = cur_c;
         }
-
+        vsag::logger::warn("yhh add2");
         // std::shared_ptr<float[]> normalize_data;
         // normalize_vector(data_point, normalize_data);
 
@@ -1850,13 +1850,13 @@ public:
             lock.unlock();
         tableint currObj = enterpoint_node_;
         tableint enterpoint_copy = enterpoint_node_;
-
+        vsag::logger::warn("yhh add3");
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
 
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
-
+        vsag::logger::warn("yhh add4");
         if (curlevel) {
             auto new_link_lists = (char*)allocator_->Reallocate(
                 link_lists_[cur_c], size_links_per_element_ * curlevel + 1);
@@ -1865,7 +1865,7 @@ public:
             link_lists_[cur_c] = new_link_lists;
             memset(link_lists_[cur_c], 0, size_links_per_element_ * curlevel + 1);
         }
-
+        vsag::logger::warn("yhh add5");
         if ((signed)currObj != -1) {
             if (curlevel < maxlevelcopy) {
                 float curdist =
@@ -1970,8 +1970,7 @@ public:
             // 如果k很大。走别的搜索函数。
             ans = searchBaseLayerSTLarge<false, true>(currObj, query_data, k, ef, isIdAllowed);
         } else {
-            ans = searchBaseLayerBSA<false, true>(
-                currObj, query_data, k, ef, isIdAllowed);
+            ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, ef, isIdAllowed);
         }
         // ans = searchBaseLayerBSA<false, true>(currObj, query_data, k, std::max(k,ef), isIdAllowed);
         for (int i = 0; i < ans.size(); i++) {
@@ -2124,7 +2123,6 @@ public:
     bool
     init_memory_space() override {
         reset();
-        vsag::logger::warn("yhh init mem");
         element_levels_ = (int*)allocator_->Allocate(max_elements_ * sizeof(int));
         if (not data_level0_memory_->Resize(max_elements_)) {
             throw std::runtime_error("allocate data_level0_memory_ error");
