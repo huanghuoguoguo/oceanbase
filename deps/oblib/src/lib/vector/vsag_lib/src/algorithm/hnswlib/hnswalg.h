@@ -1814,6 +1814,7 @@ public:
 
     tableint
     addPoint(const void* data_point, labeltype label, int level) {
+        vsag::logger::warn("yhh add");
         tableint cur_c = 0;
         {
             // Checking if the element with the same label already exists
@@ -2123,6 +2124,7 @@ public:
     bool
     init_memory_space() override {
         reset();
+        vsag::logger::warn("yhh init mem");
         element_levels_ = (int*)allocator_->Allocate(max_elements_ * sizeof(int));
         if (not data_level0_memory_->Resize(max_elements_)) {
             throw std::runtime_error("allocate data_level0_memory_ error");
