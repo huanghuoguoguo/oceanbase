@@ -1847,10 +1847,7 @@ public:
             lock.unlock();
         tableint currObj = enterpoint_node_;
         tableint enterpoint_copy = enterpoint_node_;
-        vsag::logger::warn("yhh add4");
-        vsag::logger::warn("yhh add4.5:{},{}",cur_c, offsetLevel0_);
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
-        vsag::logger::warn("yhh add5");
         // Initialisation of the data and label
         memcpy(getExternalLabeLp(cur_c), &label, sizeof(labeltype));
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);

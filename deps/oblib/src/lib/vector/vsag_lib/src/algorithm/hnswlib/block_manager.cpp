@@ -26,7 +26,7 @@ BlockManager::BlockManager(size_t size_data_per_element,
     // block_size_ = size_data_per_element * data_num_per_block_;
     block_size_ = block_size_limit - 1;
     block_size_log2_ = std::log(block_size_limit);
-    vsag::logger::warn("yhh cons:{}-,{}", block_size_, block_size_log2_);
+    vsag::logger::warn("yhh cons:{},{}", block_size_, block_size_log2_);
 }
 
 BlockManager::~BlockManager() {
@@ -40,7 +40,8 @@ BlockManager::GetElementPtr(size_t index, size_t offset) {
     size_t total_offset = index * size_data_per_element_;
 
     // 使用位运算代替除法和取模
-    size_t block_index = total_offset >> block_size_log2_;
+    // size_t block_index = total_offset >> block_size_log2_;
+    size_t block_index = total_offset / block_size_;
     size_t offset_in_block = total_offset & block_size_;
     vsag::logger::warn("yhh get:{},{},{}",total_offset,block_index,offset_in_block);
     // size_t block_index = total_offset / block_size_;
