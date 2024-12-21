@@ -1833,7 +1833,6 @@ public:
             cur_element_count_++;
             label_lookup_[label] = cur_c;
         }
-        vsag::logger::warn("yhh add2");
         // std::shared_ptr<float[]> normalize_data;
         // normalize_vector(data_point, normalize_data);
 
@@ -1841,7 +1840,6 @@ public:
         int curlevel = getRandomLevel(mult_);
         if (level > 0)
             curlevel = level;
-        vsag::logger::warn("yhh add3");
         element_levels_[cur_c] = curlevel;
         std::unique_lock<std::mutex> lock(global_);
         int maxlevelcopy = maxlevel_;
@@ -1850,7 +1848,7 @@ public:
         tableint currObj = enterpoint_node_;
         tableint enterpoint_copy = enterpoint_node_;
         vsag::logger::warn("yhh add4");
-        
+        vsag::logger::warn("yhh add4.5:{},{}",cur_c, offsetLevel0_);
         memset(data_level0_memory_->GetElementPtr(cur_c, offsetLevel0_), 0, size_data_per_element_);
         vsag::logger::warn("yhh add5");
         // Initialisation of the data and label
